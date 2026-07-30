@@ -3,9 +3,13 @@ const OUTCOMES = {
   proteoform: { label: "proteoform", short: "PRO", tone: "ok",   blurb: "mutant protein sequence translated" },
   rna_only:   { label: "RNA only",   short: "RNA", tone: "warn", blurb: "RNA variant called, no mutant protein" },
   no_call:    { label: "no call",    short: "—",   tone: "bad",  blurb: "reads present, nothing called" },
-  no_reads:   { label: "no reads",   short: "·",   tone: "none", blurb: "locus not covered by the ONT data" },
+  no_reads:   { label: "no reads",   short: "·",   tone: "none", blurb: "locus not covered by this sample's reads" },
+  not_run:    { label: "not run",    short: "⋯",   tone: "none", blurb: "no Exacto run for this sample — says nothing about the data" },
 };
+// The verdict ladder, for the summary bar and for sorting. "not_run" is
+// deliberately absent: it is the absence of a result, not a rung on the ladder.
 const OUTCOME_ORDER = ["peptide", "proteoform", "rna_only", "no_call", "no_reads"];
+const LEGEND_ORDER = [...OUTCOME_ORDER, "not_run"];
 const RECOVERED = new Set(["peptide", "proteoform"]);
 
 const TONE_VAR = { ok: "--ok", warn: "--warn", bad: "--bad", none: "--none" };
@@ -28,10 +32,24 @@ const el = (tag, className, text) => {
 
 /* ---------------------------------------------------------------- helpers */
 
+// An arm that crashed, or a sample whose job never ran, leaves an entry with no
+// arms in it. Scoring that as "no reads" would be a claim about the data —
+// that nothing covered the locus — when the truth is that Exacto never produced
+// an answer here. That distinction is the whole point of the ladder, so it is
+// kept at the top of it too.
+function ran(entry) {
+  return Boolean(entry && Object.keys(entry.arms || {}).length);
+}
+
 function outcomeOf(variant, sample) {
   const recovery = variant.recovery;
   if (!recovery) return null;
-  if (sample) return recovery.samples?.[sample]?.outcome ?? "no_reads";
+  if (sample) {
+    const entry = recovery.samples?.[sample];
+    return ran(entry) ? entry.outcome ?? "no_reads" : "not_run";
+  }
+  const every = Object.values(recovery.samples || {});
+  if (every.length && !every.some(ran)) return "not_run";
   return recovery.outcome ?? "no_reads";
 }
 
@@ -129,7 +147,7 @@ function renderTiles() {
     {
       label: "Mutant proteins recovered",
       value: DATA.has_exacto_run ? `${recovered}/${testable}` : "—",
-      sub: DATA.has_exacto_run ? "of mutations the ONT data covers" : "no run yet",
+      sub: DATA.has_exacto_run ? "of mutations the long-read data covers" : "no run yet",
       bar: DATA.has_exacto_run && counts ? OUTCOME_ORDER.map((outcome) => ({
         outcome, n: counts[outcome] || 0,
       })) : null,
@@ -193,7 +211,7 @@ function renderTiles() {
 function renderLegend() {
   const node = $("#legend");
   node.innerHTML = "";
-  for (const outcome of OUTCOME_ORDER) {
+  for (const outcome of LEGEND_ORDER) {
     const spec = OUTCOMES[outcome];
     const item = el("span");
     const swatch = el("span", "swatch");
@@ -337,7 +355,8 @@ function sortValue(variant, key) {
     case "reads": return -ontReads(variant);
     case "outcome": {
       const outcome = outcomeOf(variant, null);
-      return outcome ? OUTCOME_ORDER.indexOf(outcome) : 99;
+      const rank = outcome ? OUTCOME_ORDER.indexOf(outcome) : -1;
+      return rank < 0 ? 99 : rank;
     }
     default: return variant.gene;
   }
@@ -375,7 +394,11 @@ function sampleCells(variant) {
   for (const sample of DATA.samples) {
     const outcome = outcomeOf(variant, sample.name);
     const spec = OUTCOMES[outcome] || OUTCOMES.no_reads;
-    const cell = el("span", "tp-cell", DATA.has_exacto_run ? spec.short : "·");
+    const cell = el(
+      "span",
+      `tp-cell${outcome === "not_run" ? " not-run" : ""}`,
+      DATA.has_exacto_run ? spec.short : "·",
+    );
     cell.style.background = `var(${TONE_VAR[spec.tone]}-soft)`;
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
     cell.title = `${sample.label}: ${spec.label}`;
@@ -498,7 +521,7 @@ function detailRow(variant, columns) {
     add("vaccine epitopes", `${variant.vaccine_epitopes.length} published, ${found} found`);
   }
   for (const [name, entry] of Object.entries(variant.ont_expectation || {})) {
-    add(`${name} ONT depth`, entry ? `${entry.alt_reads}/${entry.total_reads} (VAF ${entry.vaf ?? "—"})` : "—");
+    add(`${name} ONT depth (portal)`, entry ? `${entry.alt_reads}/${entry.total_reads} (VAF ${entry.vaf ?? "—"})` : "—");
   }
   facts.append(list);
 
@@ -993,7 +1016,7 @@ function issueMarkdown(finding) {
     "",
     "---",
     "Found by [DoesExactoWorkYet](https://github.com/pirl-unc/DoesExactoWorkYet), " +
-    "running Exacto over the ONT long-read RNA-seq at https://osteosarc.com.",
+    "running Exacto over the long-read RNA-seq at https://osteosarc.com.",
   );
   return `## ${finding.title}\n\n${lines.join("\n")}\n`;
 }

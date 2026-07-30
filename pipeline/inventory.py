@@ -1,12 +1,13 @@
 """What sequencing data osteosarc.com actually holds, per platform and timepoint.
 
 Derived from the portal's own file manifest rather than asserted, because the
-obvious question about a test that only uses ONT — "isn't there PacBio too, and
-bulk as well as single-cell?" — deserves an answer anyone can re-derive.
+obvious question — "isn't there PacBio too, and bulk as well as single-cell?" —
+deserves an answer anyone can re-derive rather than take on trust.
 
 The short version, at the time of writing: PacBio exists for T1 only, ONT for
-all three biopsies, and every long-read RNA dataset is single-cell. The bulk
-RNA-seq is Illumina short-read, which Exacto is not built for.
+all three biopsies, and every long-read RNA dataset is single-cell. Both
+long-read platforms are run; the bulk RNA-seq is Illumina short-read, which
+Exacto is not built for.
 """
 
 from __future__ import annotations
@@ -98,8 +99,8 @@ def build(paths: list[str]) -> dict[str, Any]:
             "intermediates and index files, not just primary data. What matters "
             "for this test: PacBio RNA exists for T1 only, ONT for all three "
             "biopsies, and every long-read RNA dataset on the portal is "
-            "single-cell — the bulk RNA-seq is Illumina short-read, which Exacto "
-            "is not built for."
+            "single-cell. Both long-read platforms are run — the bulk RNA-seq is "
+            "Illumina short-read, which Exacto is not built for."
         ),
     }
 

@@ -852,3 +852,11 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   text-transform: none;
   white-space: nowrap;
 }
+
+/* "not run" is an empty slot, not a grey verdict: outlined rather than filled,
+   so it cannot be misread as a statement about the data. */
+.tp-cell.not-run {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--none);
+  opacity: 0.75;
+}
