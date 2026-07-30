@@ -79,10 +79,11 @@ def download(url: str, dest: Path) -> Path:
     print(f"downloading {url}")
     partial = dest.with_suffix(dest.suffix + ".part")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=600) as response:
-        with open(partial, "wb") as handle:
-            while chunk := response.read(1 << 20):
-                handle.write(chunk)
+    with urllib.request.urlopen(request, timeout=600) as response, open(
+        partial, "wb"
+    ) as handle:
+        while chunk := response.read(1 << 20):
+            handle.write(chunk)
     partial.rename(dest)
     return dest
 
@@ -107,8 +108,8 @@ def transcript_spans(gtf_path: Path) -> dict[str, list[tuple[int, int, str]]]:
             spans.setdefault(fields[0], []).append(
                 (int(fields[3]), int(fields[4]), transcript_id)
             )
-    for chrom in spans:
-        spans[chrom].sort()
+    for chrom_spans in spans.values():
+        chrom_spans.sort()
     return spans
 
 

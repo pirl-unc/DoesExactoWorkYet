@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pysam is only needed to actually read a BAM. Importing it
-    import pysam   # eagerly would drag htslib into the site build and the unit
+    import pysam  # eagerly would drag htslib into the site build and the unit
                    # tests, which have no business needing it.
 
 from .build_reference import DOWNLOAD_DIR, REGIONS_JSON, download, load_variants

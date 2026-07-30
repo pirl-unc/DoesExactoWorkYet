@@ -191,9 +191,11 @@ def parameters() -> list[dict]:
                 ("Gene window padding", f"±{config.GENE_FLANK_BP:,} bp"),
                 (
                     "Window expansion",
-                    "grown until every overlapping GENCODE transcript sits entirely "
-                    "on real sequence, because Exacto drops reads whose candidate "
-                    "transcript touches an N",
+                    (
+                        "grown until every overlapping GENCODE transcript sits "
+                        "entirely on real sequence, because Exacto drops reads whose "
+                        "candidate transcript touches an N"
+                    ),
                 ),
                 ("Reference format", "uncompressed FASTA — bgzip costs ~50% runtime"),
             ],
@@ -203,13 +205,12 @@ def parameters() -> list[dict]:
             "settings": [
                 (
                     "Variant-spanning reads",
-                    f"kept up to {config.SPANNING_READS_PER_VARIANT:,} per variant, "
-                    "seeded reservoir sample",
+                    (
+                        f"kept up to {config.SPANNING_READS_PER_VARIANT:,} per "
+                        "variant, seeded reservoir sample"
+                    ),
                 ),
-                (
-                    "Context reads",
-                    f"kept up to {config.CONTEXT_READS_PER_REGION:,} per region",
-                ),
+                ("Context reads", f"kept up to {config.CONTEXT_READS_PER_REGION:,} per region"),
                 ("Excluded", "secondary, supplementary and unmapped records"),
                 ("Retry", "4 attempts per region, region restarted from scratch"),
             ],
@@ -222,12 +223,14 @@ def parameters() -> list[dict]:
                 ("Flags", " ".join(config.MINIMAP2_COMMON_FLAGS)),
                 (
                     "Post-processing",
-                    "samtools view -F 4 to drop unmapped records, which crash Exacto",
+                    "samtools view -F 4 drops unmapped records, which crash Exacto",
                 ),
                 (
                     "Assembled contig quality",
-                    f"flat Phred '{ASSEMBLY_BASE_QUALITY}' (Q40) — Exacto panics on a "
-                    "BAM with no QUAL, and RNA-Bloom2 emits FASTA",
+                    (
+                        f"flat Phred '{ASSEMBLY_BASE_QUALITY}' (Q40) — Exacto panics "
+                        "on a BAM with no QUAL, and RNA-Bloom2 emits FASTA"
+                    ),
                 ),
             ],
         },
@@ -238,14 +241,18 @@ def parameters() -> list[dict]:
                 (
                     "Gene / transcript levels",
                     ", ".join(config.GENE_LEVELS)
-                    + " — level 3 included so the mitochondrial genes, and MT-ND5, "
-                    "are not silently dropped",
+                    + (
+                        " — level 3 included so the mitochondrial genes, and MT-ND5, "
+                        "are not silently dropped"
+                    ),
                 ),
                 (
                     "integrate-vars tolerances",
-                    "exon offset 2; transcript-boundary and intergenic offsets set to "
-                    "0, against defaults of 10 kb and 100 kb that pair nearly "
-                    "everything with everything",
+                    (
+                        "exon offset 2; transcript-boundary and intergenic offsets "
+                        "set to 0, against defaults of 10 kb and 100 kb that pair "
+                        "nearly everything with everything"
+                    ),
                 ),
                 ("translate-structs strategy", "longest_orf"),
                 ("call-peptide-vars k", "8–11"),

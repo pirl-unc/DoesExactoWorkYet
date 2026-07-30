@@ -183,9 +183,11 @@ jobs:
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
-      # enablement: true turns Pages on the first time this runs, so the repo
-      # needs no manual settings change.
+      # Best effort: enables Pages on a repo where the workflow token is
+      # allowed to. Where it is not, Pages is enabled once by hand and this
+      # step has nothing to do — either way it must not block the deploy.
       - uses: actions/configure-pages@v5
+        continue-on-error: true
         with:
           enablement: true
 

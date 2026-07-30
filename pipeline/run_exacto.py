@@ -91,9 +91,13 @@ class Runner:
         with open(log_path, "wb") as log:
             if stdout_path is not None:
                 with open(stdout_path, "wb") as sink:
-                    completed = subprocess.run(command, stdout=sink, stderr=log)
+                    completed = subprocess.run(
+                        command, stdout=sink, stderr=log, check=False
+                    )
             else:
-                completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
+                completed = subprocess.run(
+                    command, stdout=log, stderr=subprocess.STDOUT, check=False
+                )
         elapsed = round(time.monotonic() - started, 1)
 
         step = {
