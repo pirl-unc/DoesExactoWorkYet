@@ -16,7 +16,7 @@ from pathlib import Path
 from . import assays, inventory
 from .config import ARMS, REPO_ROOT, RESULTS_DIR, SITE_DIR, TIMEPOINTS
 from .extract_reads import stats_path
-from .sources import data_sources, parameters, reproduction
+from .sources import configuration, data_sources, reproduction
 
 WEB_DIR = REPO_ROOT / "web"
 HISTORY_PATH = RESULTS_DIR / "history.json"
@@ -183,7 +183,7 @@ def build_payload() -> dict:
         "data_sources": data_sources(extraction),
         "assay_columns": assay_columns,
         "inventory": inventory.load(),
-        "parameters": parameters(),
+        "configuration": configuration(),
         "reproduction": reproduction(),
         "findings": (load(RESULTS_DIR / "findings.json") or {}).get("findings", []),
         "runs": (exacto_payload or {}).get("runs", []),

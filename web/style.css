@@ -778,3 +778,53 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
 }
 .assay-tags .tag.longread { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
 .assay-tags .tag.sc { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- configuration audit ---------- */
+
+.config-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: .7rem;
+  margin-bottom: 1.4rem;
+}
+.config-count {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--none);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  padding: .6rem .8rem;
+}
+.config-count.ok   { border-left-color: var(--ok); }
+.config-count.warn { border-left-color: var(--warn); }
+.config-n { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+.config-label {
+  margin-left: .4rem;
+  font-size: .8rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.config-count.ok .config-label   { color: var(--ok); }
+.config-count.warn .config-label { color: var(--warn); }
+.config-count.none .config-label { color: var(--none); }
+.config-blurb { display: block; font-size: .78rem; color: var(--ink-soft); margin-top: .15rem; }
+
+.config-row {
+  padding: .65rem 0 .7rem;
+  border-top: 1px solid var(--rule);
+}
+.config-row:first-of-type { border-top: 0; }
+.config-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; }
+.config-name { font-weight: 620; font-size: .92rem; }
+.config-value {
+  font-size: .78rem;
+  color: var(--ink);
+  background: var(--bg-sunken);
+  border-radius: 5px;
+  padding: .2rem .45rem;
+  margin-top: .3rem;
+  display: inline-block;
+  word-break: break-word;
+}
+.config-canonical { font-size: .8rem; color: var(--ink-soft); margin-top: .25rem; }
+.config-why { margin: .3rem 0 0; font-size: .85rem; color: var(--ink-soft); max-width: 78ch; }

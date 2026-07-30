@@ -27,6 +27,7 @@
 <nav class="tabs wrap" aria-label="Sections">
   <a href="#results">Results</a>
   <a href="#variants">Variants</a>
+  <a href="#config">Configuration</a>
   <a href="#findings">Findings</a>
   <a href="#runs">Pipeline runs</a>
   <a href="sources.html">Data &amp; method →</a>
@@ -81,6 +82,18 @@
         <tbody></tbody>
       </table>
     </div>
+  </section>
+
+  <section id="config">
+    <h2>How this run is configured</h2>
+    <p class="section-note">
+      Every option this pipeline sets, measured against the canonical pipeline —
+      Andy Lee's <code>PEPTIDE_PREDICTION_EXACTO</code> subworkflow in Nexus, or
+      Exacto's own defaults where Nexus passes nothing. Anything not marked
+      <em>stock</em> is a deliberate choice with a reason attached.
+    </p>
+    <div id="config-summary" class="config-summary"></div>
+    <div id="config-groups"></div>
   </section>
 
   <section id="findings">

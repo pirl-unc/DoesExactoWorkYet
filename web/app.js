@@ -873,17 +873,56 @@ function renderSources() {
   }
 }
 
-function renderParameters() {
-  const node = $("#parameter-groups");
+const CONFIG_STATUS = {
+  canonical:  { label: "stock",     tone: "ok",   blurb: "matches the canonical pipeline" },
+  deviation:  { label: "changed",   tone: "warn", blurb: "deliberately different, with a reason" },
+  addition:   { label: "added",     tone: "warn", blurb: "a step canonical does not have" },
+  checked:    { label: "checked",   tone: "none", blurb: "looked at and deliberately left alone" },
+};
+
+function renderConfiguration() {
+  const groups = DATA.configuration || [];
+  const summary = $("#config-summary");
+  const node = $("#config-groups");
+  if (!node) return;
+
+  const all = groups.flatMap((g) => g.settings);
+  if (summary) {
+    summary.innerHTML = "";
+    for (const [status, spec] of Object.entries(CONFIG_STATUS)) {
+      const n = all.filter((s) => s.status === status).length;
+      if (!n) continue;
+      const tile = el("div", `config-count ${spec.tone}`);
+      tile.append(el("span", "config-n", String(n)));
+      tile.append(el("span", "config-label", spec.label));
+      tile.append(el("span", "config-blurb", spec.blurb));
+      summary.append(tile);
+    }
+  }
+
   node.innerHTML = "";
-  for (const group of DATA.parameters || []) {
+  for (const group of groups) {
     const block = el("div", "source-group");
     block.append(el("h3", null, group.step));
-    const list = el("dl", "kv wide");
-    for (const [key, value] of group.settings) {
-      list.append(el("dt", null, key), el("dd", null, value));
+    for (const setting of group.settings) {
+      const spec = CONFIG_STATUS[setting.status] || CONFIG_STATUS.checked;
+      const row = el("div", `config-row ${spec.tone}`);
+
+      const head = el("div", "config-head");
+      head.append(el("span", "config-name", setting.name));
+      head.append(el("span", `badge ${spec.tone}`, spec.label));
+      row.append(head);
+
+      row.append(el("div", "config-value mono", setting.value));
+      if (setting.canonical) {
+        const line = el("div", "config-canonical");
+        line.append(el("span", "locus", "canonical: "));
+        line.append(document.createTextNode(setting.canonical));
+        row.append(line);
+      }
+      if (setting.why) row.append(el("p", "config-why", setting.why));
+      block.append(row);
     }
-    block.append(list);
     node.append(block);
   }
 }
@@ -1056,7 +1095,7 @@ async function main() {
     renderSources();
     renderInventory();
     renderReproduction();
-    renderParameters();
+    renderConfiguration();
     renderEnvironment();
   } else if (page === "bugs") {
     renderBugs();
@@ -1070,6 +1109,7 @@ async function main() {
     renderHead();
     wireControls();
     renderTable();
+    renderConfiguration();
     renderFindings();
     renderRuns();
   }

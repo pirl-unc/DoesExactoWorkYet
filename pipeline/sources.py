@@ -226,100 +226,258 @@ def reproduction() -> list[dict]:
     ]
 
 
-def parameters() -> list[dict]:
-    """The knobs, with the reasoning, so a number on the page can be traced."""
+def configuration() -> list[dict]:
+    """Every option this pipeline sets, and how it compares to canonical.
+
+    "Canonical" means Andy Lee's PEPTIDE_PREDICTION_EXACTO subworkflow in Nexus,
+    or Exacto's own defaults where Nexus passes nothing. Each row is marked so a
+    reader can see at a glance what is stock, what was changed on purpose, and
+    what was checked and deliberately left alone.
+    """
     return [
         {
-            "step": "build_reference",
+            "step": "Reference construction",
             "settings": [
-                ("Gene window padding", f"±{config.GENE_FLANK_BP:,} bp"),
-                (
-                    "Window expansion",
-                    (
-                        "grown until every overlapping GENCODE transcript sits "
-                        "entirely on real sequence, because Exacto drops reads whose "
-                        "candidate transcript touches an N"
+                {
+                    "name": "Reference genome",
+                    "value": "hg38, masked to the vaccine genes, uncompressed",
+                    "status": "addition",
+                    "canonical": "a whole reference genome, bgzipped",
+                    "why": (
+                        "Only the vaccine loci are under test, so only they are "
+                        "carved out — at their true hg38 coordinates, so nothing "
+                        "downstream needs offset arithmetic. Uncompressed because "
+                        "Exacto queries the reference one base at a time and a "
+                        "bgzipped file pays a block decompression per query: "
+                        "110 s versus 74 s on the same 1,179 reads."
                     ),
-                ),
-                ("Reference format", "uncompressed FASTA — bgzip costs ~50% runtime"),
+                },
+                {
+                    "name": "Window expansion",
+                    "value": f"gene body ±{config.GENE_FLANK_BP:,} bp, then grown "
+                    "until every overlapping transcript fits",
+                    "status": "addition",
+                    "canonical": "not applicable — no masking upstream",
+                    "why": (
+                        "Exacto drops any read whose candidate transcript touches a "
+                        "non-ACGT base, silently. Growing the windows until no "
+                        "transcript escapes removes that failure mode; the build "
+                        "aborts if one still does."
+                    ),
+                },
+                {
+                    "name": "Gene annotation",
+                    "value": f"GENCODE v{config.GENCODE_RELEASE}",
+                    "status": "deviation",
+                    "canonical": "v45 in Nexus's params.yaml",
+                    "why": (
+                        "v44 is what the source BAMs were aligned against "
+                        "(10x refdata-gex-GRCh38-2024-A), so gene models stay "
+                        "consistent with the data. Nexus's v45 is a placeholder "
+                        "default, not a considered choice for this dataset."
+                    ),
+                },
             ],
         },
         {
-            "step": "extract_reads",
+            "step": "Read extraction",
             "settings": [
-                (
-                    "Variant-spanning reads",
-                    (
-                        f"kept up to {config.SPANNING_READS_PER_VARIANT:,} per "
-                        "variant, seeded reservoir sample"
+                {
+                    "name": "Variant-spanning reads",
+                    "value": f"≤ {config.SPANNING_READS_PER_VARIANT:,} per variant, "
+                    "seeded reservoir",
+                    "status": "addition",
+                    "canonical": "whole-sample FASTQ",
+                    "why": (
+                        "Coverage spans five orders of magnitude across these genes "
+                        "and Exacto's cost scales with read count. The cap sits far "
+                        "above what any caller needs to decide a locus; the uncapped "
+                        "count is recorded next to it."
                     ),
-                ),
-                ("Context reads", f"kept up to {config.CONTEXT_READS_PER_REGION:,} per region"),
-                ("Excluded", "secondary, supplementary and unmapped records"),
-                ("Retry", "4 attempts per region, region restarted from scratch"),
+                },
+                {
+                    "name": "Context reads",
+                    "value": f"≤ {config.CONTEXT_READS_PER_REGION:,} per region",
+                    "status": "addition",
+                    "canonical": "whole-sample FASTQ",
+                    "why": "Filler for the assembler; interchangeable, so capped.",
+                },
             ],
         },
         {
-            "step": "alignment (minimap2)",
+            "step": "RNA-Bloom2",
             "settings": [
-                ("Assembly arm preset", f"-ax {config.MINIMAP2_PRESET['assembly']}"),
-                ("Reads arm preset", f"-ax {config.MINIMAP2_PRESET['reads']}"),
-                ("Flags", " ".join(config.MINIMAP2_COMMON_FLAGS)),
-                (
-                    "Post-processing",
-                    "samtools view -F 4 drops unmapped records, which crash Exacto",
-                ),
-                (
-                    "Assembled contig quality",
-                    (
-                        f"flat Phred {RNABLOOM_FILTER['base-quality']}, written by the "
-                        "Nexus filter — Exacto panics on a BAM with no QUAL, and "
-                        "RNA-Bloom2 emits FASTA"
+                {
+                    "name": "Extra args",
+                    "value": "-chimera",
+                    "status": "deviation",
+                    "canonical": "-chimera -lrpb",
+                    "why": (
+                        "-lrpb means the long reads are PacBio. This data is ONT, "
+                        "so the flag is dropped. Nexus's reference pipeline is "
+                        "built around PacBio HiFi throughout."
                     ),
-                ),
+                },
             ],
         },
         {
             "step": f"nexus_filter_rnabloom2_transcripts ({NEXUS_VERSION})",
             "settings": [
-                (
-                    "Why",
-                    (
-                        "Step 6 of Andy Lee's canonical PEPTIDE_PREDICTION_EXACTO "
-                        "subworkflow in Nexus. Exacto's own docs reference it but do "
-                        "not spell it out; without it Exacto is handed every contig "
-                        "RNA-Bloom2 emitted, single-read junk included."
+                {
+                    "name": "Thresholds",
+                    "value": (
+                        f"MAPQ ≥ {RNABLOOM_FILTER['min-mapping-quality']}, "
+                        f"≥ {RNABLOOM_FILTER['min-read-support']} reads, "
+                        f"≥ {RNABLOOM_FILTER['min-fraction-match']} fraction match"
                     ),
-                ),
-                ("Minimum mapping quality", RNABLOOM_FILTER["min-mapping-quality"]),
-                ("Minimum read support", RNABLOOM_FILTER["min-read-support"]),
-                ("Minimum fraction match", RNABLOOM_FILTER["min-fraction-match"]),
+                    "status": "canonical",
+                    "canonical": "Nexus passes no extra args — these are the defaults",
+                    "why": None,
+                },
+                {
+                    "name": "Output",
+                    "value": f"FASTA and FASTQ, flat Phred "
+                    f"{RNABLOOM_FILTER['base-quality']}",
+                    "status": "canonical",
+                    "canonical": (
+                        "Nexus aligns the FASTQ so the BAM carries QUAL, because "
+                        "call-rna-vars panics without it"
+                    ),
+                    "why": None,
+                },
+            ],
+        },
+        {
+            "step": "minimap2",
+            "settings": [
+                {
+                    "name": "Assembly arm",
+                    "value": f"-ax {config.MINIMAP2_PRESET['assembly']} "
+                    + " ".join(config.MINIMAP2_COMMON_FLAGS),
+                    "status": "canonical",
+                    "canonical": "identical to Nexus minimap2_rna_args",
+                    "why": None,
+                },
+                {
+                    "name": "Reads arm",
+                    "value": f"-ax {config.MINIMAP2_PRESET['reads']} "
+                    + " ".join(config.MINIMAP2_COMMON_FLAGS),
+                    "status": "addition",
+                    "canonical": "no such arm — Nexus always assembles first",
+                    "why": (
+                        "splice rather than splice:hq because raw ONT reads are not "
+                        "as accurate as polished contigs. This arm exists to "
+                        "separate an Exacto miss from an assembler miss."
+                    ),
+                },
+                {
+                    "name": "samtools calmd",
+                    "value": "not run",
+                    "status": "checked",
+                    "canonical": "Nexus pipes through samtools calmd to add MD",
+                    "why": (
+                        "Verified unnecessary: Exacto reads the cs tag "
+                        "(alignment.rs:417) and never reads MD anywhere in its "
+                        "source."
+                    ),
+                },
+                {
+                    "name": "Drop unmapped records",
+                    "value": "samtools view -F 4",
+                    "status": "addition",
+                    "canonical": "Nexus does not filter them",
+                    "why": (
+                        "remove-unspliced-rnas panics on an unmapped record. The "
+                        "canonical pipeline is reachable by the same crash."
+                    ),
+                },
             ],
         },
         {
             "step": "Exacto",
             "settings": [
-                ("Gene types", ", ".join(config.GENE_TYPES)),
-                (
-                    "Gene / transcript levels",
-                    ", ".join(config.GENE_LEVELS)
-                    + (
-                        " — level 3 included so the mitochondrial genes, and MT-ND5, "
-                        "are not silently dropped"
+                {
+                    "name": "Gene and transcript types",
+                    "value": ", ".join(config.GENE_TYPES),
+                    "status": "canonical",
+                    "canonical": "Exacto's default",
+                    "why": None,
+                },
+                {
+                    "name": "Gene and transcript levels",
+                    "value": ", ".join(config.GENE_LEVELS),
+                    "status": "deviation",
+                    "canonical": "1, 2 — Exacto's default; Nexus passes nothing",
+                    "why": (
+                        "GENCODE annotates the mitochondrial genes at level 3, so "
+                        "the default would silently drop MT-ND5 — one of the 37 "
+                        "vaccine targets."
                     ),
-                ),
-                (
-                    "integrate-vars tolerances",
-                    (
-                        "Exacto's defaults (exon offset 2, transcript boundary "
-                        "10 kb, intergenic 100 kb), as Nexus runs them. They pair "
-                        "nearly everything with everything — only 19 of 3,359 "
-                        "integrations were exact — which is why the verdict is "
-                        "keyed on RNA calls instead of on this table"
+                },
+                {
+                    "name": "integrate-vars tolerances",
+                    "value": "exon 2, transcript boundary 10 kb, intergenic 100 kb",
+                    "status": "canonical",
+                    "canonical": "Exacto's defaults; Nexus passes nothing",
+                    "why": (
+                        "Permissive enough that only 19 of 3,359 integrations were "
+                        "exact in one measured arm. Left at stock anyway — the point "
+                        "is to test Exacto as shipped — and the verdict is keyed on "
+                        "exact RNA calls rather than on this table."
                     ),
-                ),
-                ("translate-structs strategy", "longest_orf"),
-                ("call-peptide-vars k", "8–11"),
+                },
+                {
+                    "name": "translate-structs strategy",
+                    "value": "longest_orf",
+                    "status": "canonical",
+                    "canonical": "Nexus params.yaml strategy: longest_orf",
+                    "why": None,
+                },
+                {
+                    "name": "call-peptide-vars k",
+                    "value": "8 to 11",
+                    "status": "canonical",
+                    "canonical": "equals Exacto's own defaults",
+                    "why": None,
+                },
+                {
+                    "name": "--preset ont",
+                    "value": "not set",
+                    "status": "checked",
+                    "canonical": "Nexus sets --preset pb on call-somatic-dna-vars",
+                    "why": (
+                        "The preset exists only on the DNA callers, which this "
+                        "pipeline does not run. There is no equivalent on "
+                        "call-rna-vars."
+                    ),
+                },
+                {
+                    "name": "Reference proteome",
+                    "value": "GENCODE translations for the tested genes only",
+                    "status": "deviation",
+                    "canonical": "the whole proteome",
+                    "why": (
+                        "Keeps call-peptide-vars' k-mer set tractable. It means "
+                        "'novel' is relative to the gene's own isoforms rather than "
+                        "the whole proteome."
+                    ),
+                },
+                {
+                    "name": "DNA variant callset",
+                    "value": "the portal's curated somatic calls, supplied",
+                    "status": "deviation",
+                    "canonical": (
+                        "call-somatic-dna-vars on matched tumour/normal long-read WGS"
+                    ),
+                    "why": (
+                        "Sid's WGS is short-read and Exacto's DNA callers want long "
+                        "reads. The question asked here is whether Exacto finds these "
+                        "mutations in the RNA and translates them, not whether it "
+                        "rediscovers them in DNA."
+                    ),
+                },
             ],
         },
     ]
+
+
