@@ -80,10 +80,12 @@
     <h3>Compute</h3>
     <p class="section-note">
       The pipeline runs on GitHub-hosted <code>ubuntu-latest</code> runners, with
-      the three biopsies as a parallel matrix — one job each, because a single job
-      doing all three would consume most of GitHub's six-hour ceiling. It fires on
-      a schedule every Monday at 04:00&nbsp;UTC, on a manual dispatch (which takes
-      an Exacto version as input), and on any push that touches the pipeline.
+      the sequencing samples as a parallel matrix — one job each, because a single
+      job doing them all would consume most of GitHub's six-hour ceiling. The leg
+      is the sample, not the biopsy: T1 was sequenced on ONT and again on PacBio,
+      and a matrix keyed on the timepoint would have to drop one of them. It fires
+      on a schedule every Monday at 04:00&nbsp;UTC, on a manual dispatch (which
+      takes an Exacto version as input), and on any push that touches the pipeline.
     </p>
   </section>
 

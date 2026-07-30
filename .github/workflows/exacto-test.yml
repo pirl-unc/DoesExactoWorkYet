@@ -4,11 +4,12 @@ name: Exacto test
 # result, publish the site and commit the results so the track record builds up
 # over time.
 #
-# Timepoints run as a matrix. A single job doing all three would take most of
-# GitHub's six-hour ceiling; three in parallel finish in about as long as the
-# slowest one. Scoring happens inside each job because the primary-structures
-# TSVs it reads are far too big to hand between jobs — only the compact scored
-# JSON travels.
+# Sequencing samples run as a matrix — not timepoints. T1 was sequenced on ONT
+# and again on PacBio, so a leg keyed on the biopsy would have to pick one and
+# drop the other. A single job doing them all would take most of GitHub's
+# six-hour ceiling; in parallel they finish in about as long as the slowest one.
+# Scoring happens inside each job because the primary-structures TSVs it reads
+# are far too big to hand between jobs — only the compact scored JSON travels.
 on:
   workflow_dispatch:
     inputs:
@@ -55,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        timepoint: [T1, T2, T3]
+        sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio]
     runs-on: ubuntu-latest
     timeout-minutes: 340
     defaults:
@@ -100,46 +101,46 @@ jobs:
       - name: Build masked reference
         run: python -m pipeline.build_reference
 
-      - name: Extract ONT reads for ${{ matrix.timepoint }}
-        run: python -m pipeline.extract_reads --timepoints ${{ matrix.timepoint }}
+      - name: Extract long reads for ${{ matrix.sample }}
+        run: python -m pipeline.extract_reads --samples ${{ matrix.sample }}
 
-      - name: Run Exacto on ${{ matrix.timepoint }}
+      - name: Run Exacto on ${{ matrix.sample }}
         run: |
           python -m pipeline.run_exacto \
             --threads "$(nproc)" \
-            --timepoints ${{ matrix.timepoint }} \
+            --samples ${{ matrix.sample }} \
             --arms $ARMS
 
-      - name: Score ${{ matrix.timepoint }}
+      - name: Score ${{ matrix.sample }}
         run: |
           python -m pipeline.evaluate \
-            --timepoints ${{ matrix.timepoint }} \
+            --samples ${{ matrix.sample }} \
             --no-merge
 
       - name: Upload scored result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scored-${{ matrix.timepoint }}
+          name: scored-${{ matrix.sample }}
           retention-days: 30
           if-no-files-found: warn
           path: |
-            results/scored/${{ matrix.timepoint }}.json
+            results/scored/${{ matrix.sample }}.json
             results/environment.json
-            work/reads/${{ matrix.timepoint }}.extraction.json
+            work/reads/${{ matrix.sample }}.extraction.json
 
       - name: Upload Exacto outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: exacto-outputs-${{ matrix.timepoint }}
+          name: exacto-outputs-${{ matrix.sample }}
           retention-days: 14
           if-no-files-found: warn
           path: |
-            work/exacto/${{ matrix.timepoint }}/**/run.json
-            work/exacto/${{ matrix.timepoint }}/**/*.fasta
-            work/exacto/${{ matrix.timepoint }}/**/logs/*.log
-            work/exacto/${{ matrix.timepoint }}/**/rna_vars/*rna_variant_calls.tsv
+            work/exacto/${{ matrix.sample }}/**/run.json
+            work/exacto/${{ matrix.sample }}/**/*.fasta
+            work/exacto/${{ matrix.sample }}/**/logs/*.log
+            work/exacto/${{ matrix.sample }}/**/rna_vars/*rna_variant_calls.tsv
 
   publish:
     needs: run
@@ -160,7 +161,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Collect the scored timepoints
+      - name: Collect the scored samples
         uses: actions/download-artifact@v4
         with:
           pattern: scored-*

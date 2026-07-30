@@ -1,6 +1,6 @@
-"""Run the Exacto mutant-proteoform pipeline on each timepoint.
+"""Run the Exacto mutant-proteoform pipeline on each sample.
 
-Two arms per timepoint:
+Two arms per sample:
 
 ``assembly``
     The pipeline as Exacto documents it — RNA-Bloom2 stitches the long reads
@@ -38,11 +38,12 @@ from .config import (
     GENE_LEVELS,
     GENE_TYPES,
     MINIMAP2_COMMON_FLAGS,
-    MINIMAP2_PRESET,
     RNABLOOM_FILTER,
-    TIMEPOINTS,
+    SAMPLES,
     WORK_DIR,
-    Timepoint,
+    Sample,
+    minimap2_preset,
+    samples_named,
 )
 from .extract_reads import assembly_inputs, spanning_fastq, stats_path
 
@@ -235,7 +236,9 @@ def find_assembly(outdir: Path) -> Path:
     raise StepFailed(f"RNA-Bloom2 produced no transcripts in {outdir}")
 
 
-def align(runner: Runner, query: Path, arm: str, out_bam: Path) -> None:
+def align(
+    runner: Runner, query: Path, sample: Sample, arm: str, out_bam: Path
+) -> None:
     sam = out_bam.with_suffix(".sam")
     mapped = out_bam.with_suffix(".mapped.bam")
     runner.run(
@@ -243,7 +246,7 @@ def align(runner: Runner, query: Path, arm: str, out_bam: Path) -> None:
         [
             "minimap2",
             "-ax",
-            MINIMAP2_PRESET[arm],
+            minimap2_preset(sample.platform, arm),
             *MINIMAP2_COMMON_FLAGS,
             "-t",
             str(runner.threads),
@@ -317,26 +320,30 @@ def count_alignments(bam: Path) -> int:
 
 
 def run_arm(
-    timepoint: Timepoint,
+    sample: Sample,
     arm: str,
     variants: list[dict],
     threads: int,
 ) -> dict:
-    """One timepoint through one arm of the pipeline."""
-    out_dir = EXACTO_DIR / timepoint.name / arm
+    """One sample through one arm of the pipeline."""
+    out_dir = EXACTO_DIR / sample.name / arm
     out_dir.mkdir(parents=True, exist_ok=True)
     runner = Runner(out_dir / "logs", threads)
-    prefix = f"{timepoint.name}_{arm}"
+    prefix = f"{sample.name}_{arm}"
 
     result: dict = {
-        "timepoint": timepoint.name,
+        "sample": sample.name,
+        "timepoint": sample.timepoint,
+        "platform": sample.platform,
+        "assay": sample.assay,
+        "label": sample.label,
         "arm": arm,
         "status": "ok",
         "outputs": {},
         "counts": {},
     }
 
-    stats = json.loads(stats_path(timepoint).read_text())
+    stats = json.loads(stats_path(sample).read_text())
     query_fasta: Path | None = None
 
     try:
@@ -348,7 +355,11 @@ def run_arm(
                 "rnabloom",
                 [
                     "rnabloom",
-                    "-long", *(str(path) for path in assembly_inputs(timepoint)),
+                    # -long is RNA-Bloom2's long-read mode and is not
+                    # platform-specific; the same flag covers ONT and PacBio.
+                    # What does differ by platform is the minimap2 preset the
+                    # polished contigs are then realigned with.
+                    "-long", *(str(path) for path in assembly_inputs(sample)),
                     "-o", str(assembly_dir),
                     "-t", str(threads),
                     "-chimera",
@@ -389,11 +400,11 @@ def run_arm(
             # never produce one of the mutant proteins under test — it would just
             # cost Exacto time. minimap2 carries their real base qualities into
             # the BAM, which Exacto needs.
-            query = spanning_fastq(timepoint)
+            query = spanning_fastq(sample)
             result["counts"]["query_sequences"] = stats["n_spanning_reads"]
 
         aligned_bam = out_dir / f"{prefix}.aligned.bam"
-        align(runner, query, arm, aligned_bam)
+        align(runner, query, sample, arm, aligned_bam)
         result["counts"]["aligned"] = count_alignments(aligned_bam)
 
         if arm == "assembly":
@@ -553,7 +564,7 @@ def run_arm(
     except StepFailed as error:
         result["status"] = "failed"
         result["error"] = str(error)
-        print(f"    !! {timepoint.name}/{arm}: {error}")
+        print(f"    !! {sample.name}/{arm}: {error}")
 
     result["steps"] = runner.steps
     result["seconds"] = round(sum(step["seconds"] for step in runner.steps), 1)
@@ -567,41 +578,43 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--threads", type=int, default=os.cpu_count() or 2)
-    parser.add_argument("--timepoints", nargs="*", default=[tp.name for tp in TIMEPOINTS])
+    parser.add_argument(
+        "--samples",
+        nargs="*",
+        help="Sequencing samples to run, e.g. T1-ONT T1-PacBio (default: all).",
+    )
     parser.add_argument("--arms", nargs="*", default=list(ARMS))
     args = parser.parse_args()
 
     variants = load_variants()
     runs = []
-    for timepoint in TIMEPOINTS:
-        if timepoint.name not in args.timepoints:
-            continue
+    for sample in samples_named(args.samples):
         for arm in args.arms:
-            print(f"== {timepoint.name} / {arm} ==")
-            runs.append(run_arm(timepoint, arm, variants, args.threads))
+            print(f"== {sample.name} / {arm} ==")
+            runs.append(run_arm(sample, arm, variants, args.threads))
 
     failures = [run for run in runs if run["status"] != "ok"]
     print(f"\n{len(runs) - len(failures)}/{len(runs)} arms completed")
     for failure in failures:
-        print(f"  FAILED {failure['timepoint']}/{failure['arm']}: {failure['error']}")
+        print(f"  FAILED {failure['sample']}/{failure['arm']}: {failure['error']}")
 
 
-def collect_runs(timepoints: list[str] | None = None) -> list[dict]:
+def collect_runs(samples: list[str] | None = None) -> list[dict]:
     """Gather the per-arm run.json files on disk.
 
-    CI runs the timepoints as separate jobs, so the runs are assembled from what
+    CI runs the samples as separate jobs, so the runs are assembled from what
     each one left behind rather than from a single in-process list. Only the
-    canonical ``<timepoint>/<arm>/`` paths count — anything else under work/ is
+    canonical ``<sample>/<arm>/`` paths count — anything else under work/ is
     somebody's leftovers, not a result.
     """
-    known_timepoints = {timepoint.name for timepoint in TIMEPOINTS}
+    known_samples = {sample.name for sample in SAMPLES}
     runs = []
     for run_path in sorted(EXACTO_DIR.glob("*/*/run.json")):
         arm_dir = run_path.parent
-        if arm_dir.parent.name not in known_timepoints or arm_dir.name not in ARMS:
+        if arm_dir.parent.name not in known_samples or arm_dir.name not in ARMS:
             continue
         run = json.loads(run_path.read_text())
-        if timepoints and run["timepoint"] not in timepoints:
+        if samples and run["sample"] not in samples:
             continue
         runs.append(run)
     return runs

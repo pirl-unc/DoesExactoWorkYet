@@ -28,10 +28,10 @@ const el = (tag, className, text) => {
 
 /* ---------------------------------------------------------------- helpers */
 
-function outcomeOf(variant, timepoint) {
+function outcomeOf(variant, sample) {
   const recovery = variant.recovery;
   if (!recovery) return null;
-  if (timepoint) return recovery.timepoints?.[timepoint]?.outcome ?? "no_reads";
+  if (sample) return recovery.samples?.[sample]?.outcome ?? "no_reads";
   return recovery.outcome ?? "no_reads";
 }
 
@@ -156,12 +156,12 @@ function renderTiles() {
     });
   }
 
-  for (const timepoint of DATA.timepoints) {
-    const extraction = DATA.extraction?.[timepoint.name];
-    const outcomes = DATA.variants.map((variant) => outcomeOf(variant, timepoint.name));
+  for (const sample of DATA.samples) {
+    const extraction = DATA.extraction?.[sample.name];
+    const outcomes = DATA.variants.map((variant) => outcomeOf(variant, sample.name));
     const hits = outcomes.filter((outcome) => RECOVERED.has(outcome)).length;
     tiles.push({
-      label: `${timepoint.name} · ${timepoint.biopsy_date}`,
+      label: sample.label,
       value: DATA.has_exacto_run ? String(hits) : "—",
       sub: extraction
         ? `${extraction.n_reads.toLocaleString()} reads · ${extraction.n_spanning_reads.toLocaleString()} spanning`
@@ -286,7 +286,14 @@ function renderHead() {
   const verdict = el("th", "sticky-right");
   verdict.rowSpan = 2;
   verdict.dataset.sort = "outcome";
-  verdict.textContent = "Exacto";
+  verdict.append(el("div", "assay-name", "Exacto"));
+  // Name the verdict cells. Without this the block of squares reads as
+  // "three timepoints" whatever is actually in it.
+  const legend = el("div", "tp-legend");
+  for (const sample of DATA.samples) {
+    legend.append(el("span", "tp-key", sample.name.replace("-", "\u00b7")));
+  }
+  verdict.append(legend);
   groups.append(verdict);
 }
 
@@ -361,15 +368,17 @@ function visibleVariants() {
     });
 }
 
-function timepointCells(variant) {
+// One cell per sequencing sample, not per biopsy: T1 was sequenced twice and
+// the two platforms can disagree, which is the whole point of running both.
+function sampleCells(variant) {
   const wrapper = el("div", "tp-cells");
-  for (const timepoint of DATA.timepoints) {
-    const outcome = outcomeOf(variant, timepoint.name);
+  for (const sample of DATA.samples) {
+    const outcome = outcomeOf(variant, sample.name);
     const spec = OUTCOMES[outcome] || OUTCOMES.no_reads;
     const cell = el("span", "tp-cell", DATA.has_exacto_run ? spec.short : "·");
     cell.style.background = `var(${TONE_VAR[spec.tone]}-soft)`;
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
-    cell.title = `${timepoint.name}: ${spec.label}`;
+    cell.title = `${sample.label}: ${spec.label}`;
     wrapper.appendChild(cell);
   }
   return wrapper;
@@ -395,11 +404,12 @@ function highlightedSequence(form, expected) {
   return box;
 }
 
-function detailCard(timepoint, variant) {
+function detailCard(sample, variant) {
   const card = el("div", "detail-card");
-  card.append(el("h4", null, `${timepoint.name} · ${timepoint.biopsy_date}`));
+  card.append(el("h4", null, sample.label));
+  card.append(el("div", "locus", `${sample.biopsy_date} · ${sample.library}`));
 
-  const recovery = variant.recovery?.timepoints?.[timepoint.name];
+  const recovery = variant.recovery?.samples?.[sample.name];
   if (!recovery || !Object.keys(recovery.arms || {}).length) {
     card.append(el("div", "locus", "no run recorded"));
     return card;
@@ -494,11 +504,29 @@ function detailRow(variant, columns) {
 
   const grid = el("div", "detail-grid");
   grid.append(facts);
-  for (const timepoint of DATA.timepoints) grid.append(detailCard(timepoint, variant));
+  for (const sample of DATA.samples) grid.append(detailCard(sample, variant));
   inner.append(grid);
   cell.append(inner);
   row.append(cell);
   return row;
+}
+
+function renderAbsentPlatforms() {
+  const node = $("#absent-platforms");
+  if (!node) return;
+  node.innerHTML = "";
+  const absent = DATA.absent_platforms || [];
+  const present = [...new Set((DATA.assay_columns || []).map((c) => c.platform))];
+  const line = el("p", "section-note");
+  line.append(el("strong", null, "Platforms in this grid: "));
+  line.append(document.createTextNode(present.join(", ") + "."));
+  node.append(line);
+  for (const item of absent) {
+    const warn = el("p", "section-note absent-note");
+    warn.append(el("strong", null, `No ${item.platform} column: `));
+    warn.append(document.createTextNode(item.reason));
+    node.append(warn);
+  }
 }
 
 function renderTable() {
@@ -545,7 +573,7 @@ function renderTable() {
     for (const column of DATA.assay_columns || []) row.append(assayCell(variant, column));
 
     const outcome = el("td", "sticky-right");
-    outcome.append(timepointCells(variant));
+    outcome.append(sampleCells(variant));
     if (variant.recovery?.residue_confirmed === false) {
       const warn = el("span", "badge warn", "wrong residue");
       warn.style.marginLeft = ".35rem";
@@ -617,7 +645,7 @@ function renderRuns() {
   }
   for (const run of DATA.runs) {
     const card = el("div", `run-card ${run.status}`);
-    card.append(el("h3", null, `${run.timepoint} · ${run.arm}`));
+    card.append(el("h3", null, `${run.label || run.sample} · ${run.arm}`));
     const counts = Object.entries(run.counts || {})
       .map(([key, value]) => `${key.replace(/_/g, " ")} ${value.toLocaleString()}`)
       .join(" · ");
@@ -1045,7 +1073,7 @@ function renderObservedFailures() {
     summary.append(
       el("span", "mono", step.name),
       el("span", "badge bad", `exit ${step.returncode}`),
-      el("span", "locus", `${run.timepoint} · ${run.arm}`),
+      el("span", "locus", `${run.label || run.sample} · ${run.arm}`),
     );
     card.append(summary);
     if (step.command?.length) {
@@ -1108,6 +1136,7 @@ async function main() {
     renderHistory();
     renderHead();
     wireControls();
+    renderAbsentPlatforms();
     renderTable();
     renderConfiguration();
     renderFindings();

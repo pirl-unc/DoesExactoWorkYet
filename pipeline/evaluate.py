@@ -1,12 +1,12 @@
-"""Decide, per vaccine mutation and timepoint, whether Exacto recovered it.
+"""Decide, per vaccine mutation and sample, whether Exacto recovered it.
 
 The question this repo exists to answer is narrow: *does a translated mutant
 protein sequence come out the other end?* So the verdict ladder is graded rather
 than binary, and each rung is read straight out of an Exacto output file:
 
 ===============  =========================================================
-``no_reads``     nothing in the ONT data covers the locus — nobody could
-                 have called it, so it is not counted against Exacto
+``no_reads``     nothing in this sample's reads covers the locus — nobody
+                 could have called it, so it is not counted against Exacto
 ``no_call``      reads cover it, Exacto called no RNA variant there
 ``rna_only``     Exacto called the variant at that exact locus and allele in
                  the RNA, but translated no mutant protein carrying it
@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 from .build_reference import load_variants
-from .config import ARMS, RESULTS_DIR, TIMEPOINTS
+from .config import ARMS, RESULTS_DIR, SAMPLES, SAMPLES_BY_NAME, samples_named
 from .extract_reads import stats_path
 from .run_exacto import EXACTO_DIR, as_graph_operation, collect_runs
 
@@ -260,7 +260,7 @@ def evaluate_arm(
     spanning: dict[str, int],
     spanning_seen: dict[str, int] | None = None,
 ) -> dict[str, dict]:
-    """Grade one timepoint/arm run against every vaccine mutation."""
+    """Grade one sample/arm run against every vaccine mutation."""
     call_ids = {str(index): variant for index, variant in enumerate(variants, start=1)}
     outputs = run.get("outputs", {})
 
@@ -407,25 +407,23 @@ def best_outcome(outcomes: list[str]) -> str:
 SCORED_DIR = RESULTS_DIR / "scored"
 
 
-def score_timepoints(timepoints: list[str]) -> list[dict]:
-    """Grade the runs on disk for these timepoints and cache them per timepoint.
+def score_samples(samples: list[str]) -> list[dict]:
+    """Grade the runs on disk for these samples and cache them per sample.
 
     Scoring happens where the run happened, because the primary-structures TSVs
     it reads are far too big to hand between CI jobs.
     """
     variants = load_variants()
-    runs = collect_runs(timepoints)
+    runs = collect_runs(samples)
     if not runs:
         raise SystemExit(
-            f"no run.json under {EXACTO_DIR} for {', '.join(timepoints)} — "
+            f"no run.json under {EXACTO_DIR} for {', '.join(samples)} — "
             "run pipeline.run_exacto first"
         )
 
     graded_runs = []
     for run in runs:
-        stats_file = stats_path(
-            next(item for item in TIMEPOINTS if item.name == run["timepoint"])
-        )
+        stats_file = stats_path(SAMPLES_BY_NAME[run["sample"]])
         stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
         graded = (
             evaluate_arm(
@@ -439,7 +437,10 @@ def score_timepoints(timepoints: list[str]) -> list[dict]:
         )
         graded_runs.append(
             {
-                "timepoint": run["timepoint"],
+                "sample": run["sample"],
+                "timepoint": run.get("timepoint"),
+                "platform": run.get("platform"),
+                "label": run.get("label", run["sample"]),
                 "arm": run["arm"],
                 "status": run["status"],
                 "error": run.get("error"),
@@ -468,18 +469,18 @@ def score_timepoints(timepoints: list[str]) -> list[dict]:
         )
 
     SCORED_DIR.mkdir(parents=True, exist_ok=True)
-    for name in timepoints:
-        subset = [run for run in graded_runs if run["timepoint"] == name]
+    for name in samples:
+        subset = [run for run in graded_runs if run["sample"] == name]
         if not subset:
             continue
         # Carry the read-extraction summary along: work/ does not survive between
         # CI jobs, and the site wants to show what went in.
-        stats_file = stats_path(next(item for item in TIMEPOINTS if item.name == name))
+        stats_file = stats_path(SAMPLES_BY_NAME[name])
         stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
         (SCORED_DIR / f"{name}.json").write_text(
             json.dumps(
                 {
-                    "timepoint": name,
+                    "sample": name,
                     "extraction": {
                         key: stats[key]
                         for key in (
@@ -503,7 +504,7 @@ def score_timepoints(timepoints: list[str]) -> list[dict]:
 
 
 def merge() -> dict:
-    """Combine every cached per-timepoint score into the final verdict."""
+    """Combine every cached per-sample score into the final verdict."""
     variants = load_variants()
     graded_runs: list[dict] = []
     extraction: dict[str, dict] = {}
@@ -511,41 +512,41 @@ def merge() -> dict:
         scored = json.loads(path.read_text())
         graded_runs.extend(scored["runs"])
         if scored.get("extraction"):
-            extraction[scored["timepoint"]] = scored["extraction"]
+            extraction[scored["sample"]] = scored["extraction"]
     if not graded_runs:
-        raise SystemExit(f"no scored timepoints in {SCORED_DIR}")
+        raise SystemExit(f"no scored samples in {SCORED_DIR}")
 
-    # Roll up to one verdict per variant across every timepoint and arm.
+    # Roll up to one verdict per variant across every sample and arm.
     summary = []
     for variant in variants:
         variant_id = variant["variant_id"]
-        per_timepoint = {}
-        for timepoint in TIMEPOINTS:
+        per_sample = {}
+        for sample in SAMPLES:
             per_arm = {}
             for arm in ARMS:
                 run = next(
                     (
                         item
                         for item in graded_runs
-                        if item["timepoint"] == timepoint.name and item["arm"] == arm
+                        if item["sample"] == sample.name and item["arm"] == arm
                     ),
                     None,
                 )
                 if run and variant_id in run["variants"]:
                     per_arm[arm] = run["variants"][variant_id]
-            per_timepoint[timepoint.name] = {
+            per_sample[sample.name] = {
                 "arms": per_arm,
                 "outcome": best_outcome(
                     [entry["outcome"] for entry in per_arm.values()]
                 ),
             }
         overall = best_outcome(
-            [entry["outcome"] for entry in per_timepoint.values() if entry["arms"]]
+            [entry["outcome"] for entry in per_sample.values() if entry["arms"]]
         )
         residue_confirmed = None
         checks = [
             arm_entry.get("residue_confirmed")
-            for entry in per_timepoint.values()
+            for entry in per_sample.values()
             for arm_entry in entry["arms"].values()
             if arm_entry.get("residue_confirmed") is not None
         ]
@@ -555,7 +556,7 @@ def merge() -> dict:
         epitopes = sorted(
             {
                 hit["sequence"]
-                for entry in per_timepoint.values()
+                for entry in per_sample.values()
                 for arm_entry in entry["arms"].values()
                 for hit in arm_entry.get("matched_epitopes", [])
             },
@@ -571,7 +572,7 @@ def merge() -> dict:
                 "residue_confirmed": residue_confirmed,
                 "n_vaccine_epitopes": len(variant.get("vaccine_epitopes") or []),
                 "matched_epitopes": epitopes,
-                "timepoints": per_timepoint,
+                "samples": per_sample,
             }
         )
 
@@ -588,7 +589,7 @@ def merge() -> dict:
     testable = [
         item
         for item in summary
-        if any(entry["outcome"] != "no_reads" for entry in item["timepoints"].values())
+        if any(entry["outcome"] != "no_reads" for entry in item["samples"].values())
     ]
 
     payload = {
@@ -631,15 +632,17 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--timepoints",
+        "--samples",
         nargs="*",
-        default=[timepoint.name for timepoint in TIMEPOINTS],
-        help="Score these biopsies from the Exacto outputs on disk.",
+        help=(
+            "Score these sequencing samples from the Exacto outputs on disk, "
+            "e.g. T1-ONT T1-PacBio (default: all)."
+        ),
     )
     parser.add_argument(
         "--merge-only",
         action="store_true",
-        help="Skip scoring and just combine the cached per-timepoint results.",
+        help="Skip scoring and just combine the cached per-sample results.",
     )
     parser.add_argument(
         "--no-merge",
@@ -649,7 +652,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.merge_only:
-        score_timepoints(args.timepoints)
+        score_samples([s.name for s in samples_named(args.samples)])
     if not args.no_merge:
         merge()
 

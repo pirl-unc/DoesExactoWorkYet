@@ -17,8 +17,9 @@
       Every vaccine neoantigen from
       <a href="https://osteosarc.com">Sid Sijbrandij's osteosarcoma</a> is a mutant
       protein someone already believed in enough to manufacture. This runs Exacto
-      over the ONT long-read RNA-seq from three tumour biopsies and asks a single
-      question: does the mutant protein sequence come back out?
+      over every long-read RNA-seq sample from his tumour — ONT at three biopsies
+      and PacBio Iso-Seq at the first — and asks a single question: does the
+      mutant protein sequence come back out?
     </p>
     <div id="verdict" class="verdict"></div>
   </div>
@@ -39,10 +40,12 @@
 <main class="wrap">
 
   <section id="results">
-    <h2>Recovery by timepoint</h2>
+    <h2>Recovery by sample</h2>
     <p class="section-note">
-      Each cell is the best outcome Exacto reached for that mutation in that
-      biopsy, across both arms of the pipeline.
+      One column per sequencing sample, not per biopsy: T1 was sequenced on ONT
+      and again on PacBio, and the two can disagree. Each cell is the best
+      outcome Exacto reached for that mutation in that sample, across both arms
+      of the pipeline.
     </p>
     <div id="tiles" class="tiles"></div>
     <div id="legend" class="legend"></div>
@@ -72,6 +75,8 @@
       and total read counts. The table scrolls sideways — gene, change and verdict
       stay pinned.
     </p>
+
+    <div id="absent-platforms"></div>
 
     <div class="table-scroll">
       <table id="variant-table">
@@ -109,7 +114,7 @@
   <section id="runs">
     <h2>Pipeline runs</h2>
     <p class="section-note">
-      Six runs — three biopsies by two arms. Every Exacto invocation's exit status
+      One run per sequencing sample per arm. Every Exacto invocation's exit status
       and wall time is recorded, so a crash shows up as a crash rather than a zero.
     </p>
     <div id="run-cards" class="run-cards"></div>

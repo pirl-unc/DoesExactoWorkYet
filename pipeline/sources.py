@@ -23,14 +23,20 @@ def _bytes(value: int | None) -> str | None:
 
 def data_sources(extraction: dict) -> list[dict]:
     """Every input, grouped, with the exact URL it came from."""
-    timepoint_rows = []
-    for timepoint in config.TIMEPOINTS:
-        stats = extraction.get(timepoint.name, {})
+    sample_rows = []
+    for sample in config.SAMPLES:
+        stats = extraction.get(sample.name, {})
+        genotyping = (
+            "The same BAM the portal's own variant table is genotyped from, so "
+            "its read counts are directly comparable."
+            if sample.portal_genotyped
+            else "The portal publishes no genotyping against this BAM — every "
+            "number this test reports for it is derived here by Exacto."
+        )
         detail = (
-            f"Single-cell long-read RNA-seq of the {timepoint.name} tumour biopsy "
-            f"({timepoint.biopsy_date}), sample {timepoint.sample}. UMI-deduplicated "
-            "and genome-aligned by ONT's wf-single-cell — the same BAM the portal's "
-            "own variant table is genotyped from."
+            f"{sample.library.capitalize()} RNA-seq of the {sample.timepoint} "
+            f"tumour biopsy ({sample.biopsy_date}), sample {sample.biosample}, on "
+            f"{sample.platform}. {sample.provenance} {genotyping}"
         )
         taken = None
         if stats:
@@ -39,19 +45,19 @@ def data_sources(extraction: dict) -> list[dict]:
                 f"{stats.get('n_context_reads', 0):,} context reads read out over "
                 "HTTP byte ranges; the file is never downloaded."
             )
-        timepoint_rows.append(
+        sample_rows.append(
             {
-                "label": f"{timepoint.name} ONT BAM",
-                "url": timepoint.bam_url,
+                "label": f"{sample.name} BAM",
+                "url": sample.bam_url,
                 "size": _bytes(stats.get("bam_bytes")),
                 "detail": detail,
                 "taken": taken,
             }
         )
-        timepoint_rows.append(
+        sample_rows.append(
             {
-                "label": f"{timepoint.name} BAM index",
-                "url": timepoint.bai_url,
+                "label": f"{sample.name} BAM index",
+                "url": sample.bai_url,
                 "detail": "Downloaded in full so htslib knows which blocks to request.",
             }
         )
@@ -60,7 +66,7 @@ def data_sources(extraction: dict) -> list[dict]:
         {
             "group": "Long-read RNA-seq — the data under test",
             "origin": "osteosarc.com (Backblaze B2)",
-            "entries": timepoint_rows,
+            "entries": sample_rows,
         },
         {
             "group": "Vaccine and variant tables",
@@ -136,16 +142,6 @@ def data_sources(extraction: dict) -> list[dict]:
             "origin": "osteosarc.com",
             "entries": [
                 {
-                    "label": "PacBio single-cell long-read RNA, T1 only",
-                    "url": f"{config.B2}/pacbio/"
-                    "IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
-                    "detail": "The portal's only PacBio RNA data — T1 alone, also "
-                    "single-cell, pbmm2-mapped, with Iso-Seq intermediates under "
-                    "ucsf/T1/pacbio_bams/. A useful second platform at one timepoint, "
-                    "but it cannot answer the across-timepoints question, so this test "
-                    "sticks to ONT.",
-                },
-                {
                     "label": "Bulk RNA-seq (BostonGene, Tempus, UCLA)",
                     "url": f"{config.B2}/rna-seq/fastq/",
                     "detail": "All Illumina short-read. Exacto is a long-read tool, so "
@@ -158,6 +154,13 @@ def data_sources(extraction: dict) -> list[dict]:
                     "detail": "Pre-basecalling and pre-alignment. The dedup BAMs are "
                     "used instead so read support is directly comparable to the "
                     "portal's own genotyping.",
+                },
+                {
+                    "label": "PacBio Iso-Seq intermediates",
+                    "url": f"{config.B2}/ucsf/T1/pacbio_bams/IPISRC044_T1_sclrs/",
+                    "detail": "The lima/refine/cluster stages behind the T1-PacBio "
+                    "sample. The deduplicated pbmm2-mapped BAM is used instead, for "
+                    "the same reason as ONT: it is the finished alignment.",
                 },
             ],
         },
@@ -202,10 +205,11 @@ def reproduction() -> list[dict]:
                 "export DEWY_WORK_DIR=$PWD/work",
                 "python -m pipeline.fetch_osteosarc",
                 "python -m pipeline.build_reference",
-                "python -m pipeline.extract_reads --timepoints T1 T2 T3",
+                "python -m pipeline.extract_reads --samples T1-ONT T2-ONT T3-ONT T1-PacBio",
                 (
                     'python -m pipeline.run_exacto --threads "$(nproc)"'
-                    " --timepoints T1 T2 T3 --arms assembly reads"
+                    " --samples T1-ONT T2-ONT T3-ONT T1-PacBio"
+                    " --arms assembly reads"
                 ),
                 "python -m pipeline.evaluate",
                 "python -m pipeline.build_site",
@@ -235,6 +239,52 @@ def configuration() -> list[dict]:
     what was checked and deliberately left alone.
     """
     return [
+        {
+            "step": "What a run is",
+            "settings": [
+                {
+                    "name": "Run unit",
+                    "value": "one sequencing sample: "
+                    + ", ".join(sample.name for sample in config.SAMPLES),
+                    "status": "addition",
+                    "canonical": "Nexus runs one sample per invocation too",
+                    "why": (
+                        "Not the biopsy. T1 was sequenced on ONT and again on "
+                        "PacBio, so a run keyed on \"T1\" would have to pick one "
+                        "platform and drop the other. Each sample is its own CI "
+                        "job, its own Exacto run and its own column on the site; "
+                        "the timepoint is kept alongside for grouping."
+                    ),
+                },
+                {
+                    "name": "Platforms run",
+                    "value": ", ".join(
+                        sorted({sample.platform for sample in config.SAMPLES})
+                    ),
+                    "status": "addition",
+                    "canonical": "Exacto documents ONT and PacBio long reads",
+                    "why": (
+                        "Every long-read RNA dataset the portal holds, both of them "
+                        "single-cell. The portal never genotyped these mutations "
+                        "against the PacBio BAM, so its numbers here are Exacto's "
+                        "own rather than a comparison against a published VAF."
+                    ),
+                },
+                {
+                    "name": "Illumina short read",
+                    "value": "not run",
+                    "status": "checked",
+                    "canonical": "Exacto is a long-read tool",
+                    "why": (
+                        "The bulk and 10x RNA on the portal is all Illumina. It "
+                        "supplies the VAF columns in the variant table for context, "
+                        "but Exacto's transcript-model construction assumes reads "
+                        "that span a transcript, so running it on 100 bp reads "
+                        "would test the wrong thing."
+                    ),
+                },
+            ],
+        },
         {
             "step": "Reference construction",
             "settings": [
@@ -352,15 +402,15 @@ def configuration() -> list[dict]:
             "settings": [
                 {
                     "name": "Assembly arm",
-                    "value": f"-ax {config.MINIMAP2_PRESET['assembly']} "
+                    "value": f"-ax {config.minimap2_preset('ONT', 'assembly')} "
                     + " ".join(config.MINIMAP2_COMMON_FLAGS),
                     "status": "canonical",
                     "canonical": "identical to Nexus minimap2_rna_args",
                     "why": None,
                 },
                 {
-                    "name": "Reads arm",
-                    "value": f"-ax {config.MINIMAP2_PRESET['reads']} "
+                    "name": "Reads arm, ONT",
+                    "value": f"-ax {config.minimap2_preset('ONT', 'reads')} "
                     + " ".join(config.MINIMAP2_COMMON_FLAGS),
                     "status": "addition",
                     "canonical": "no such arm — Nexus always assembles first",
@@ -368,6 +418,18 @@ def configuration() -> list[dict]:
                         "splice rather than splice:hq because raw ONT reads are not "
                         "as accurate as polished contigs. This arm exists to "
                         "separate an Exacto miss from an assembler miss."
+                    ),
+                },
+                {
+                    "name": "Reads arm, PacBio",
+                    "value": f"-ax {config.minimap2_preset('PacBio', 'reads')} "
+                    + " ".join(config.MINIMAP2_COMMON_FLAGS),
+                    "status": "addition",
+                    "canonical": "no such arm — Nexus always assembles first",
+                    "why": (
+                        "splice:hq here, unlike ONT: the Iso-Seq records are "
+                        "deduplicated HiFi consensus transcripts, not raw subreads, "
+                        "so the tolerant preset would cost accuracy for nothing."
                     ),
                 },
                 {

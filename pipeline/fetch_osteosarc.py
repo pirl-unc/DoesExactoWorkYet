@@ -18,7 +18,7 @@ from typing import Any
 from .config import (
     PVACTOOLS_EPITOPE_URLS,
     RESULTS_DIR,
-    TIMEPOINTS,
+    TIMEPOINT_ORDER,
     VACCINE_OVERLAP_URL,
     VARIANT_VAFS_COLUMNS_URL,
     VARIANT_VAFS_URL,
@@ -150,9 +150,11 @@ def _assay_support(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
 def _ont_expectation(support: list[dict[str, Any]]) -> dict[str, Any]:
     """What the portal's own genotyping of the ONT BAMs says.
 
-    This is the yardstick for the Exacto run: a variant with zero ONT alt reads
+    This is the yardstick for the ONT samples: a variant with zero ONT alt reads
     at a timepoint cannot be recovered from that timepoint by anyone, so
-    counting it as an Exacto failure would be unfair.
+    counting it as an Exacto failure would be unfair. Keyed on the biopsy, not
+    the sample, because the portal genotyped only one platform — the PacBio
+    sample has no published counterpart to be measured against.
     """
     by_timepoint = {}
     for entry in support:
@@ -165,7 +167,7 @@ def _ont_expectation(support: list[dict[str, Any]]) -> dict[str, Any]:
             "vaf": entry["vaf"],
         }
     return {
-        timepoint.name: by_timepoint.get(timepoint.name) for timepoint in TIMEPOINTS
+        timepoint: by_timepoint.get(timepoint) for timepoint in TIMEPOINT_ORDER
     }
 
 

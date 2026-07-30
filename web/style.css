@@ -828,3 +828,27 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
 }
 .config-canonical { font-size: .8rem; color: var(--ink-soft); margin-top: .25rem; }
 .config-why { margin: .3rem 0 0; font-size: .85rem; color: var(--ink-soft); max-width: 78ch; }
+.absent-note {
+  border-left: 3px solid var(--warn);
+  padding-left: .7rem;
+  margin-bottom: .8rem !important;
+}
+
+/* The Exacto verdict block: one square per sequencing sample, labelled, so the
+   column cannot be misread as one square per biopsy. */
+.tp-legend {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tp-key {
+  flex: 1;
+  min-width: 2.9rem;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-transform: none;
+  white-space: nowrap;
+}

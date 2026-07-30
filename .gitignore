@@ -224,3 +224,8 @@ work/
 site/
 # Per-timepoint scores are an intermediate; the merged verdict is committed.
 results/scored/
+
+# htslib drops a local index beside the CWD when it range-reads a remote BAM.
+*.bam
+*.bam.bai
+*.pbi

@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from pipeline import extract_reads
-from pipeline.config import Timepoint
+from pipeline.config import SAMPLES_BY_NAME
 
 
 class FakeRead:
@@ -49,7 +49,7 @@ class FakeBam:
             yield read
 
 
-TIMEPOINT = Timepoint("T1", "T1", "2024-06", "sample")
+SAMPLE = SAMPLES_BY_NAME["T1-ONT"]
 REGION = {"chrom": "chr1", "start": 1, "end": 10_000, "genes": ["GENE"]}
 VARIANT = {"variant_id": "GENE-chr1-500", "chrom": "chr1", "pos": 500, "ref": "C"}
 SPANS = [(VARIANT, 500, 500)]
@@ -72,7 +72,7 @@ def context_reads(count, offset=0):
 
 def scan(bam, already_seen=None):
     return extract_reads.scan_region(
-        bam, TIMEPOINT, REGION, SPANS, already_seen or set()
+        bam, SAMPLE, REGION, SPANS, already_seen or set()
     )
 
 

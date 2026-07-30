@@ -14,7 +14,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import assays, inventory
-from .config import ARMS, REPO_ROOT, RESULTS_DIR, SITE_DIR, TIMEPOINTS
+from .config import (
+    ARMS,
+    REPO_ROOT,
+    RESULTS_DIR,
+    SAMPLES,
+    SITE_DIR,
+    minimap2_preset,
+)
 from .extract_reads import stats_path
 from .sources import configuration, data_sources, reproduction
 
@@ -35,19 +42,54 @@ def load(path: Path) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 
 
+# Runs are keyed on the sequencing sample now, not the biopsy — but a run that
+# was already in flight when that changed wrote "T1" where it would now write
+# "T1-ONT". Those results are still perfectly good; only their labels are stale.
+# ONT was the only platform a timepoint-keyed run could have used, so the
+# mapping is exact rather than a guess.
+LEGACY_SAMPLE_NAMES = {
+    sample.timepoint: sample.name for sample in SAMPLES if sample.platform == "ONT"
+}
+
+
+def migrate_name(name: str) -> str:
+    return LEGACY_SAMPLE_NAMES.get(name, name)
+
+
+def migrate_keys(mapping: dict) -> dict:
+    return {migrate_name(key): value for key, value in mapping.items()}
+
+
+def migrate_payload(payload: dict | None) -> dict | None:
+    """Rewrite a timepoint-keyed Exacto result in place as a sample-keyed one."""
+    if not payload:
+        return payload
+    for run in payload.get("runs", []):
+        if "sample" not in run and "timepoint" in run:
+            run["sample"] = migrate_name(run["timepoint"])
+            run.setdefault("platform", "ONT")
+            run.setdefault("label", run["sample"])
+    for variant in payload.get("variants", []):
+        if "samples" not in variant and "timepoints" in variant:
+            variant["samples"] = migrate_keys(variant.pop("timepoints"))
+    if "extraction" in payload:
+        payload["extraction"] = migrate_keys(payload["extraction"])
+    return payload
+
+
 def extraction_summary(exacto_payload: dict | None) -> dict:
-    """How many reads went in, per timepoint.
+    """How many reads went in, per sample.
 
     Prefer the copy carried through the scored results: the site is often built
     in a job that never had ``work/``.
     """
-    summary = dict((exacto_payload or {}).get("extraction") or {})
-    for timepoint in TIMEPOINTS:
-        if timepoint.name in summary:
+    summary = migrate_keys(dict((exacto_payload or {}).get("extraction") or {}))
+    for sample in SAMPLES:
+        if sample.name in summary:
             continue
-        stats = load(stats_path(timepoint))
+        stats = load(stats_path(sample))
         if stats:
-            summary[timepoint.name] = {
+            summary[sample.name] = {
                 key: stats[key]
                 for key in (
                     "n_reads",
@@ -105,7 +147,7 @@ def build_payload() -> dict:
         raise SystemExit(
             "results/vaccine_variants.json missing — run pipeline.fetch_osteosarc"
         )
-    exacto_payload = load(RESULTS_DIR / "exacto_results.json")
+    exacto_payload = migrate_payload(load(RESULTS_DIR / "exacto_results.json"))
     environment = load(RESULTS_DIR / "environment.json") or {}
 
     by_variant_id = {}
@@ -169,19 +211,32 @@ def build_payload() -> dict:
         "sources": variants_payload["source"],
         "vaccine_names": variants_payload["vaccine_names"],
         "vaccine_set_sizes": variants_payload["vaccine_set_sizes"],
-        "timepoints": [
+        "samples": [
             {
-                "name": timepoint.name,
-                "label": timepoint.label,
-                "biopsy_date": timepoint.biopsy_date,
-                "bam_url": timepoint.bam_url,
+                "name": sample.name,
+                "timepoint": sample.timepoint,
+                "platform": sample.platform,
+                "assay": sample.assay,
+                "label": sample.label,
+                "biopsy_date": sample.biopsy_date,
+                "library": sample.library,
+                "biosample": sample.biosample,
+                "bam_url": sample.bam_url,
+                "portal_genotyped": sample.portal_genotyped,
+                "provenance": sample.provenance,
+                "minimap2_preset": {
+                    arm: minimap2_preset(sample.platform, arm) for arm in ARMS
+                },
             }
-            for timepoint in TIMEPOINTS
+            for sample in SAMPLES
         ],
         "arms": list(ARMS),
         "extraction": extraction,
         "data_sources": data_sources(extraction),
         "assay_columns": assay_columns,
+        "absent_platforms": assays.absent_platforms(
+            variants_payload["variants"]
+        ),
         "inventory": inventory.load(),
         "configuration": configuration(),
         "reproduction": reproduction(),

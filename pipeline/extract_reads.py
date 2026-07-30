@@ -1,8 +1,9 @@
-"""Slice the ONT long-read RNA-seq down to the vaccine-gene loci.
+"""Slice each long-read RNA-seq sample down to the vaccine-gene loci.
 
-The three dedup BAMs are 37, 67 and 53 GB. Backblaze serves them with byte-range
-support and the BAM index is only ~12 MB, so htslib can fetch just the blocks
-covering our regions — a couple of minutes instead of 157 GB.
+The three ONT dedup BAMs are 37, 67 and 53 GB and the PacBio Iso-Seq BAM is
+1.8 GB. Backblaze serves them all with byte-range support and the BAM indexes
+are small, so htslib can fetch just the blocks covering our regions — a couple
+of minutes instead of 159 GB.
 
 Volume is wildly uneven: the mitochondrial window alone holds ~1.3M reads, 88%
 of everything in scope, while VPS13B's variant has 20. So reads are split in two
@@ -15,7 +16,8 @@ and each half is capped, with a fixed seed so runs stay reproducible:
     helps RNA-Bloom2 extend transcripts. Capped per region.
 
 Reads come out in their original (transcript-sense) orientation, which is what
-wf-single-cell put in and what minimap2's ``-uf`` expects on the way back in.
+both wf-single-cell and Iso-Seq put in and what minimap2's ``-uf`` expects on
+the way back in.
 """
 
 from __future__ import annotations
@@ -35,10 +37,10 @@ from .build_reference import DOWNLOAD_DIR, REGIONS_JSON, download, load_variants
 from .config import (
     CONTEXT_READS_PER_REGION,
     SPANNING_READS_PER_VARIANT,
-    TIMEPOINTS,
     WORK_DIR,
-    Timepoint,
+    Sample,
     ensure_ca_bundle,
+    samples_named,
 )
 
 READS_DIR = WORK_DIR / "reads"
@@ -68,24 +70,24 @@ def load_regions() -> list[dict]:
     return json.loads(REGIONS_JSON.read_text())
 
 
-def spanning_fastq(timepoint: Timepoint) -> Path:
+def spanning_fastq(sample: Sample) -> Path:
     """Reads whose alignment covers a vaccine variant. The only ones that can
     carry a mutation, so the reads arm needs nothing else."""
-    return READS_DIR / f"{timepoint.name}.spanning.fastq.gz"
+    return READS_DIR / f"{sample.name}.spanning.fastq.gz"
 
 
-def context_fastq(timepoint: Timepoint) -> Path:
+def context_fastq(sample: Sample) -> Path:
     """Everything else in the gene — filler that lets RNA-Bloom2 extend
     transcripts. Capped per region."""
-    return READS_DIR / f"{timepoint.name}.context.fastq.gz"
+    return READS_DIR / f"{sample.name}.context.fastq.gz"
 
 
-def assembly_inputs(timepoint: Timepoint) -> list[Path]:
-    return [spanning_fastq(timepoint), context_fastq(timepoint)]
+def assembly_inputs(sample: Sample) -> list[Path]:
+    return [spanning_fastq(sample), context_fastq(sample)]
 
 
-def stats_path(timepoint: Timepoint) -> Path:
-    return READS_DIR / f"{timepoint.name}.extraction.json"
+def stats_path(sample: Sample) -> Path:
+    return READS_DIR / f"{sample.name}.extraction.json"
 
 
 def variant_span(variant: dict) -> tuple[int, int]:
@@ -110,7 +112,7 @@ def _fastq_record(read: pysam.AlignedSegment) -> str | None:
 
 def scan_region(
     bam,
-    timepoint: Timepoint,
+    sample: Sample,
     region: dict,
     spans: list[tuple],
     already_seen: set[str],
@@ -125,7 +127,7 @@ def scan_region(
     """
     for attempt in range(1, REGION_FETCH_ATTEMPTS + 1):
         # Seeded per region, not per attempt, so a retry samples identically.
-        rng = random.Random(f"{timepoint.name}:{region['chrom']}:{region['start']}")
+        rng = random.Random(f"{sample.name}:{region['chrom']}:{region['start']}")
         context_reservoir: list[str] = []
         spanning_reservoirs: dict[str, list[str]] = {
             variant["variant_id"]: [] for variant, _, _ in spans
@@ -197,21 +199,21 @@ def scan_region(
     raise RuntimeError("unreachable")
 
 
-def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> dict:
-    """Write one timepoint's reads to two gzipped FASTQs, spanning and context."""
+def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
+    """Write one sample's reads to two gzipped FASTQs, spanning and context."""
     bundle = ensure_ca_bundle()
     if bundle:
         print(f"  using CA bundle {bundle}")
     import pysam
 
-    out_spanning = spanning_fastq(timepoint)
-    out_context = context_fastq(timepoint)
+    out_spanning = spanning_fastq(sample)
+    out_context = context_fastq(sample)
     out_spanning.parent.mkdir(parents=True, exist_ok=True)
 
     # htslib wants the index beside the file; fetching it once locally avoids a
     # remote index read per region.
-    index_path = download(timepoint.bai_url, DOWNLOAD_DIR / f"{timepoint.name}.bam.bai")
-    bam_bytes = remote_size(timepoint.bam_url)
+    index_path = download(sample.bai_url, DOWNLOAD_DIR / f"{sample.name}.bam.bai")
+    bam_bytes = remote_size(sample.bam_url)
 
     variants_by_chrom: dict[str, list[dict]] = {}
     for variant in variants:
@@ -226,7 +228,7 @@ def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> 
     n_bases = 0
 
     with pysam.AlignmentFile(
-        timepoint.bam_url, "rb", index_filename=str(index_path)
+        sample.bam_url, "rb", index_filename=str(index_path)
     ) as bam, gzip.open(out_spanning, "wt") as sink, gzip.open(
         out_context, "wt"
     ) as context_sink:
@@ -238,7 +240,7 @@ def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> 
             ]
             spans = [(variant, *variant_span(variant)) for variant in in_region]
 
-            scanned = scan_region(bam, timepoint, region, spans, seen)
+            scanned = scan_region(bam, sample, region, spans, seen)
             context_reservoir = scanned["context"]
             spanning_reservoirs = scanned["spanning"]
             n_context_seen = scanned["context_seen"]
@@ -277,15 +279,17 @@ def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> 
                 }
             )
             print(
-                f"  {timepoint.name} {','.join(region['genes']):<20} "
+                f"  {sample.name} {','.join(region['genes']):<20} "
                 f"spanning={region_spanning:>6,}  "
                 f"context={len(context_reservoir):>6,}/{n_context_seen:,}"
             )
 
     n_reads = n_spanning + n_context
     stats = {
-        "timepoint": timepoint.name,
-        "bam_url": timepoint.bam_url,
+        "sample": sample.name,
+        "timepoint": sample.timepoint,
+        "platform": sample.platform,
+        "bam_url": sample.bam_url,
         "bam_bytes": bam_bytes,
         "spanning_fastq": str(out_spanning),
         "context_fastq": str(out_context),
@@ -300,9 +304,9 @@ def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> 
         "spanning_reads_seen_by_variant": spanning_seen,
         "regions": per_region,
     }
-    stats_path(timepoint).write_text(json.dumps(stats, indent=2) + "\n")
+    stats_path(sample).write_text(json.dumps(stats, indent=2) + "\n")
     print(
-        f"{timepoint.name}: {n_spanning:,} spanning + {n_context:,} context reads "
+        f"{sample.name}: {n_spanning:,} spanning + {n_context:,} context reads "
         f"-> {out_spanning.name}, {out_context.name}"
     )
     return stats
@@ -313,23 +317,23 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--timepoints",
+        "--samples",
         nargs="*",
-        default=[timepoint.name for timepoint in TIMEPOINTS],
-        help="Which biopsies to extract (default: all).",
+        help=(
+            "Which sequencing samples to extract, e.g. T1-ONT T1-PacBio "
+            "(default: all)."
+        ),
     )
     args = parser.parse_args()
 
     regions = load_regions()
     variants = load_variants()
-    for timepoint in TIMEPOINTS:
-        if timepoint.name not in args.timepoints:
+    for sample in samples_named(args.samples):
+        done = all(path.exists() for path in assembly_inputs(sample))
+        if done and stats_path(sample).exists():
+            print(f"{sample.name}: reusing {spanning_fastq(sample).parent}")
             continue
-        done = all(path.exists() for path in assembly_inputs(timepoint))
-        if done and stats_path(timepoint).exists():
-            print(f"{timepoint.name}: reusing {spanning_fastq(timepoint).parent}")
-            continue
-        extract(timepoint, regions, variants)
+        extract(sample, regions, variants)
 
 
 if __name__ == "__main__":

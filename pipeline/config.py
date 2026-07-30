@@ -96,42 +96,127 @@ PVACTOOLS_EPITOPE_URLS = {
 HG38_FASTA_URL = f"{B2}/ref_genome/Homo_sapiens_assembly38.fasta"
 
 # --------------------------------------------------------------------------
-# Long-read RNA-seq: ONT single-cell long-read sequencing of the tumour
+# The long-read RNA-seq samples Exacto is run on
 # --------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
-class Timepoint:
-    """One tumour biopsy that has ONT long-read RNA-seq."""
+class Sample:
+    """One long-read RNA-seq dataset — the unit a run is keyed on.
+
+    Deliberately *not* the biopsy. T1 was sequenced twice, on ONT and on PacBio,
+    so a run keyed on "T1" has to pick one platform and silently drop the other;
+    keying on the sample makes a second platform at the same timepoint a config
+    entry rather than a special case. ``timepoint`` is kept alongside so the
+    biopsies still group back together for the across-time question.
+
+    ``name`` is the identifier everywhere else: FASTQ names, the work/exacto
+    directory, the CI matrix leg, the scored JSON, the site's columns.
+    """
 
     name: str
+    timepoint: str
+    platform: str
+    # Key into assays.ASSAY_META, so a sample and a portal VAF column that mean
+    # the same sequencing agree on their label rather than drifting apart.
+    assay: str
     label: str
     biopsy_date: str
-    sample: str
-
-    @property
-    def bam_url(self) -> str:
-        """UMI-deduplicated, genome-aligned reads from ONT's wf-single-cell.
-
-        These are the same BAMs the portal's own variant table is genotyped
-        from, so read support numbers are directly comparable.
-        """
-        stem = f"IPISRC044_{self.name}_sclrs_ONT"
-        return (
-            f"{B2}/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/"
-            f"{stem}/{stem}/{stem}_dedup/{stem}_dedup.bam"
-        )
+    biosample: str
+    bam_url: str
+    library: str
+    # Whether the portal's own variant table genotyped these mutations against
+    # this sample. False means the only numbers for it are the ones this test
+    # derives itself.
+    portal_genotyped: bool
+    provenance: str
 
     @property
     def bai_url(self) -> str:
         return self.bam_url + ".bai"
 
 
-TIMEPOINTS = (
-    Timepoint("T1", "T1 — first recurrence biopsy", "2024-06", "IPISRC044_T1"),
-    Timepoint("T2", "T2 — second recurrence biopsy", "2025-01", "IPISRC044_T2"),
-    Timepoint("T3", "T3 — third recurrence biopsy", "2025-04", "IPISRC044_T3"),
+def _ont_bam(timepoint: str) -> str:
+    """UMI-deduplicated, genome-aligned reads from ONT's wf-single-cell.
+
+    These are the same BAMs the portal's own variant table is genotyped from,
+    so read support numbers are directly comparable.
+    """
+    stem = f"IPISRC044_{timepoint}_sclrs_ONT"
+    return (
+        f"{B2}/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/"
+        f"{stem}/{stem}/{stem}_dedup/{stem}_dedup.bam"
+    )
+
+
+_ONT_PROVENANCE = (
+    "ONT wf-single-cell: barcode/UMI-tagged, deduplicated, aligned to "
+    "refdata-gex-GRCh38-2024-A with minimap2 -ax splice."
 )
+
+SAMPLES = (
+    Sample(
+        name="T1-ONT", timepoint="T1", platform="ONT", assay="scRNA_ONT",
+        label="T1 · ONT", biopsy_date="2024-06", biosample="IPISRC044_T1",
+        bam_url=_ont_bam("T1"), library="single-cell, long read",
+        portal_genotyped=True, provenance=_ONT_PROVENANCE,
+    ),
+    Sample(
+        name="T2-ONT", timepoint="T2", platform="ONT", assay="scRNA_ONT",
+        label="T2 · ONT", biopsy_date="2025-01", biosample="IPISRC044_T2",
+        bam_url=_ont_bam("T2"), library="single-cell, long read",
+        portal_genotyped=True, provenance=_ONT_PROVENANCE,
+    ),
+    Sample(
+        name="T3-ONT", timepoint="T3", platform="ONT", assay="scRNA_ONT",
+        label="T3 · ONT", biopsy_date="2025-04", biosample="IPISRC044_T3",
+        bam_url=_ont_bam("T3"), library="single-cell, long read",
+        portal_genotyped=True, provenance=_ONT_PROVENANCE,
+    ),
+    # The portal's variant table has no PacBio rows, so there is no published
+    # VAF for these 37 mutations on this platform. That is a reason to run
+    # Exacto on it, not a reason to leave it out: the BAM is right there, it is
+    # the same T1 biopsy, and Exacto's own RNA caller can supply the numbers the
+    # portal never published. It is also the more favourable input on paper —
+    # Iso-Seq consensus transcripts are full-length and HiFi-accurate — which
+    # makes it a real control on how much of a miss is ONT's error rate.
+    Sample(
+        name="T1-PacBio", timepoint="T1", platform="PacBio", assay="scRNA_PacBio",
+        label="T1 · PacBio Iso-Seq", biopsy_date="2024-06",
+        biosample="IPISRC044_T1_sclrs_live",
+        bam_url=f"{B2}/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+        library="single-cell, long read",
+        portal_genotyped=False,
+        provenance=(
+            "PacBio Iso-Seq v4: lima 5p--3p, refine, cluster, groupdedup "
+            "(--keep-non-real-cells), aligned with pbmm2 1.14 --preset ISOSEQ "
+            "to refdata-gex-GRCh38-2020-A. Records are deduplicated consensus "
+            "transcripts, not raw subreads."
+        ),
+    ),
+)
+
+SAMPLES_BY_NAME = {sample.name: sample for sample in SAMPLES}
+
+# The biopsies, for grouping samples back into the across-time question.
+TIMEPOINT_ORDER = ("T1", "T2", "T3")
+
+
+def samples_named(names: list[str] | None) -> list[Sample]:
+    """Resolve CLI/CI sample names, failing loudly on a typo.
+
+    A silently-empty selection would make a three-hour CI leg finish in seconds
+    and report nothing missing.
+    """
+    if not names:
+        return list(SAMPLES)
+    unknown = [name for name in names if name not in SAMPLES_BY_NAME]
+    if unknown:
+        raise SystemExit(
+            f"unknown sample(s): {', '.join(unknown)} — "
+            f"known: {', '.join(SAMPLES_BY_NAME)}"
+        )
+    return [SAMPLES_BY_NAME[name] for name in names]
 
 # --------------------------------------------------------------------------
 # Reference annotation
@@ -203,10 +288,28 @@ RNABLOOM_FILTER = {
 # --cs, and Exacto reads the CS tag to find variants — so everything gets
 # realigned here regardless of arm.
 #
-# Preset differs by arm: assembled contigs are accurate enough for splice:hq,
-# raw ONT reads are not.
-MINIMAP2_PRESET = {"assembly": "splice:hq", "reads": "splice"}
+# Preset differs by platform and arm. splice:hq is minimap2's high-accuracy
+# spliced mode; it is right for assembled contigs whatever assembled them, and
+# right for PacBio Iso-Seq reads, which are deduplicated HiFi consensus
+# transcripts rather than raw subreads. Raw ONT reads are the one case that
+# needs the tolerant preset — using splice:hq on them would cost real alignments.
+MINIMAP2_PRESET = {
+    ("ONT", "assembly"): "splice:hq",
+    ("ONT", "reads"): "splice",
+    ("PacBio", "assembly"): "splice:hq",
+    ("PacBio", "reads"): "splice:hq",
+}
 MINIMAP2_COMMON_FLAGS = ("-uf", "--cs", "--eqx", "-Y", "-L", "--secondary=no")
+
+
+def minimap2_preset(platform: str, arm: str) -> str:
+    """Fail rather than guess: a new platform must state its own preset."""
+    try:
+        return MINIMAP2_PRESET[(platform, arm)]
+    except KeyError as error:
+        raise SystemExit(
+            f"no minimap2 preset for platform {platform!r} arm {arm!r}"
+        ) from error
 
 # GENCODE annotates the mitochondrial genes at level 3, so the Exacto defaults
 # (levels 1 and 2) would silently drop MT-ND5 — one of the vaccine targets.
