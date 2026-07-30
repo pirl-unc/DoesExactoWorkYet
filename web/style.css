@@ -612,3 +612,58 @@ pre.block {
   white-space: pre;
   color: var(--ink-soft);
 }
+
+/* ---------- assay VAF grid ---------- */
+
+#variant-table { font-size: .85rem; }
+
+th.assay-group {
+  text-align: center;
+  border-left: 2px solid var(--rule-strong);
+  font-size: .72rem;
+}
+th.assay-group .tested {
+  margin-left: .35rem;
+  font-size: .6rem;
+  vertical-align: 1px;
+}
+th.assay-col {
+  font-size: .68rem;
+  letter-spacing: .03em;
+  padding: .35rem .55rem;
+  text-align: right;
+}
+th.assay-group.dna, th.assay-col.dna { color: var(--ink-faint); }
+
+td.assay-cell {
+  padding: .4rem .55rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+td.assay-cell.dna { background: color-mix(in srgb, var(--bg-sunken) 55%, transparent); }
+.vaf-value { font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); }
+.vaf-value.present { color: var(--ink); font-weight: 650; }
+.vaf-value.zero { color: var(--ink-faint); }
+.vaf-reads { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); }
+
+/* Keep the identifying columns and the verdict in view while scrolling wide. */
+th.sticky-col, td.sticky-col {
+  position: sticky;
+  background: var(--bg-raised);
+  z-index: 2;
+}
+thead th.sticky-col { background: var(--bg-sunken); z-index: 4; }
+th.sticky-col:nth-child(1), td.sticky-col:nth-child(1) { left: 0; }
+th.sticky-col:nth-child(2), td.sticky-col:nth-child(2) { left: 5.5rem; }
+th.sticky-right, td.sticky-right {
+  position: sticky;
+  right: 0;
+  background: var(--bg-raised);
+  border-left: 2px solid var(--rule-strong);
+  z-index: 2;
+}
+thead th.sticky-right { background: var(--bg-sunken); z-index: 4; }
+tbody tr.row:hover td.sticky-col,
+tbody tr.row:hover td.sticky-right,
+tbody tr.open td.sticky-col,
+tbody tr.open td.sticky-right { background: var(--bg-sunken); }

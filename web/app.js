@@ -228,7 +228,86 @@ function renderHistory() {
 
 /* ----------------------------------------------------------- variant table */
 
+const BASE_COLUMNS = [
+  { key: "gene", label: "Gene", sticky: true },
+  { key: "protein", label: "Protein change", sticky: true },
+  { key: "locus", label: "Locus (GRCh38)" },
+  { key: "type", label: "Change" },
+  { key: "vaccines", label: "Vaccines" },
+  { key: "elispot", label: "ELISPOT" },
+];
+
+function renderHead() {
+  const groups = $("#assay-group-row");
+  const cols = $("#column-row");
+  groups.innerHTML = "";
+  cols.innerHTML = "";
+
+  for (const col of BASE_COLUMNS) {
+    const cell = el("th", col.sticky ? "sticky-col" : null);
+    cell.rowSpan = 2;
+    cell.dataset.sort = col.key;
+    cell.textContent = col.label;
+    groups.append(cell);
+  }
+
+  // One group header per assay, spanning its timepoints.
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const cell = el("th", `assay-group ${run[0].kind}`);
+    cell.colSpan = run.length;
+    cell.textContent = run[0].assay_label;
+    if (run[0].tested) cell.append(el("span", "badge ok tested", "tested"));
+    groups.append(cell);
+    for (const col of run) {
+      const sub = el("th", `assay-col ${col.kind} num`);
+      sub.dataset.sort = `assay:${col.key}`;
+      sub.textContent = col.timepoint;
+      cols.append(sub);
+    }
+    run = [];
+  };
+  for (const col of DATA.assay_columns || []) {
+    if (run.length && run[0].assay !== col.assay) flush();
+    run.push(col);
+  }
+  flush();
+
+  const verdict = el("th", "sticky-right");
+  verdict.rowSpan = 2;
+  verdict.dataset.sort = "outcome";
+  verdict.textContent = "Exacto";
+  groups.append(verdict);
+}
+
+function assayCell(variant, column) {
+  const cell = el("td", `num assay-cell ${column.kind}`);
+  const data = variant.assay_matrix?.[column.key];
+  if (!data || data.vaf === null || data.vaf === undefined) {
+    cell.append(el("span", "locus", "—"));
+    return cell;
+  }
+  const vaf = el("div", "vaf-value", data.vaf.toFixed(3));
+  if (data.vaf === 0) vaf.classList.add("zero");
+  else if (data.vaf >= 0.05) vaf.classList.add("present");
+  cell.append(vaf);
+  cell.append(el("div", "vaf-reads", `${data.alt.toLocaleString()}/${data.total.toLocaleString()}`));
+  const germline = variant.germline_matrix?.[column.key];
+  cell.title =
+    `${column.assay_label} ${column.timepoint}: ` +
+    `${data.alt} alt / ${data.total} total across ${data.samples} sample(s)` +
+    (germline && germline.total
+      ? `\nmatched normal: ${germline.alt}/${germline.total} (VAF ${(germline.vaf ?? 0).toFixed(3)})`
+      : "");
+  return cell;
+}
+
 function sortValue(variant, key) {
+  if (key.startsWith("assay:")) {
+    const cell = variant.assay_matrix?.[key.slice(6)];
+    return cell && cell.vaf !== null && cell.vaf !== undefined ? -cell.vaf : 1;
+  }
   switch (key) {
     case "gene": return variant.gene;
     case "protein": return variant.protein_change || "";
@@ -415,7 +494,7 @@ function renderTable() {
   const body = $("#variant-table tbody");
   body.innerHTML = "";
   const rows = visibleVariants();
-  const columns = document.querySelectorAll("#variant-table thead th").length;
+  const columns = BASE_COLUMNS.length + (DATA.assay_columns || []).length + 1;
 
   if (!rows.length) {
     const row = el("tr");
@@ -429,8 +508,8 @@ function renderTable() {
   for (const variant of rows) {
     const row = el("tr", "row");
 
-    row.append(el("td", "gene", variant.gene));
-    row.append(el("td", "change", variant.protein_change || variant.vaccine_label || "—"));
+    row.append(el("td", "gene sticky-col", variant.gene));
+    row.append(el("td", "change sticky-col", variant.protein_change || variant.vaccine_label || "—"));
     row.append(el("td", "locus", `${variant.chrom}:${variant.pos.toLocaleString()}`));
 
     const change = el("td", "change");
@@ -452,20 +531,9 @@ function renderTable() {
     else elispot.append(el("span", "locus", "untested"));
     row.append(elispot);
 
-    const vaf = el("td", "num");
-    vaf.append(sparkline(variant.vaf_trend));
-    row.append(vaf);
+    for (const column of DATA.assay_columns || []) row.append(assayCell(variant, column));
 
-    const reads = el("td", "num locus", ontReads(variant).toLocaleString());
-    reads.title = DATA.timepoints
-      .map((timepoint) => {
-        const entry = variant.ont_expectation?.[timepoint.name];
-        return `${timepoint.name}: ${entry ? `${entry.alt_reads}/${entry.total_reads}` : "—"}`;
-      })
-      .join("\n");
-    row.append(reads);
-
-    const outcome = el("td");
+    const outcome = el("td", "sticky-right");
     outcome.append(timepointCells(variant));
     if (variant.recovery?.residue_confirmed === false) {
       const warn = el("span", "badge warn", "wrong residue");
@@ -752,12 +820,12 @@ function wireControls() {
   $("#only-recovered").addEventListener("change", renderTable);
   $("#only-elispot").addEventListener("change", renderTable);
 
-  document.querySelectorAll("#variant-table thead th").forEach((header) => {
+  document.querySelectorAll("#variant-table thead th[data-sort]").forEach((header) => {
     header.addEventListener("click", () => {
       const key = header.dataset.sort;
       if (sortKey === key) sortAsc = !sortAsc;
       else { sortKey = key; sortAsc = true; }
-      document.querySelectorAll("#variant-table thead th")
+      document.querySelectorAll("#variant-table thead th[data-sort]")
         .forEach((other) => other.classList.remove("sorted", "asc"));
       header.classList.add("sorted");
       if (sortAsc) header.classList.add("asc");
@@ -783,6 +851,7 @@ async function main() {
     renderTiles();
     renderLegend();
     renderHistory();
+    renderHead();
     wireControls();
     renderTable();
     renderFindings();

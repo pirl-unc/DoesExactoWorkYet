@@ -63,20 +63,18 @@
       <label class="check"><input type="checkbox" id="only-elispot"> only ELISPOT-positive</label>
     </div>
 
+    <p class="section-note">
+      The VAF columns pool every sample the portal sequenced for that assay and
+      timepoint; each cell shows the variant allele fraction over the supporting
+      and total read counts. The table scrolls sideways — gene, change and verdict
+      stay pinned.
+    </p>
+
     <div class="table-scroll">
       <table id="variant-table">
         <thead>
-          <tr>
-            <th data-sort="gene">Gene</th>
-            <th data-sort="protein">Protein change</th>
-            <th data-sort="locus">Locus (GRCh38)</th>
-            <th data-sort="type">Change</th>
-            <th data-sort="vaccines">Vaccines</th>
-            <th data-sort="elispot">ELISPOT</th>
-            <th class="num" data-sort="vaf">VAF trend</th>
-            <th class="num" data-sort="reads">ONT reads</th>
-            <th data-sort="outcome">Exacto</th>
-          </tr>
+          <tr id="assay-group-row"></tr>
+          <tr id="column-row"></tr>
         </thead>
         <tbody></tbody>
       </table>

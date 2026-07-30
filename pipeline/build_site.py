@@ -13,6 +13,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import assays, inventory
 from .config import ARMS, REPO_ROOT, RESULTS_DIR, SITE_DIR, TIMEPOINTS
 from .extract_reads import stats_path
 from .sources import data_sources, parameters
@@ -113,15 +114,25 @@ def build_payload() -> dict:
             item["variant_id"]: item for item in exacto_payload["variants"]
         }
 
+    assay_columns = assays.columns(variants_payload["variants"])
+
     variants = []
     for variant in variants_payload["variants"]:
         recovery = by_variant_id.get(variant["variant_id"])
-        # assay_support is 200 rows per variant and the page never reads it;
-        # it stays in results/vaccine_variants.json for anyone who wants it.
+        # assay_support is 200 rows per variant, so it is collapsed into a VAF
+        # grid for the page; the per-sample rows stay in
+        # results/vaccine_variants.json for anyone who wants them.
         trimmed = {
             key: value for key, value in variant.items() if key != "assay_support"
         }
-        variants.append({**trimmed, "recovery": recovery})
+        variants.append(
+            {
+                **trimmed,
+                "assay_matrix": assays.matrix(variant),
+                "germline_matrix": assays.germline(variant),
+                "recovery": recovery,
+            }
+        )
 
     summary = {
         "n_variants": variants_payload["n_variants"],
@@ -166,6 +177,8 @@ def build_payload() -> dict:
         "arms": list(ARMS),
         "extraction": extraction,
         "data_sources": data_sources(extraction),
+        "assay_columns": assay_columns,
+        "inventory": inventory.load(),
         "parameters": parameters(),
         "findings": (load(RESULTS_DIR / "findings.json") or {}).get("findings", []),
         "runs": (exacto_payload or {}).get("runs", []),
