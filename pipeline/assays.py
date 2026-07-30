@@ -25,6 +25,18 @@ ASSAY_LABELS = {
     "scRNA_ONT": "scRNA ONT",
 }
 
+# Spelled out because "Bulk RNA" reads as though it might be long-read, and it is
+# not: every bulk sample is STAR- or oncoanalyser-aligned Illumina, from
+# BostonGene, Tempus, Personalis or UCLA. Of the five groups only scRNA ONT is
+# long-read, which is why it is the one Exacto is pointed at.
+ASSAY_PLATFORM = {
+    "WGS": "Illumina, short read",
+    "WES": "Illumina, short read",
+    "RNA": "Illumina, short read",
+    "scRNA": "Illumina 10x, short read",
+    "scRNA_ONT": "Oxford Nanopore, long read",
+}
+
 ASSAY_KIND = {
     "WGS": "dna",
     "WES": "dna",
@@ -66,6 +78,7 @@ def columns(variants: list[dict]) -> list[dict]:
             "key": f"{assay}|{timepoint or ''}",
             "assay": assay,
             "assay_label": ASSAY_LABELS.get(assay, assay),
+            "platform": ASSAY_PLATFORM.get(assay, "unknown"),
             "kind": ASSAY_KIND.get(assay, "rna"),
             "timepoint": timepoint or "—",
             "tested": assay == TESTED_ASSAY,

@@ -746,3 +746,13 @@ tbody tr.open td.sticky-right { background: var(--bg-sunken); }
 .step-command pre.block { font-size: .68rem; }
 .inventory-table th, .inventory-table td { padding: .5rem .8rem; }
 .inventory-table td.num .vaf-value { font-size: .85rem; }
+.assay-name { font-weight: 650; }
+.assay-platform {
+  font-weight: 400;
+  font-size: .62rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+  margin-top: .05rem;
+}
+th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .58rem; }

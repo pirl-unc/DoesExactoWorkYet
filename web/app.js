@@ -257,8 +257,9 @@ function renderHead() {
     if (!run.length) return;
     const cell = el("th", `assay-group ${run[0].kind}`);
     cell.colSpan = run.length;
-    cell.textContent = run[0].assay_label;
-    if (run[0].tested) cell.append(el("span", "badge ok tested", "tested"));
+    cell.append(el("div", "assay-name", run[0].assay_label));
+    cell.append(el("div", "assay-platform", run[0].platform));
+    if (run[0].tested) cell.append(el("span", "badge ok tested", "tested by Exacto"));
     groups.append(cell);
     for (const col of run) {
       const sub = el("th", `assay-col ${col.kind} num`);
@@ -295,7 +296,7 @@ function assayCell(variant, column) {
   cell.append(el("div", "vaf-reads", `${data.alt.toLocaleString()}/${data.total.toLocaleString()}`));
   const germline = variant.germline_matrix?.[column.key];
   cell.title =
-    `${column.assay_label} ${column.timepoint}: ` +
+    `${column.assay_label} (${column.platform}) ${column.timepoint}: ` +
     `${data.alt} alt / ${data.total} total across ${data.samples} sample(s)` +
     (germline && germline.total
       ? `\nmatched normal: ${germline.alt}/${germline.total} (VAF ${(germline.vaf ?? 0).toFixed(3)})`
