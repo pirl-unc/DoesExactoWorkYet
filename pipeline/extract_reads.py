@@ -38,6 +38,7 @@ from .config import (
     TIMEPOINTS,
     WORK_DIR,
     Timepoint,
+    ensure_ca_bundle,
 )
 
 READS_DIR = WORK_DIR / "reads"
@@ -198,6 +199,9 @@ def scan_region(
 
 def extract(timepoint: Timepoint, regions: list[dict], variants: list[dict]) -> dict:
     """Write one timepoint's reads to two gzipped FASTQs, spanning and context."""
+    bundle = ensure_ca_bundle()
+    if bundle:
+        print(f"  using CA bundle {bundle}")
     import pysam
 
     out_spanning = spanning_fastq(timepoint)

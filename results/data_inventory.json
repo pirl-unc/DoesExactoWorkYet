@@ -1,0 +1,104 @@
+{
+  "manifest_url": "https://b2.osteosarc.com/manifest.txt",
+  "n_files": 262036,
+  "grid": [
+    {
+      "platform": "PacBio",
+      "timepoints": {
+        "T1": {
+          "files": 61,
+          "areas": [
+            "bigwigs/pacbio",
+            "kamil/arcashla",
+            "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+            "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam.bai"
+          ]
+        },
+        "unlabelled": {
+          "files": 3,
+          "areas": [
+            "bigwigs/pacbio"
+          ]
+        }
+      }
+    },
+    {
+      "platform": "ONT",
+      "timepoints": {
+        "T1": {
+          "files": 796,
+          "areas": [
+            "ONT/IPISRC044_ONT_upload",
+            "bigwigs/ONT",
+            "ctat_lr_fusion/T1_ont",
+            "ucsf/T1"
+          ]
+        },
+        "T2": {
+          "files": 823,
+          "areas": [
+            "ONT/IPISRC044_ONT_upload",
+            "bigwigs/ONT",
+            "ctat_lr_fusion/T2_ont",
+            "ucsf/T2"
+          ]
+        },
+        "T3": {
+          "files": 789,
+          "areas": [
+            "ONT/IPISRC044_ONT_upload",
+            "bigwigs/ONT",
+            "ctat_lr_fusion/T3_ont",
+            "ucsf/T3"
+          ]
+        }
+      }
+    },
+    {
+      "platform": "Illumina",
+      "timepoints": {
+        "T0": {
+          "files": 642,
+          "areas": [
+            "genomics/genomics-duplicates",
+            "kamil/basespace",
+            "kamil/oncoanalyser",
+            "webpage/igv_bostongene_2022_T0_PFOalignments.html"
+          ]
+        },
+        "T1": {
+          "files": 102,
+          "areas": [
+            "T1/IPISRC044_T1_UCSF_cellranger",
+            "bigwigs/ucsf",
+            "ucsf/T1"
+          ]
+        },
+        "T2": {
+          "files": 163,
+          "areas": [
+            "bigwigs/ucsf",
+            "ucsf/T2"
+          ]
+        },
+        "T3": {
+          "files": 151,
+          "areas": [
+            "bigwigs/ucsf",
+            "ucsf/T3"
+          ]
+        },
+        "unlabelled": {
+          "files": 7378,
+          "areas": [
+            "bigwigs/genomics",
+            "bigwigs/hudson_lab",
+            "bigwigs/rna-seq",
+            "elucidate/SIN-01_20250915"
+          ]
+        }
+      }
+    }
+  ],
+  "note": "Counts are files whose path names a platform, so they include intermediates and index files, not just primary data. What matters for this test: PacBio RNA exists for T1 only, ONT for all three biopsies, and every long-read RNA dataset on the portal is single-cell \u2014 the bulk RNA-seq is Illumina short-read, which Exacto is not built for."
+}

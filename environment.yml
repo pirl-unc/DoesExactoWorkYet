@@ -21,6 +21,10 @@ dependencies:
   - rnabloom=2.0.1
   - openjdk>=17
 
+  # pysam bundles a libcurl that cannot find the conda trust store on its own;
+  # certifi gives pipeline.config.ensure_ca_bundle something to point it at.
+  - certifi
+
   - pip:
       # pip rather than conda, per Exacto's install instructions.
       - pysam==0.23.0

@@ -22,6 +22,43 @@ SITE_DIR = REPO_ROOT / "site"
 # disk instead of inside the checkout.
 WORK_DIR = Path(os.environ.get("DEWY_WORK_DIR", REPO_ROOT / "work")).resolve()
 
+def ensure_ca_bundle() -> str | None:
+    """Point libcurl at a CA bundle before htslib opens an https:// file.
+
+    pysam ships its own libcurl, and inside a conda environment that build often
+    cannot find the system trust store — it fails with "Libcurl reported error 77
+    (Problem with the SSL CA cert)" and htslib turns that into a bare I/O error.
+    Conda's samtools is fine, which makes the failure look baffling: the same URL
+    works from the shell and not from Python.
+
+    Returns the bundle in use, or None if the environment already had one.
+    """
+    if os.environ.get("CURL_CA_BUNDLE"):
+        return None
+
+    candidates = []
+    try:
+        import certifi
+
+        candidates.append(certifi.where())
+    except ImportError:
+        pass
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if conda_prefix:
+        candidates.append(str(Path(conda_prefix) / "ssl" / "cacert.pem"))
+    candidates += [
+        "/etc/ssl/certs/ca-certificates.crt",  # Debian, Ubuntu
+        "/etc/pki/tls/certs/ca-bundle.crt",  # RHEL, Fedora
+    ]
+
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            os.environ["CURL_CA_BUNDLE"] = candidate
+            os.environ.setdefault("SSL_CERT_FILE", candidate)
+            return candidate
+    return None
+
+
 # --------------------------------------------------------------------------
 # osteosarc.com — Sid Sijbrandij's open osteosarcoma data portal
 # --------------------------------------------------------------------------
