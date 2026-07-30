@@ -93,9 +93,17 @@ The uncapped counts are recorded alongside, and shown per variant on the site.
 
 **`pipeline/run_exacto.py`** runs each timepoint through two arms:
 
-- **`assembly`** — the pipeline as Exacto documents it. RNA-Bloom2 assembles spanning +
-  context reads into full-length transcripts, minimap2 realigns them (`splice:hq`),
-  `remove-unspliced-rnas` filters, then `call-rna-vars`.
+- **`assembly`** — the pipeline as Exacto documents it, by way of Andy Lee's canonical
+  `PEPTIDE_PREDICTION_EXACTO` subworkflow in [Nexus](https://github.com/pirl-unc/nexus).
+  RNA-Bloom2 assembles spanning + context reads, `nexus_filter_rnabloom2_transcripts`
+  drops contigs without enough read support (min MAPQ 30, min 3 reads, min 0.5 fraction
+  match — it halved a T1 assembly, 5,365 contigs to 2,656), minimap2 realigns them
+  (`splice:hq`), `remove-unspliced-rnas` filters, then `call-rna-vars`.
+
+  That filter also writes the FASTQ, not just the FASTA. Nexus's own comment explains
+  why — *"so the downstream BAM consumed by call-rna-vars carries QUAL fields"* — which
+  is the same workaround this harness arrived at independently before finding it, and
+  independent confirmation that the crash below is real.
 - **`reads`** — the same without the assembler; the spanning reads go straight in as
   transcripts (`splice` preset, no unspliced filter). Without an assembler each read *is*
   a transcript, so a read touching no variant cannot produce one of the mutant proteins
@@ -233,6 +241,14 @@ This measures one thing well and several things not at all.
   the whole human proteome.
 - **GENCODE levels 1–3** are allowed, rather than Exacto's default 1–2, because the
   mitochondrial genes are annotated at level 3 and MT-ND5 is one of the vaccine targets.
+- **Exacto has no documented single-cell path.** Not one mention of single-cell,
+  barcode, UMI or 10x in its docs, README or Python — yet every long-read dataset here is
+  single-cell. Nexus has unwired scRNA tooling (`find_scrna_barcode_knee`,
+  `convert_scrna_bam2fastq`, `count_scrna_assembly_support`, `filter_scrna_assembly`) that
+  sketches an intended path this test does not yet follow.
+- **There is no pooled mode.** Only `call-somatic-dna-vars --control-bam-files` takes more
+  than one sample, and those are the *normals*. Everything else is one BAM at a time, and
+  Nexus runs Exacto per sample. Pooling T1+T2+T3 would mean merging BAMs by hand.
 - **Four Exacto crashes are worked around** rather than reported as failures, or the run
   would stop at the first step every time. Each is written up in
   [`results/findings.json`](results/findings.json) and shown on the site, and any

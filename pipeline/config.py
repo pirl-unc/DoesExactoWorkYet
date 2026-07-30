@@ -185,6 +185,20 @@ SPANNING_READS_PER_VARIANT = 3_000
 #              skipping assembly. Cheaper, and a useful control.
 ARMS = ("assembly", "reads")
 
+# Andy Lee's Nexus wraps Exacto in a canonical Nextflow subworkflow
+# (PEPTIDE_PREDICTION_EXACTO). Step 6 of it filters RNA-Bloom2's output before
+# anything is aligned, on these thresholds — without it Exacto is handed every
+# contig the assembler emitted, single-read junk included.
+NEXUS_VERSION = "v0.2.0a7"
+RNABLOOM_FILTER = {
+    "min-mapping-quality": "30",
+    "min-read-support": "3",
+    "min-fraction-match": "0.5",
+    # The same trick this harness arrived at independently: assembled contigs
+    # carry no per-base quality, and call-rna-vars panics without one.
+    "base-quality": "30",
+}
+
 # The portal's BAMs were aligned with plain `minimap2 -ax splice --MD`, without
 # --cs, and Exacto reads the CS tag to find variants — so everything gets
 # realigned here regardless of arm.

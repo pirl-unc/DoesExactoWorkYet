@@ -39,6 +39,7 @@ from .config import (
     GENE_TYPES,
     MINIMAP2_COMMON_FLAGS,
     MINIMAP2_PRESET,
+    RNABLOOM_FILTER,
     TIMEPOINTS,
     WORK_DIR,
     Timepoint,
@@ -47,9 +48,10 @@ from .extract_reads import assembly_inputs, spanning_fastq, stats_path
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
-# Phred character stamped on every base of an assembled contig. 'I' is Q40,
-# comfortably over call-rna-vars' default --min-average-base-quality of 30.
-ASSEMBLY_BASE_QUALITY = "I"
+# RNA-Bloom2 names its polished assembly and the read-to-contig alignment it
+# is filtered against.
+ASSEMBLY_NAME = "rnabloom.longreads.assembly4.pol.fa"
+PAF_NAME = "rnabloom.longreads.assembly3.map.paf.gz"
 
 ANNOTATION_ARGS = [
     "--reference-gene-annotation-file", str(SUBSET_GTF),
@@ -214,40 +216,6 @@ def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
 # --------------------------------------------------------------------------
 
 
-def fasta_to_fastq(fasta: Path, fastq: Path, quality: str = ASSEMBLY_BASE_QUALITY) -> int:
-    """Give assembled contigs a flat base quality so Exacto will read them.
-
-    ``call-rna-vars`` indexes into the per-base quality array unconditionally
-    (exacto-caller/src/structs/alignment.rs:229), so a BAM built from a FASTA —
-    which is exactly what RNA-Bloom2 emits and what Exacto's own docs align —
-    panics on every record. Exacto's bundled test BAMs carry a flat quality
-    string, so this matches what the tool is built against. Consensus contigs
-    have no meaningful per-base quality anyway.
-    """
-    records = 0
-    with open(fasta) as source, open(fastq, "w") as sink:
-        name = None
-        chunks: list[str] = []
-
-        def flush() -> None:
-            nonlocal records
-            if name is None:
-                return
-            sequence = "".join(chunks)
-            sink.write(f"@{name}\n{sequence}\n+\n{quality * len(sequence)}\n")
-            records += 1
-
-        for line in source:
-            if line.startswith(">"):
-                flush()
-                name = line[1:].strip()
-                chunks = []
-            else:
-                chunks.append(line.strip())
-        flush()
-    return records
-
-
 def count_fasta_records(fasta: Path) -> int:
     """Count records without pulling a few hundred MB of sequence into memory."""
     with open(fasta, "rb") as handle:
@@ -256,11 +224,7 @@ def count_fasta_records(fasta: Path) -> int:
 
 def find_assembly(outdir: Path) -> Path:
     """Locate RNA-Bloom2's transcript FASTA, whose name varies by version."""
-    candidates = [
-        "rnabloom.transcripts.fa",
-        "rnabloom.longreads.assembly4.pol.fa",
-        "rnabloom.longreads.assembly3.fa",
-    ]
+    candidates = [ASSEMBLY_NAME, "rnabloom.transcripts.fa"]
     for name in candidates:
         path = outdir / name
         if path.exists() and path.stat().st_size > 0:
@@ -391,10 +355,34 @@ def run_arm(
                     "-f",
                 ],
             )
+            # Step 6 of Andy Lee's canonical Nexus subworkflow, which the
+            # Exacto docs point at but do not spell out: drop assembled
+            # transcripts without enough read support before anything is
+            # aligned. It also emits the FASTQ — assembled contigs have no
+            # per-base quality, and call-rna-vars panics on a BAM without one.
+            raw_assembly = find_assembly(assembly_dir)
             query_fasta = out_dir / f"{prefix}.transcripts.fa"
-            shutil.copyfile(find_assembly(assembly_dir), query_fasta)
-            query = out_dir / f"{prefix}.transcripts.fq"
-            result["counts"]["query_sequences"] = fasta_to_fastq(query_fasta, query)
+            query = out_dir / f"{prefix}.transcripts.fastq.gz"
+            runner.run(
+                "nexus_filter_rnabloom2_transcripts",
+                [
+                    "nexus_filter_rnabloom2_transcripts",
+                    "--assembly4-pol-fasta-file", str(raw_assembly),
+                    "--assembly3-map-paf-file", str(assembly_dir / PAF_NAME),
+                    *(
+                        argument
+                        for key, value in RNABLOOM_FILTER.items()
+                        for argument in (f"--{key}", value)
+                    ),
+                    "--output-reads-tsv-file", str(out_dir / f"{prefix}.reads.tsv"),
+                    "--output-transcripts-tsv-file",
+                    str(out_dir / f"{prefix}.transcripts.tsv"),
+                    "--output-fasta-file", str(query_fasta),
+                    "--output-fastq-file", str(query),
+                ],
+            )
+            result["counts"]["assembled_transcripts"] = count_fasta_records(raw_assembly)
+            result["counts"]["query_sequences"] = count_fasta_records(query_fasta)
         else:
             # Only the variant-spanning reads. Without an assembler each read is
             # its own transcript, so a read that touches no vaccine variant can

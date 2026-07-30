@@ -28,3 +28,7 @@ dependencies:
   - pip:
       # pip rather than conda, per Exacto's install instructions.
       - pysam==0.23.0
+      # Andy's Nexus, pinned. Step 6 of his canonical PEPTIDE_PREDICTION_EXACTO
+      # subworkflow is nexus_filter_rnabloom2_transcripts; running his code beats
+      # reimplementing it.
+      - git+https://github.com/pirl-unc/nexus.git@v0.2.0a7

@@ -8,7 +8,7 @@ provenance quietly wrong.
 from __future__ import annotations
 
 from . import config
-from .run_exacto import ASSEMBLY_BASE_QUALITY
+from .config import NEXUS_VERSION, RNABLOOM_FILTER
 
 
 def _bytes(value: int | None) -> str | None:
@@ -272,10 +272,28 @@ def parameters() -> list[dict]:
                 (
                     "Assembled contig quality",
                     (
-                        f"flat Phred '{ASSEMBLY_BASE_QUALITY}' (Q40) — Exacto panics "
-                        "on a BAM with no QUAL, and RNA-Bloom2 emits FASTA"
+                        f"flat Phred {RNABLOOM_FILTER['base-quality']}, written by the "
+                        "Nexus filter — Exacto panics on a BAM with no QUAL, and "
+                        "RNA-Bloom2 emits FASTA"
                     ),
                 ),
+            ],
+        },
+        {
+            "step": f"nexus_filter_rnabloom2_transcripts ({NEXUS_VERSION})",
+            "settings": [
+                (
+                    "Why",
+                    (
+                        "Step 6 of Andy Lee's canonical PEPTIDE_PREDICTION_EXACTO "
+                        "subworkflow in Nexus. Exacto's own docs reference it but do "
+                        "not spell it out; without it Exacto is handed every contig "
+                        "RNA-Bloom2 emitted, single-read junk included."
+                    ),
+                ),
+                ("Minimum mapping quality", RNABLOOM_FILTER["min-mapping-quality"]),
+                ("Minimum read support", RNABLOOM_FILTER["min-read-support"]),
+                ("Minimum fraction match", RNABLOOM_FILTER["min-fraction-match"]),
             ],
         },
         {
