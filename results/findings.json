@@ -70,6 +70,16 @@
       "detail": "Three of the five mutant proteoforms recovered at T1 carried the wrong amino acid at the right codon \u2014 DYNC1H1 gave H where the annotation predicts I, VPS13B N for F, MT-ND5 V for T. All three were short ORFs (92-129 aa) on novel or truncated transcript models, one terminating in a stop immediately after the mutation. With no reference CDS to anchor on, the longest open reading frame in a partial transcript is often not the real one, and the peptide that comes out is not the neoantigen.",
       "workaround": "Not worked around. Every recovered proteoform's residue is checked against the portal's HGVS annotation and a mismatch is reported rather than counted, so the headline is not inflated by these.",
       "suggested_fix": "Where a transcript model matches a reference transcript, prefer that transcript's CDS frame over the longest ORF, or expose the reference frame as a strategy."
+    },
+    {
+      "id": "unmapped-records-affect-canonical-pipeline-too",
+      "title": "The unmapped-record crash is reachable from Nexus's own subworkflow",
+      "observed_in": "0.4.6a1",
+      "severity": "crash",
+      "where": "exacto-core/src/common/bam.rs:892",
+      "detail": "Noted while auditing against Andy Lee's PEPTIDE_PREDICTION_EXACTO subworkflow in Nexus. It pipes minimap2 through 'samtools view -bS | samtools calmd | samtools sort' with no -F 4, so unmapped records reach remove-unspliced-rnas exactly as they did here. This is the same defect as unmapped-records-panic, recorded separately because it means the canonical pipeline is affected, not just this harness's variation on it.",
+      "workaround": "This harness drops unmapped records with samtools view -F 4 before sorting.",
+      "suggested_fix": "Same as unmapped-records-panic: skip records whose reference sequence id is None."
     }
   ]
 }

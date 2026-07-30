@@ -43,8 +43,9 @@ with its exact allele**, and never on `integrate-vars` output. That distinction 
 pedantic: `integrate-vars` links a DNA variant to any RNA variant within 10 kb of a
 transcript boundary, or 100 kb intergenically, and at those defaults only 19 of 3,359
 integrations in one T1 arm were exact. Scoring off the integration table turned 5 recovered
-mutations into 28. The pipeline also runs `integrate-vars` with those tolerances closed
-down, so its output means something.
+mutations into 28. `integrate-vars` still runs at Exacto's defaults, as Nexus runs it —
+the point is to test Exacto as shipped, not a tuned version of it — but nothing downstream
+of the verdict depends on its output.
 
 Two further checks run on top of the ladder:
 
@@ -222,6 +223,23 @@ environment.yml    conda environment (samtools, minimap2, RNA-Bloom2, Exacto's s
 
 The tests run without pysam or samtools installed, which is what lets the site and CI
 workflows stay lightweight.
+
+## Audited against the author's own pipeline
+
+Checked line by line against Andy Lee's `PEPTIDE_PREDICTION_EXACTO` subworkflow in
+[Nexus](https://github.com/pirl-unc/nexus) and against Exacto's source:
+
+| | |
+|---|---|
+| minimap2 RNA args | identical: `-ax splice:hq -uf --cs --eqx -Y -L --secondary=no` |
+| RNA-Bloom2 | `-chimera`, matching; `-lrpb` deliberately dropped — it means PacBio, and this is ONT |
+| `nexus_filter_rnabloom2_transcripts` | run, at its defaults |
+| `call-rna-vars`, `translate-structs`, `integrate-vars` | no extra args, as Nexus |
+| `call-peptide-vars --min-k 8 --max-k 11` | equals Exacto's own defaults |
+| `--preset ont` | not applicable — only the DNA callers take a preset, and this pipeline does not run them |
+| `samtools calmd` | Nexus pipes through it; safe to omit, because Exacto reads the `cs` tag and never reads `MD` |
+| GENCODE v44 vs Nexus's placeholder v45 | deliberate: v44 is what the source BAMs were aligned against |
+| Gene/transcript levels 1–3 vs the default 1–2 | deliberate: MT-ND5 is level 3 and would otherwise be dropped silently |
 
 ## Caveats
 

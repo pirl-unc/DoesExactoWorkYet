@@ -489,14 +489,13 @@ def run_arm(
                 "--annotated-dna-vars-tsv-file", str(annotated_tsv),
                 "--rna-vars-tsv-file", str(integrable_calls),
                 *ANNOTATION_ARGS,
-                # Exacto defaults to linking a DNA variant to any RNA variant
-                # within 10 kb of a transcript boundary, or 100 kb intergenically,
-                # which produces mostly-spurious pairings — 19 of 3,359 were exact
-                # at the defaults. Keep the small exon offset, which exists for
-                # indel placement wobble, and drop the rest.
-                "--max-exon-offset", "2",
-                "--max-transcript-boundary-offset", "0",
-                "--max-intergenic-distance", "0",
+                # Exacto's defaults, matching Andy's Nexus subworkflow, which
+                # passes no extra arguments here. They are permissive — a DNA
+                # variant links to any RNA variant within 10 kb of a transcript
+                # boundary or 100 kb intergenically, and only 19 of 3,359
+                # integrations were exact in one measured arm — but tightening
+                # them would mean testing something other than Exacto as shipped.
+                # The verdict does not read this table; see evaluate.py.
                 "--output-tsv-file", str(integrated_tsv),
                 "--num-threads", str(threads),
             ],

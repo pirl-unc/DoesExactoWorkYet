@@ -311,9 +311,11 @@ def parameters() -> list[dict]:
                 (
                     "integrate-vars tolerances",
                     (
-                        "exon offset 2; transcript-boundary and intergenic offsets "
-                        "set to 0, against defaults of 10 kb and 100 kb that pair "
-                        "nearly everything with everything"
+                        "Exacto's defaults (exon offset 2, transcript boundary "
+                        "10 kb, intergenic 100 kb), as Nexus runs them. They pair "
+                        "nearly everything with everything — only 19 of 3,359 "
+                        "integrations were exact — which is why the verdict is "
+                        "keyed on RNA calls instead of on this table"
                     ),
                 ),
                 ("translate-structs strategy", "longest_orf"),
