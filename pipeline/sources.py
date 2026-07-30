@@ -7,7 +7,7 @@ provenance quietly wrong.
 
 from __future__ import annotations
 
-from . import config
+from . import config, extract_reads
 from .config import NEXUS_VERSION, RNABLOOM_FILTER
 
 
@@ -268,6 +268,27 @@ def configuration() -> list[dict]:
                         "single-cell. The portal never genotyped these mutations "
                         "against the PacBio BAM, so its numbers here are Exacto's "
                         "own rather than a comparison against a published VAF."
+                    ),
+                },
+                {
+                    "name": "Base qualities, PacBio",
+                    "value": (
+                        "QUAL is \"*\" on every Iso-Seq record; a flat Q"
+                        f"{extract_reads.SYNTHETIC_BASE_QUALITY} is written in its place"
+                    ),
+                    "status": "addition",
+                    "canonical": (
+                        "Nexus writes a flat quality for assembled contigs, which "
+                        "have none either — same problem, same answer"
+                    ),
+                    "why": (
+                        "isoseq groupdedup emits deduplicated consensus transcripts "
+                        "without per-base quality, and Exacto's call-rna-vars panics "
+                        "on a BAM that has none (alignment.rs:229). Dropping those "
+                        "records would lose the entire platform — measured across "
+                        "three vaccine loci, 206 of 207 PacBio records carry no "
+                        "QUAL. These scores are manufactured: nothing downstream "
+                        "should read them as measured base quality."
                     ),
                 },
                 {

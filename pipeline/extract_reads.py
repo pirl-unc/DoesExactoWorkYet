@@ -36,6 +36,7 @@ if TYPE_CHECKING:  # pysam is only needed to actually read a BAM. Importing it
 from .build_reference import DOWNLOAD_DIR, REGIONS_JSON, download, load_variants
 from .config import (
     CONTEXT_READS_PER_REGION,
+    RNABLOOM_FILTER,
     SPANNING_READS_PER_VARIANT,
     WORK_DIR,
     Sample,
@@ -44,6 +45,11 @@ from .config import (
 )
 
 READS_DIR = WORK_DIR / "reads"
+
+# Stand-in per-base quality for records that carry none. Taken from the Nexus
+# RNA-Bloom2 filter rather than chosen here, so the two places that have to
+# invent a quality score cannot drift apart.
+SYNTHETIC_BASE_QUALITY = int(RNABLOOM_FILTER["base-quality"])
 
 # Streaming tens of thousands of BGZF blocks over HTTPS occasionally trips an
 # HTTP/2 framing error or a connection reset. Seen once in testing, so it is
@@ -102,11 +108,33 @@ def variant_span(variant: dict) -> tuple[int, int]:
 
 
 def _fastq_record(read: pysam.AlignedSegment) -> str | None:
+    """One read as a FASTQ record, in transcript-sense orientation.
+
+    Some inputs carry no per-base quality at all. PacBio's Iso-Seq
+    ``groupdedup`` writes ``QUAL`` as ``*`` for every record it emits — the
+    output is a deduplicated consensus transcript, not a raw read — and
+    measured against three vaccine loci that is 206 of 207 records. Two things
+    follow. ``pysam.get_forward_qualities()`` raises ``TypeError`` on those
+    rather than returning None, so guarding on the return value never fires;
+    and Exacto's ``call-rna-vars`` panics on a BAM without QUAL
+    (alignment.rs:229), so dropping them would trade one crash for another and
+    lose the whole platform.
+
+    A flat quality is written instead, at the same value Nexus's
+    ``filter_rnabloom2_transcripts`` uses when it hands Exacto assembled
+    contigs — which have no quality either, for the same reason. It is
+    disclosed on the site rather than left implicit: these numbers are
+    manufactured, and nothing downstream should read them as measured.
+    """
     sequence = read.get_forward_sequence()
-    qualities = read.get_forward_qualities()
-    if not sequence or qualities is None:
+    if not sequence:
         return None
-    quality_string = "".join(chr(value + 33) for value in qualities)
+    if read.query_qualities is None:
+        quality_string = chr(SYNTHETIC_BASE_QUALITY + 33) * len(sequence)
+    else:
+        quality_string = "".join(
+            chr(value + 33) for value in read.get_forward_qualities()
+        )
     return f"@{read.query_name}\n{sequence}\n+\n{quality_string}\n"
 
 
@@ -135,6 +163,7 @@ def scan_region(
         spanning_seen: dict[str, int] = {key: 0 for key in spanning_reservoirs}
         names: set[str] = set()
         n_context_seen = 0
+        n_synthetic_quality = 0
 
         try:
             for read in bam.fetch(region["chrom"], region["start"] - 1, region["end"]):
@@ -156,6 +185,8 @@ def scan_region(
                 record = _fastq_record(read)
                 if record is None:
                     continue
+                if read.query_qualities is None:
+                    n_synthetic_quality += 1
                 names.add(name)
 
                 if covered:
@@ -193,6 +224,7 @@ def scan_region(
             "spanning_seen": spanning_seen,
             "context": context_reservoir,
             "context_seen": n_context_seen,
+            "synthetic_quality": n_synthetic_quality,
             "names": names,
         }
 
@@ -226,6 +258,7 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     n_spanning = 0
     n_context = 0
     n_bases = 0
+    n_synthetic_quality = 0
 
     with pysam.AlignmentFile(
         sample.bam_url, "rb", index_filename=str(index_path)
@@ -244,6 +277,7 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
             context_reservoir = scanned["context"]
             spanning_reservoirs = scanned["spanning"]
             n_context_seen = scanned["context_seen"]
+            n_synthetic_quality += scanned["synthetic_quality"]
             for variant_id, count in scanned["spanning_seen"].items():
                 spanning_seen[variant_id] += count
             seen |= scanned["names"]
@@ -299,6 +333,9 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
         "n_spanning_reads": n_spanning,
         "n_context_reads": n_context,
         "n_bases": n_bases,
+        # Records whose QUAL was "*" and had a flat score written for them.
+        "n_synthetic_quality_reads": n_synthetic_quality,
+        "synthetic_base_quality": SYNTHETIC_BASE_QUALITY,
         "mean_read_length": round(n_bases / n_reads, 1) if n_reads else 0.0,
         "spanning_reads_by_variant": spanning_kept,
         "spanning_reads_seen_by_variant": spanning_seen,

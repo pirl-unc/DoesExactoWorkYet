@@ -23,12 +23,18 @@ class FakeRead:
         self.is_supplementary = "supplementary" in flags
         self.is_unmapped = "unmapped" in flags
         self._sequence = "ACGT" * 25
+        # PacBio Iso-Seq consensus records carry QUAL "*", which pysam surfaces
+        # as query_qualities None — and get_forward_qualities() then raises
+        # rather than returning None, exactly as it does on a real BAM.
+        self.query_qualities = None if "no_qual" in flags else [40] * len(self._sequence)
 
     def get_forward_sequence(self):
         return self._sequence
 
     def get_forward_qualities(self):
-        return [40] * len(self._sequence)
+        if self.query_qualities is None:
+            raise TypeError("'NoneType' object is not subscriptable")
+        return list(self.query_qualities)
 
 
 class FakeBam:
@@ -151,3 +157,35 @@ def test_gives_up_after_the_attempt_limit():
         scan(bam)
 
     assert bam.fetch_calls == extract_reads.REGION_FETCH_ATTEMPTS
+
+
+def test_reads_without_quality_get_a_flat_score_rather_than_being_dropped():
+    """Iso-Seq consensus records have no QUAL, and Exacto panics without one.
+
+    Dropping them would lose the entire PacBio sample; the flat score matches
+    what Nexus writes for assembled contigs, which have no quality either.
+    """
+    read = FakeRead("consensus", 400, 600, flags=("no_qual",))
+
+    record = extract_reads._fastq_record(read)
+
+    name, sequence, plus, quality = record.rstrip("\n").split("\n")
+    assert name == "@consensus"
+    assert plus == "+"
+    assert len(quality) == len(sequence)
+    assert set(quality) == {chr(extract_reads.SYNTHETIC_BASE_QUALITY + 33)}
+
+
+def test_real_qualities_are_preserved():
+    record = extract_reads._fastq_record(FakeRead("ont", 400, 600))
+
+    quality = record.rstrip("\n").split("\n")[3]
+    assert set(quality) == {chr(40 + 33)}
+
+
+def test_synthetic_quality_reads_are_counted():
+    reads = [FakeRead("a", 400, 600, flags=("no_qual",)), FakeRead("b", 700, 900)]
+
+    scanned = extract_reads.scan_region(FakeBam(reads), SAMPLE, REGION, SPANS, set())
+
+    assert scanned["synthetic_quality"] == 1
