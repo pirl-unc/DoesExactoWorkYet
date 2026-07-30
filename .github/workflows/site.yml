@@ -7,10 +7,15 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # The mirror image of the Exacto test's trigger: everything that changes
+    # what the site shows, without re-running the science.
     paths:
       - "web/**"
       - "results/**"
       - "pipeline/build_site.py"
+      - "pipeline/sources.py"
+      - "pipeline/assays.py"
+      - "pipeline/inventory.py"
       - "pipeline/fetch_osteosarc.py"
       - ".github/workflows/site.yml"
 

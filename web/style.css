@@ -756,3 +756,25 @@ tbody tr.open td.sticky-right { background: var(--bg-sunken); }
   margin-top: .05rem;
 }
 th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .58rem; }
+
+/* Platform / read-length / single-cell tags on the assay group headers. */
+.assay-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .2rem;
+  justify-content: center;
+  margin-top: .2rem;
+}
+.assay-tags .tag {
+  font-size: .58rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 .3rem;
+  border-radius: 3px;
+  background: var(--none-soft);
+  color: var(--none);
+  white-space: nowrap;
+}
+.assay-tags .tag.longread { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.assay-tags .tag.sc { background: var(--warn-soft); color: var(--warn); }

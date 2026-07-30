@@ -255,11 +255,19 @@ function renderHead() {
   let run = [];
   const flush = () => {
     if (!run.length) return;
-    const cell = el("th", `assay-group ${run[0].kind}`);
+    const spec = run[0];
+    const cell = el("th", `assay-group ${spec.kind}`);
     cell.colSpan = run.length;
-    cell.append(el("div", "assay-name", run[0].assay_label));
-    cell.append(el("div", "assay-platform", run[0].platform));
-    if (run[0].tested) cell.append(el("span", "badge ok tested", "tested by Exacto"));
+    cell.append(el("div", "assay-name", spec.assay_label));
+
+    // Every column says its platform, its read length, and whether it is
+    // single-cell — none of it left to be inferred from the name.
+    const tags = el("div", "assay-tags");
+    tags.append(el("span", `tag platform ${spec.long_read ? "longread" : ""}`, spec.platform));
+    tags.append(el("span", `tag ${spec.long_read ? "longread" : ""}`, spec.read_length));
+    if (spec.single_cell) tags.append(el("span", "tag sc", "single cell"));
+    cell.append(tags);
+    if (spec.tested) cell.append(el("span", "badge ok tested", "tested by Exacto"));
     groups.append(cell);
     for (const col of run) {
       const sub = el("th", `assay-col ${col.kind} num`);
@@ -295,8 +303,10 @@ function assayCell(variant, column) {
   cell.append(vaf);
   cell.append(el("div", "vaf-reads", `${data.alt.toLocaleString()}/${data.total.toLocaleString()}`));
   const germline = variant.germline_matrix?.[column.key];
+  const descriptor = [column.platform, column.read_length]
+    .concat(column.single_cell ? ["single cell"] : []).join(", ");
   cell.title =
-    `${column.assay_label} (${column.platform}) ${column.timepoint}: ` +
+    `${column.assay_label} ${column.timepoint} (${descriptor}): ` +
     `${data.alt} alt / ${data.total} total across ${data.samples} sample(s)` +
     (germline && germline.total
       ? `\nmatched normal: ${germline.alt}/${germline.total} (VAF ${(germline.vaf ?? 0).toFixed(3)})`

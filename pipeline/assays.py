@@ -13,36 +13,30 @@ per-sample rows stay available in ``results/vaccine_variants.json``.
 
 from __future__ import annotations
 
-# Ordered so the table reads DNA → bulk RNA → single-cell RNA → long read,
-# which is roughly increasing relevance to what this test actually measures.
-ASSAY_ORDER = ["WGS", "WES", "RNA", "scRNA", "scRNA_ONT"]
+# RNA first, since that is what Exacto is being tested on, then the DNA that
+# establishes each variant is really there.
+ASSAY_ORDER = ["RNA", "scRNA", "scRNA_ONT", "WGS", "WES"]
 
-ASSAY_LABELS = {
-    "WGS": "WGS",
-    "WES": "WES",
-    "RNA": "Bulk RNA",
-    "scRNA": "scRNA 10x",
-    "scRNA_ONT": "scRNA ONT",
+# Every column states its platform and whether it is single-cell, rather than
+# leaving either to be inferred from a terse name. "Bulk RNA" in particular
+# reads as though it might be long-read and is not: every bulk sample is
+# STAR- or oncoanalyser-aligned Illumina from BostonGene, Tempus, Personalis or
+# UCLA. Of the five groups exactly one is long-read.
+ASSAY_META = {
+    "RNA":       {"label": "Bulk RNA", "platform": "Illumina",
+                  "read": "short read", "single_cell": False, "kind": "rna"},
+    "scRNA":     {"label": "scRNA", "platform": "Illumina 10x",
+                  "read": "short read", "single_cell": True, "kind": "rna"},
+    "scRNA_ONT": {"label": "scRNA", "platform": "ONT",
+                  "read": "long read", "single_cell": True, "kind": "rna"},
+    "WGS":       {"label": "WGS", "platform": "Illumina",
+                  "read": "short read", "single_cell": False, "kind": "dna"},
+    "WES":       {"label": "WES", "platform": "Illumina",
+                  "read": "short read", "single_cell": False, "kind": "dna"},
 }
-
-# Spelled out because "Bulk RNA" reads as though it might be long-read, and it is
-# not: every bulk sample is STAR- or oncoanalyser-aligned Illumina, from
-# BostonGene, Tempus, Personalis or UCLA. Of the five groups only scRNA ONT is
-# long-read, which is why it is the one Exacto is pointed at.
-ASSAY_PLATFORM = {
-    "WGS": "Illumina, short read",
-    "WES": "Illumina, short read",
-    "RNA": "Illumina, short read",
-    "scRNA": "Illumina 10x, short read",
-    "scRNA_ONT": "Oxford Nanopore, long read",
-}
-
-ASSAY_KIND = {
-    "WGS": "dna",
-    "WES": "dna",
-    "RNA": "rna",
-    "scRNA": "rna",
-    "scRNA_ONT": "rna",
+FALLBACK_META = {
+    "label": "?", "platform": "unknown", "read": "unknown",
+    "single_cell": False, "kind": "rna",
 }
 
 # The long-read assay this test actually runs Exacto on.
@@ -73,18 +67,24 @@ def columns(variants: list[dict]) -> list[dict]:
                 continue
             seen.add((entry["assay_type"], entry["timepoint"]))
 
-    return [
-        {
-            "key": f"{assay}|{timepoint or ''}",
-            "assay": assay,
-            "assay_label": ASSAY_LABELS.get(assay, assay),
-            "platform": ASSAY_PLATFORM.get(assay, "unknown"),
-            "kind": ASSAY_KIND.get(assay, "rna"),
-            "timepoint": timepoint or "—",
-            "tested": assay == TESTED_ASSAY,
-        }
-        for assay, timepoint in sorted(seen, key=lambda item: _sort_key(*item))
-    ]
+    columns = []
+    for assay, timepoint in sorted(seen, key=lambda item: _sort_key(*item)):
+        meta = ASSAY_META.get(assay, {**FALLBACK_META, "label": assay})
+        columns.append(
+            {
+                "key": f"{assay}|{timepoint or ''}",
+                "assay": assay,
+                "assay_label": meta["label"],
+                "platform": meta["platform"],
+                "read_length": meta["read"],
+                "single_cell": meta["single_cell"],
+                "long_read": meta["read"] == "long read",
+                "kind": meta["kind"],
+                "timepoint": timepoint or "—",
+                "tested": assay == TESTED_ASSAY,
+            }
+        )
+    return columns
 
 
 def matrix(variant: dict) -> dict[str, dict]:

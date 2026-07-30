@@ -25,8 +25,16 @@ on:
     - cron: "0 4 * * 1"
   push:
     branches: [main]
+    # Only the modules that can change the answer. Presentation code —
+    # build_site, sources, assays, inventory — is deliberately excluded so a
+    # label tweak does not queue a three-hour matrix behind itself.
     paths:
-      - "pipeline/**"
+      - "pipeline/config.py"
+      - "pipeline/fetch_osteosarc.py"
+      - "pipeline/build_reference.py"
+      - "pipeline/extract_reads.py"
+      - "pipeline/run_exacto.py"
+      - "pipeline/evaluate.py"
       - "scripts/**"
       - "environment.yml"
       - ".github/workflows/exacto-test.yml"
