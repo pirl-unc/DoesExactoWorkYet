@@ -16,7 +16,7 @@ from pathlib import Path
 from . import assays, inventory
 from .config import ARMS, REPO_ROOT, RESULTS_DIR, SITE_DIR, TIMEPOINTS
 from .extract_reads import stats_path
-from .sources import data_sources, parameters
+from .sources import data_sources, parameters, reproduction
 
 WEB_DIR = REPO_ROOT / "web"
 HISTORY_PATH = RESULTS_DIR / "history.json"
@@ -159,6 +159,10 @@ def build_payload() -> dict:
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        # Lets the page ask the GitHub API what is running right now. The site
+        # is static, so live status has to come from the browser.
+        "repo": "pirl-unc/DoesExactoWorkYet",
+        "workflow_file": "exacto-test.yml",
         "has_exacto_run": exacto_payload is not None,
         "summary": summary,
         "environment": environment,
@@ -180,6 +184,7 @@ def build_payload() -> dict:
         "assay_columns": assay_columns,
         "inventory": inventory.load(),
         "parameters": parameters(),
+        "reproduction": reproduction(),
         "findings": (load(RESULTS_DIR / "findings.json") or {}).get("findings", []),
         "runs": (exacto_payload or {}).get("runs", []),
         "variants": variants,

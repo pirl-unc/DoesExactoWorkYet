@@ -446,8 +446,9 @@ def score_timepoints(timepoints: list[str]) -> list[dict]:
                 "seconds": run.get("seconds"),
                 "counts": run.get("counts", {}),
                 "workarounds": run.get("workarounds", []),
-                # Failed steps carry their command line and stderr tail so the
-                # site can show a bug report someone could actually file.
+                # Every step carries its full command so the site can offer it
+                # verbatim; failures additionally carry the stderr tail, so a
+                # bug report can be filed without digging through CI logs.
                 "steps": [
                     {
                         key: step[key]
@@ -455,7 +456,8 @@ def score_timepoints(timepoints: list[str]) -> list[dict]:
                             "name",
                             "returncode",
                             "seconds",
-                            *(("command", "log_tail") if step.get("returncode") else ()),
+                            "command",
+                            *(("log_tail",) if step.get("returncode") else ()),
                         )
                         if key in step
                     }

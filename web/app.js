@@ -615,9 +615,17 @@ function renderRuns() {
 
     const steps = el("ul", "steps");
     for (const step of run.steps || []) {
-      const item = el("li");
-      item.append(el("span", `name${step.returncode ? " fail" : ""}`, step.name));
-      item.append(el("span", "locus", `${step.seconds}s`));
+      const item = el("li", "step-row");
+      const line = el("div", "step-line");
+      line.append(el("span", `name${step.returncode ? " fail" : ""}`, step.name));
+      line.append(el("span", "locus", `${step.seconds}s`));
+      item.append(line);
+      if (step.command?.length) {
+        const detail = el("details", "step-command");
+        detail.append(el("summary", "locus", "command"));
+        detail.append(copyBlock(step.command.join(" \\\n  ")));
+        item.append(detail);
+      }
       steps.append(item);
     }
     card.append(steps);
@@ -630,6 +638,201 @@ function renderRuns() {
 }
 
 /* ------------------------------------------------------------------ boot */
+
+function copyBlock(text, label = "Copy") {
+  const wrap = el("div", "copy-block");
+  wrap.append(el("pre", "block", text));
+  const button = el("button", "button ghost copy-button", label);
+  button.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(text);
+    button.textContent = "Copied";
+    setTimeout(() => { button.textContent = label; }, 1600);
+  });
+  wrap.append(button);
+  return wrap;
+}
+
+function renderInventory() {
+  const node = $("#inventory-block");
+  if (!node) return;
+  node.innerHTML = "";
+  const inv = DATA.inventory;
+  if (!inv) {
+    node.append(el("div", "empty", "No inventory recorded."));
+    return;
+  }
+
+  const timepoints = [...new Set(
+    inv.grid.flatMap((row) => Object.keys(row.timepoints)))]
+    .sort((a, b) => (a === "unlabelled" ? 1 : b === "unlabelled" ? -1 : a.localeCompare(b)));
+
+  const scroll = el("div", "table-scroll");
+  const table = el("table", "inventory-table");
+  const head = el("thead");
+  const headRow = el("tr");
+  headRow.append(el("th", null, "Platform"));
+  for (const tp of timepoints) headRow.append(el("th", "num", tp));
+  head.append(headRow);
+  table.append(head);
+
+  const body = el("tbody");
+  for (const row of inv.grid) {
+    const tr = el("tr");
+    tr.append(el("td", "gene", row.platform));
+    for (const tp of timepoints) {
+      const data = row.timepoints[tp];
+      const cell = el("td", "num");
+      if (!data) {
+        cell.append(el("span", "locus", "—"));
+      } else {
+        cell.append(el("div", "vaf-value present", data.files.toLocaleString()));
+        cell.title = data.areas.join("\n");
+      }
+      body.append;
+      tr.append(cell);
+    }
+    body.append(tr);
+  }
+  table.append(body);
+  scroll.append(table);
+  node.append(scroll);
+  node.append(el("p", "section-note", inv.note));
+  const link = el("a", "source-url mono", inv.manifest_url);
+  link.href = inv.manifest_url;
+  node.append(el("div", null, `${inv.n_files.toLocaleString()} files listed in `));
+  node.append(link);
+}
+
+function renderReproduction() {
+  const node = $("#reproduction");
+  if (!node) return;
+  node.innerHTML = "";
+  for (const stage of DATA.reproduction || []) {
+    const block = el("div", "source-group");
+    block.append(el("h3", null, stage.stage));
+    block.append(copyBlock(stage.commands.join("\n")));
+    node.append(block);
+  }
+}
+
+/* --------------------------------------------------------- live run status */
+
+const RUN_TONE = {
+  in_progress: "warn", queued: "warn", pending: "warn", waiting: "warn",
+  requested: "warn", success: "ok", failure: "bad", cancelled: "none",
+  skipped: "none", timed_out: "bad",
+};
+
+async function github(path) {
+  const response = await fetch(`https://api.github.com/repos/${DATA.repo}/${path}`, {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (!response.ok) throw new Error(`GitHub API ${response.status}`);
+  return response.json();
+}
+
+function since(iso) {
+  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 90) return `${Math.round(seconds)}s`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min`;
+  return `${(seconds / 3600).toFixed(1)} h`;
+}
+
+async function renderLiveRun() {
+  const node = $("#live-run");
+  if (!node || !DATA.repo) return;
+
+  const WAITING = ["queued", "pending", "waiting", "requested"];
+
+  let runs;
+  try {
+    const payload = await github(
+      `actions/workflows/${DATA.workflow_file}/runs?per_page=5`);
+    runs = payload.workflow_runs || [];
+  } catch {
+    return; // Rate-limited or offline: the page is still fine without this.
+  }
+  if (!runs.length) return;
+
+  // The newest run can be sitting in the queue while an older one does the
+  // work — the workflow serialises itself so two runs cannot both publish.
+  const active = runs.find((r) => r.status === "in_progress");
+  const waiting = runs.filter((r) => WAITING.includes(r.status));
+  const run = active || runs[0];
+
+  const live = run.status !== "completed";
+  const state = live ? run.status : run.conclusion;
+  const tone = RUN_TONE[state] || "none";
+
+  node.hidden = false;
+  node.className = `live-run ${tone}${live ? " pulsing" : ""}`;
+  node.innerHTML = "";
+
+  const head = el("div", "live-head");
+  head.append(el("span", `badge ${tone}`,
+    active ? "running" : live ? "queued" : state));
+  head.append(el("span", "live-title",
+    active ? "An Exacto run is in progress"
+      : live ? "An Exacto run is queued"
+      : `Last run ${state}`));
+  const link = el("a", "live-link", `run #${run.run_number} →`);
+  link.href = run.html_url;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  head.append(link);
+  head.append(el("span", "locus",
+    `${live ? "started" : "finished"} ${since(run.updated_at)} ago · ${run.head_branch} · ${run.head_sha.slice(0, 7)}`));
+  if (waiting.length && active) {
+    head.append(el("span", "locus",
+      `· ${waiting.length} more queued behind it`));
+  }
+  node.append(head);
+
+  // Per-job progress, so "where in the process" is answerable at a glance.
+  try {
+    const { jobs } = await github(`actions/runs/${run.id}/jobs?per_page=30`);
+    if (!jobs?.length) {
+      node.append(el("div", "live-note",
+        "Waiting for a runner — the workflow runs one at a time so results "
+        + "cannot be published out of order."));
+      if (live) setTimeout(renderLiveRun, 20000);
+      return;
+    }
+    const grid = el("div", "live-jobs");
+    for (const job of jobs) {
+      const jobState = job.status !== "completed" ? job.status : job.conclusion;
+      const jobTone = RUN_TONE[jobState] || "none";
+      const card = el("div", `live-job ${jobTone}`);
+      card.append(el("div", "live-job-name", job.name));
+      const current = (job.steps || []).find((s) => s.status === "in_progress")
+        || [...(job.steps || [])].reverse().find((s) => s.status === "completed");
+      const done = (job.steps || []).filter((s) => s.status === "completed").length;
+      const total = (job.steps || []).length;
+      card.append(el("div", "live-job-step",
+        current ? current.name : jobState));
+      if (total) {
+        const bar = el("div", "bar");
+        const fill = el("span");
+        fill.style.width = `${Math.round((done / total) * 100)}%`;
+        fill.style.background = `var(${TONE_VAR[jobTone]})`;
+        bar.append(fill);
+        card.append(bar);
+        card.append(el("div", "locus", `step ${Math.min(done + 1, total)} of ${total}`));
+      }
+      const jobLink = el("a", "live-link", "log →");
+      jobLink.href = job.html_url;
+      jobLink.target = "_blank";
+      jobLink.rel = "noreferrer";
+      card.append(jobLink);
+      grid.append(card);
+    }
+    node.append(grid);
+  } catch {
+    // Jobs endpoint is a second request; skip it rather than lose the header.
+  }
+
+  if (live) setTimeout(renderLiveRun, 20000);
+}
 
 /* ------------------------------------------------------- data & method page */
 
@@ -840,6 +1043,8 @@ async function main() {
 
   if (page === "sources") {
     renderSources();
+    renderInventory();
+    renderReproduction();
     renderParameters();
     renderEnvironment();
   } else if (page === "bugs") {
@@ -858,6 +1063,7 @@ async function main() {
     renderRuns();
   }
   renderProvenance();
+  renderLiveRun();
 }
 
 main().catch((error) => {

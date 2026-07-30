@@ -182,6 +182,50 @@ def data_sources(extraction: dict) -> list[dict]:
     ]
 
 
+def reproduction() -> list[dict]:
+    """The exact commands, in order, to reproduce a run from nothing."""
+    return [
+        {
+            "stage": "Set up",
+            "commands": [
+                "git clone https://github.com/pirl-unc/DoesExactoWorkYet.git",
+                "cd DoesExactoWorkYet",
+                "micromamba env create -f environment.yml",
+                "micromamba activate does-exacto-work-yet",
+                "# EXACTO_VERSION=<git ref> to test something unreleased",
+                "bash scripts/install_exacto.sh",
+            ],
+        },
+        {
+            "stage": "Run",
+            "commands": [
+                "export DEWY_WORK_DIR=$PWD/work",
+                "python -m pipeline.fetch_osteosarc",
+                "python -m pipeline.build_reference",
+                "python -m pipeline.extract_reads --timepoints T1 T2 T3",
+                (
+                    'python -m pipeline.run_exacto --threads "$(nproc)"'
+                    " --timepoints T1 T2 T3 --arms assembly reads"
+                ),
+                "python -m pipeline.evaluate",
+                "python -m pipeline.build_site",
+                "python -m http.server -d site 8000",
+            ],
+        },
+        {
+            "stage": "Or run it on GitHub",
+            "commands": [
+                "gh workflow run 'Exacto test' -R pirl-unc/DoesExactoWorkYet",
+                (
+                    "gh workflow run 'Exacto test' -R pirl-unc/DoesExactoWorkYet"
+                    " -f exacto_version=v0.4.6a1"
+                ),
+                "# otherwise it runs itself every Monday at 04:00 UTC",
+            ],
+        },
+    ]
+
+
 def parameters() -> list[dict]:
     """The knobs, with the reasoning, so a number on the page can be traced."""
     return [

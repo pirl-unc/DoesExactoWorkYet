@@ -667,3 +667,82 @@ tbody tr.row:hover td.sticky-col,
 tbody tr.row:hover td.sticky-right,
 tbody tr.open td.sticky-col,
 tbody tr.open td.sticky-right { background: var(--bg-sunken); }
+
+/* ---------- live run status ---------- */
+
+.live-run {
+  margin: 1.2rem 0 -0.6rem;
+  border: 1px solid var(--rule-strong);
+  border-left: 4px solid var(--none);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: .8rem 1rem;
+}
+.live-run.ok   { border-left-color: var(--ok); }
+.live-run.warn { border-left-color: var(--warn); }
+.live-run.bad  { border-left-color: var(--bad); }
+
+.live-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem .8rem;
+}
+.live-title { font-weight: 620; font-size: .93rem; }
+.live-link { font-size: .82rem; white-space: nowrap; }
+
+.live-run.pulsing .badge.warn { animation: livePulse 1.8s ease-in-out infinite; }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .live-run.pulsing .badge.warn { animation: none; }
+}
+
+.live-jobs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: .6rem;
+  margin-top: .8rem;
+}
+.live-job {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: .55rem .7rem;
+  background: var(--bg-sunken);
+}
+.live-job-name { font-weight: 620; font-size: .85rem; }
+.live-job-step {
+  font-family: var(--mono);
+  font-size: .74rem;
+  color: var(--ink-soft);
+  margin: .15rem 0 .35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-job .bar { margin: 0 0 .3rem; }
+.live-note { margin-top: .5rem; font-size: .83rem; color: var(--ink-soft); }
+
+/* ---------- copyable commands ---------- */
+
+.copy-block { position: relative; margin-top: .5rem; }
+.copy-button {
+  position: absolute;
+  top: .4rem;
+  right: .4rem;
+  font-size: .72rem;
+  padding: .2rem .55rem;
+  background: var(--bg-raised);
+}
+.step-row { display: block; }
+.step-line { display: flex; justify-content: space-between; gap: .6rem; }
+.step-command summary {
+  cursor: pointer;
+  font-size: .7rem;
+  padding: .1rem 0 .2rem;
+  list-style: none;
+}
+.step-command summary::before { content: "▸ "; }
+.step-command[open] summary::before { content: "▾ "; }
+.step-command pre.block { font-size: .68rem; }
+.inventory-table th, .inventory-table td { padding: .5rem .8rem; }
+.inventory-table td.num .vaf-value { font-size: .85rem; }

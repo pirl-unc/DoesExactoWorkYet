@@ -25,9 +25,13 @@
   <a href="index.html">Summary</a>
   <a href="bugs.html">Bug reports</a>
   <a href="#sources">Sources</a>
+  <a href="#inventory">Inventory</a>
+  <a href="#reproduce">Reproduce</a>
   <a href="#parameters">Parameters</a>
   <a href="#environment">Environment</a>
 </nav>
+
+<div class="wrap"><div id="live-run" class="live-run" hidden></div></div>
 
 <main class="wrap">
 
@@ -39,6 +43,25 @@
       htslib range-reads only the blocks covering the vaccine-gene windows.
     </p>
     <div id="source-groups"></div>
+  </section>
+
+  <section id="inventory">
+    <h2>What the portal actually holds</h2>
+    <p class="section-note">
+      Derived from osteosarc.com's own file manifest, not asserted — so
+      "isn't there PacBio for T2?" has an answer anyone can re-derive. Counts are
+      files whose path names a platform, so they include intermediates and
+      indexes, not just primary data.
+    </p>
+    <div id="inventory-block"></div>
+  </section>
+
+  <section id="reproduce">
+    <h2>Reproducing a run</h2>
+    <p class="section-note">
+      Every command, in order, from an empty directory. Each block is copyable.
+    </p>
+    <div id="reproduction"></div>
   </section>
 
   <section id="parameters">
