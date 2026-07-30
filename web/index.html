@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Does Exacto Work Yet?</title>
+<meta name="description" content="An automated end-to-end test of Exacto on the ONT long-read RNA-seq from Sid Sijbrandij's osteosarcoma: can it recover the mutant proteins that went into his personalised cancer vaccines?">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">pirl-unc / DoesExactoWorkYet</p>
+    <h1>Does <a href="https://github.com/pirl-unc/exacto">Exacto</a> work yet?</h1>
+    <p class="lede">
+      Every vaccine neoantigen from
+      <a href="https://osteosarc.com">Sid Sijbrandij's osteosarcoma</a> is a mutant
+      protein someone already believed in enough to manufacture. This runs Exacto
+      over the ONT long-read RNA-seq from three tumour biopsies and asks a single
+      question: does the mutant protein sequence come back out?
+    </p>
+    <div id="verdict" class="verdict"></div>
+  </div>
+</header>
+
+<nav class="tabs wrap" aria-label="Sections">
+  <a href="#results">Results</a>
+  <a href="#variants">Variants</a>
+  <a href="#findings">Findings</a>
+  <a href="#runs">Pipeline runs</a>
+  <a href="sources.html">Data &amp; method →</a>
+  <a href="bugs.html">Bug reports →</a>
+</nav>
+
+<main class="wrap">
+
+  <section id="results">
+    <h2>Recovery by timepoint</h2>
+    <p class="section-note">
+      Each cell is the best outcome Exacto reached for that mutation in that
+      biopsy, across both arms of the pipeline.
+    </p>
+    <div id="tiles" class="tiles"></div>
+    <div id="legend" class="legend"></div>
+    <div id="history-block" class="history-block" hidden>
+      <h3>Track record</h3>
+      <div id="history"></div>
+    </div>
+  </section>
+
+  <section id="variants">
+    <h2>Somatic variants used in a vaccine</h2>
+    <p class="section-note">
+      <span id="variant-count"></span> somatic mutations from Sid's tumour that were
+      selected into at least one of his personalised vaccines. Click a row for the
+      per-arm Exacto detail, including any mutant protein sequence recovered.
+    </p>
+
+    <div class="controls">
+      <input type="search" id="filter" placeholder="Filter by gene, protein change, locus…" aria-label="Filter variants">
+      <label class="check"><input type="checkbox" id="only-recovered"> only recovered</label>
+      <label class="check"><input type="checkbox" id="only-elispot"> only ELISPOT-positive</label>
+    </div>
+
+    <div class="table-scroll">
+      <table id="variant-table">
+        <thead>
+          <tr>
+            <th data-sort="gene">Gene</th>
+            <th data-sort="protein">Protein change</th>
+            <th data-sort="locus">Locus (GRCh38)</th>
+            <th data-sort="type">Change</th>
+            <th data-sort="vaccines">Vaccines</th>
+            <th data-sort="elispot">ELISPOT</th>
+            <th class="num" data-sort="vaf">VAF trend</th>
+            <th class="num" data-sort="reads">ONT reads</th>
+            <th data-sort="outcome">Exacto</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="findings">
+    <h2>What broke along the way</h2>
+    <p class="section-note">
+      Issues in Exacto that this harness has run into, and what the pipeline does
+      about each. Full write-ups, with the failing commands and their output, are
+      on the <a href="bugs.html">bug reports page</a>.
+    </p>
+    <div id="finding-list" class="finding-list"></div>
+  </section>
+
+  <section id="runs">
+    <h2>Pipeline runs</h2>
+    <p class="section-note">
+      Six runs — three biopsies by two arms. Every Exacto invocation's exit status
+      and wall time is recorded, so a crash shows up as a crash rather than a zero.
+    </p>
+    <div id="run-cards" class="run-cards"></div>
+  </section>
+
+  <section id="method">
+    <h2>How this works</h2>
+    <ol class="method">
+      <li>
+        <strong>Variants.</strong> The vaccine neoantigen list and the per-assay
+        read counts are pulled live from osteosarc.com, merged on locus, and
+        written to <code>results/vaccine_variants.json</code>.
+      </li>
+      <li>
+        <strong>Reference.</strong> Each mutation's GENCODE gene body (±10&nbsp;kb)
+        is fetched from hg38 over HTTP byte ranges and written back at its true
+        coordinate inside otherwise all-N chromosomes. Coordinates stay identical
+        to hg38; only a few megabases have to be indexed.
+      </li>
+      <li>
+        <strong>Reads.</strong> The three dedup ONT BAMs total ~157&nbsp;GB and stay
+        on Backblaze — htslib range-reads only the blocks over our loci. Coverage
+        spans five orders of magnitude across these genes, so reads whose alignment
+        covers a variant are capped per variant and everything else is capped per
+        region, both sampled with a fixed seed. The caps sit far above what any
+        caller needs to decide a locus.
+      </li>
+      <li>
+        <strong>Alignment.</strong> The portal's BAMs were aligned without
+        minimap2's <code>--cs</code> tag, which Exacto needs, so everything is
+        realigned.
+      </li>
+      <li>
+        <strong>Exacto.</strong> Two arms.
+        <em>assembly</em> follows the documented pipeline — RNA-Bloom2 assembles
+        spanning and context reads into transcripts,
+        <code>remove-unspliced-rnas</code> filters, then
+        <code>call-rna-vars</code>. <em>reads</em> skips the assembler and hands
+        the variant-spanning reads straight in as transcripts. Both then run
+        <code>annotate-vars</code> → <code>integrate-vars</code> →
+        <code>translate-structs</code> → <code>call-peptide-vars</code>.
+      </li>
+      <li>
+        <strong>Verdict.</strong> A mutation counts as recovered when a translated
+        primary structure carries an amino acid Exacto marked mutant, traced back
+        to an RNA variant Exacto called at that exact locus with that exact
+        allele — never via <code>integrate-vars</code>, which links a DNA variant
+        to anything within 10&nbsp;kb of a transcript edge and would inflate the
+        count several-fold. For missense mutations the residue is additionally
+        checked against the portal's HGVS annotation — a change at the right codon
+        but the wrong amino acid is reported, not counted as a win.
+      </li>
+      <li>
+        <strong>Does it match the vaccine?</strong> The portal also publishes the
+        curated pVACtools run the vaccine designs were picked from. For the ten
+        mutations it covers, its <code>MT Epitope Seq</code> values are searched
+        for inside Exacto's translated proteoform — the strictest form of the
+        question available, since those are the peptides that were actually made.
+      </li>
+    </ol>
+    <div id="caveats" class="caveats">
+      <h3>What this test does not do</h3>
+      <ul>
+        <li>It does not re-discover the somatic variants from DNA. Sid's WGS is
+          short-read; Exacto's DNA callers want long reads. The portal's curated
+          calls are supplied as the somatic callset, and Exacto is asked whether it
+          can find them in the RNA and translate them.</li>
+        <li>Reads are only pulled from the vaccine genes, so this measures
+          sensitivity at known loci, not genome-wide precision. Masking the rest of
+          the genome also removes paralogues that would otherwise compete for
+          alignments.</li>
+        <li><code>call-peptide-vars</code> is run against the reference proteins of
+          the tested genes, so "novel" means absent from the gene's own wild-type
+          isoforms.</li>
+        <li>Read counts are capped, so the assembly arm sees less depth than a
+          whole-sample run would at the most highly expressed loci. Both the kept
+          and the available counts are shown in each variant's detail.</li>
+        <li>The exact-peptide check only covers the ten mutations the published
+          pVACtools run includes. For the other twenty-seven the strongest
+          available check is the amino acid itself.</li>
+        <li>Exacto 0.4.6a1 cannot finish its own documented pipeline on this data
+          without the workarounds listed above. Each is applied deliberately and
+          recorded in the run's JSON — none of them is silent.</li>
+        <li>A recovered proteoform is not automatically the neoantigen.
+          <code>longest_orf</code> has no reference CDS to anchor on and often
+          picks the wrong frame on a truncated transcript, which is why the
+          residue is checked separately and mismatches are flagged rather than
+          counted.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p id="provenance"></p>
+  <p>
+    Data: <a href="https://osteosarc.com">osteosarc.com</a> ·
+    Tool: <a href="https://github.com/pirl-unc/exacto">pirl-unc/exacto</a> ·
+    Source: <a href="https://github.com/pirl-unc/DoesExactoWorkYet">pirl-unc/DoesExactoWorkYet</a>
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

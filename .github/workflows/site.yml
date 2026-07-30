@@ -1,0 +1,63 @@
+name: Site
+
+# The light job: rebuild and publish the site from whatever is already in
+# results/. Runs in a couple of minutes, so front-end and variant-table changes
+# do not have to wait on a full Exacto run.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "results/**"
+      - "pipeline/build_site.py"
+      - "pipeline/fetch_osteosarc.py"
+      - ".github/workflows/site.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Refresh the variant table from osteosarc.com
+        run: python -m pipeline.fetch_osteosarc
+
+      - name: Build site
+        run: python -m pipeline.build_site
+
+      # enablement: true turns Pages on the first time this runs, so the repo
+      # needs no manual settings change.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bug reports — Does Exacto Work Yet?</title>
+<meta name="description" content="Everything this harness has found in Exacto, written up so it can be filed upstream.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="bugs">
+
+<header class="masthead compact">
+  <div class="wrap">
+    <p class="eyebrow"><a href="index.html">← Does Exacto work yet?</a></p>
+    <h1>Bug reports</h1>
+    <p class="lede">
+      Everything this harness has run into, written up to be filed. Each entry has
+      the version it was seen on, where in the source it happens, what the pipeline
+      does about it, and — where a run captured one — the failing command and its
+      actual output. Use “Copy as issue” to lift a report into a GitHub issue.
+    </p>
+    <div id="bug-summary" class="verdict"></div>
+  </div>
+</header>
+
+<nav class="tabs wrap" aria-label="Sections">
+  <a href="index.html">Summary</a>
+  <a href="sources.html">Data &amp; method</a>
+  <a href="#reports">Reports</a>
+  <a href="#observed">Observed failures</a>
+</nav>
+
+<main class="wrap">
+
+  <section id="reports">
+    <h2>Reports</h2>
+    <div id="bug-list" class="bug-list"></div>
+  </section>
+
+  <section id="observed">
+    <h2>Every step that exited non-zero</h2>
+    <p class="section-note">
+      Straight from the run records — the exact invocation and the tail of what it
+      printed. A step can appear here and the arm still succeed, when the pipeline
+      catches the failure and works around it.
+    </p>
+    <div id="observed-list"></div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p id="provenance"></p>
+  <p>
+    Report upstream at
+    <a href="https://github.com/pirl-unc/exacto/issues">pirl-unc/exacto/issues</a> ·
+    Harness: <a href="https://github.com/pirl-unc/DoesExactoWorkYet">pirl-unc/DoesExactoWorkYet</a>
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

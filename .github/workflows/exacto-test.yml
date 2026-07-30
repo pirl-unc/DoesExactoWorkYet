@@ -1,0 +1,207 @@
+name: Exacto test
+
+# The heavy job: pull Sid's data, run Exacto over all three biopsies, score the
+# result, publish the site and commit the results so the track record builds up
+# over time.
+#
+# Timepoints run as a matrix. A single job doing all three would take most of
+# GitHub's six-hour ceiling; three in parallel finish in about as long as the
+# slowest one. Scoring happens inside each job because the primary-structures
+# TSVs it reads are far too big to hand between jobs — only the compact scored
+# JSON travels.
+on:
+  workflow_dispatch:
+    inputs:
+      exacto_version:
+        description: "Exacto release tag, git ref, or 'latest-release'"
+        default: "latest-release"
+        required: false
+      arms:
+        description: "Space-separated arms to run (default: assembly reads)"
+        default: "assembly reads"
+        required: false
+  schedule:
+    # Monday 04:00 UTC — a fresh answer at the start of every week.
+    - cron: "0 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "pipeline/**"
+      - "scripts/**"
+      - "environment.yml"
+      - ".github/workflows/exacto-test.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exacto-test
+  cancel-in-progress: false
+
+env:
+  EXACTO_VERSION: ${{ github.event.inputs.exacto_version || 'latest-release' }}
+  ARMS: ${{ github.event.inputs.arms || 'assembly reads' }}
+
+jobs:
+  run:
+    strategy:
+      fail-fast: false
+      matrix:
+        timepoint: [T1, T2, T3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    defaults:
+      run:
+        shell: bash -el {0}
+    env:
+      DEWY_WORK_DIR: ${{ github.workspace }}/work
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Set up conda environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+
+      - name: Install Exacto
+        run: bash scripts/install_exacto.sh
+
+      - name: Cache GENCODE and the hg38 index
+        uses: actions/cache@v4
+        with:
+          path: work/downloads
+          key: refdata-${{ hashFiles('pipeline/config.py') }}
+          restore-keys: refdata-
+
+      - name: Fetch vaccine variants from osteosarc.com
+        run: python -m pipeline.fetch_osteosarc
+
+      - name: Build masked reference
+        run: python -m pipeline.build_reference
+
+      - name: Extract ONT reads for ${{ matrix.timepoint }}
+        run: python -m pipeline.extract_reads --timepoints ${{ matrix.timepoint }}
+
+      - name: Run Exacto on ${{ matrix.timepoint }}
+        run: |
+          python -m pipeline.run_exacto \
+            --threads "$(nproc)" \
+            --timepoints ${{ matrix.timepoint }} \
+            --arms $ARMS
+
+      - name: Score ${{ matrix.timepoint }}
+        run: |
+          python -m pipeline.evaluate \
+            --timepoints ${{ matrix.timepoint }} \
+            --no-merge
+
+      - name: Upload scored result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scored-${{ matrix.timepoint }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            results/scored/${{ matrix.timepoint }}.json
+            results/environment.json
+            work/reads/${{ matrix.timepoint }}.extraction.json
+
+      - name: Upload Exacto outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exacto-outputs-${{ matrix.timepoint }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            work/exacto/${{ matrix.timepoint }}/**/run.json
+            work/exacto/${{ matrix.timepoint }}/**/*.fasta
+            work/exacto/${{ matrix.timepoint }}/**/logs/*.log
+            work/exacto/${{ matrix.timepoint }}/**/rna_vars/*rna_variant_calls.tsv
+
+  publish:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    env:
+      DEWY_WORK_DIR: ${{ github.workspace }}/work
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Collect the scored timepoints
+        uses: actions/download-artifact@v4
+        with:
+          pattern: scored-*
+          merge-multiple: true
+          path: .
+
+      - name: Refresh the variant table
+        run: python -m pipeline.fetch_osteosarc
+
+      - name: Merge into a verdict
+        run: python -m pipeline.evaluate --merge-only
+
+      - name: Build site
+        run: python -m pipeline.build_site
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/
+          if git diff --staged --quiet; then
+            echo "results unchanged"
+          else
+            version="$(python -c 'import json; print(json.load(open("results/environment.json"))["exacto_version"])' 2>/dev/null || echo unknown)"
+            git commit -m "results: Exacto ${version} run $(date -u +%Y-%m-%d)"
+            # The branch may have moved while the three-hour matrix ran.
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      # enablement: true turns Pages on the first time this runs, so the repo
+      # needs no manual settings change.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

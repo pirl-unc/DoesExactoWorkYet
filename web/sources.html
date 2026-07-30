@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data sources — Does Exacto Work Yet?</title>
+<meta name="description" content="Every file this test reads, where it comes from, and every parameter it runs with.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="sources">
+
+<header class="masthead compact">
+  <div class="wrap">
+    <p class="eyebrow"><a href="index.html">← Does Exacto work yet?</a></p>
+    <h1>Data sources &amp; method</h1>
+    <p class="lede">
+      Every file the test reads, the exact URL it comes from, and every parameter
+      it runs with. Generated from the pipeline's own configuration, so it cannot
+      drift from what actually ran.
+    </p>
+  </div>
+</header>
+
+<nav class="tabs wrap" aria-label="Sections">
+  <a href="index.html">Summary</a>
+  <a href="bugs.html">Bug reports</a>
+  <a href="#sources">Sources</a>
+  <a href="#parameters">Parameters</a>
+  <a href="#environment">Environment</a>
+</nav>
+
+<main class="wrap">
+
+  <section id="sources">
+    <h2>Where the data comes from</h2>
+    <p class="section-note">
+      Nothing is vendored in the repository — every run fetches the current data.
+      The three ONT BAMs total about 157&nbsp;GB and are never downloaded whole;
+      htslib range-reads only the blocks covering the vaccine-gene windows.
+    </p>
+    <div id="source-groups"></div>
+  </section>
+
+  <section id="parameters">
+    <h2>How it was run</h2>
+    <p class="section-note">
+      The knobs, step by step. Several are set against Exacto's defaults for
+      reasons documented in the <a href="bugs.html">bug reports</a>.
+    </p>
+    <div id="parameter-groups"></div>
+  </section>
+
+  <section id="environment">
+    <h2>Where it ran, and with what</h2>
+    <div id="environment-block"></div>
+    <h3>Compute</h3>
+    <p class="section-note">
+      The pipeline runs on GitHub-hosted <code>ubuntu-latest</code> runners, with
+      the three biopsies as a parallel matrix — one job each, because a single job
+      doing all three would consume most of GitHub's six-hour ceiling. It fires on
+      a schedule every Monday at 04:00&nbsp;UTC, on a manual dispatch (which takes
+      an Exacto version as input), and on any push that touches the pipeline.
+    </p>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p id="provenance"></p>
+  <p>
+    Data: <a href="https://osteosarc.com">osteosarc.com</a> ·
+    Tool: <a href="https://github.com/pirl-unc/exacto">pirl-unc/exacto</a> ·
+    Source: <a href="https://github.com/pirl-unc/DoesExactoWorkYet">pirl-unc/DoesExactoWorkYet</a>
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

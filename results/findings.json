@@ -1,0 +1,75 @@
+{
+  "_comment": "Hand-maintained notes on issues this harness hit while running Exacto. Each entry records the version it was observed on and what the pipeline does about it. Not generated \u2014 update it when a run turns up something new, and drop entries once upstream fixes them.",
+  "findings": [
+    {
+      "id": "unmapped-records-panic",
+      "title": "remove-unspliced-rnas panics on unmapped BAM records",
+      "observed_in": "0.4.6a1",
+      "severity": "crash",
+      "where": "exacto-core/src/common/bam.rs:892",
+      "detail": "record.reference_sequence_id().unwrap().unwrap() is called for every record that is not spliced. minimap2 emits unmapped reads by default, and samtools sort keeps them, so any BAM built straight from the documented alignment command takes the tool down. Observed with 123 unmapped records out of 5,560.",
+      "workaround": "The pipeline runs `samtools view -b -F 4` between alignment and sorting.",
+      "suggested_fix": "Skip records whose reference sequence id is None instead of unwrapping."
+    },
+    {
+      "id": "unsorted-filter-output",
+      "title": "remove-unspliced-rnas cannot index the BAM it just wrote",
+      "observed_in": "0.4.6a1",
+      "severity": "crash",
+      "where": "exacto-core/src/common/bam.rs:1315",
+      "detail": "The kept records are written in hash-set iteration order while the header still carries SO:coordinate, so the bam::fs::index call on the next line fails with 'invalid reference sequence ID'. The filtering work itself completes \u2014 the output BAM is on disk and correct \u2014 but the command exits non-zero and the pipeline stops. Observed with 55 out-of-order records in a 1,755-record output.",
+      "workaround": "The failure is caught, the output BAM is sorted with samtools and reindexed, and the arm continues.",
+      "suggested_fix": "Sort the kept records by (reference sequence id, alignment start) before writing, or drop the SO:coordinate claim and index with a sort first."
+    },
+    {
+      "id": "empty-transcript-list-panic",
+      "title": "integrate-vars panics on RNA calls that matched no reference transcript",
+      "observed_in": "0.4.6a1",
+      "severity": "crash",
+      "where": "exacto-integrator/src/algorithms/variant_integration.rs:98",
+      "detail": "reference_transcript_ids is parsed with field.split(\",\"), and in Rust \"\".split(\",\") yields one empty string rather than nothing. A call against a novel transcript model therefore looks like a call against a transcript named \"\", fails the is_empty() check that guards the intergenic path, takes the annotated-transcript branch, and dies on get_transcript(\"\").unwrap(). call-rna-vars produces these routinely \u2014 4,039 of 30,697 calls in one T1 arm.",
+      "workaround": "integrate-vars is handed a copy of the callset with those rows removed, and the number withheld is recorded in the run. translate-structs still receives every call.",
+      "suggested_fix": "Filter empty strings out after the split, so a call with no reference transcript takes the intergenic branch it was written for."
+    },
+    {
+      "id": "non-acgt-reference-panic",
+      "title": "call-rna-vars drops any read whose candidate transcript touches a non-ACGT base",
+      "observed_in": "0.4.6a1",
+      "severity": "silent data loss",
+      "where": "exacto-caller/src/structs/reference_transcript_sequence.rs:176",
+      "detail": "Rebuilding a reference transcript's sequence calls Nucleotide::from_str(...).unwrap() on each base, which panics on N. The panic is caught per read ('Panic while processing read name ...') and the read is skipped, so the run completes and simply reports fewer variants \u2014 the failure mode is a quiet loss of sensitivity rather than an error. hg38 has N runs in real assembly gaps, so this is reachable on an unmodified reference too.",
+      "workaround": "The masked reference is grown until every transcript in the subset annotation lies entirely on real sequence, and the build fails if one does not.",
+      "suggested_fix": "Map unknown bases to N rather than unwrapping, and surface skipped reads as a count instead of a stderr line per read."
+    },
+    {
+      "id": "per-base-reference-queries",
+      "title": "Reference transcript sequences are rebuilt one base at a time, per read",
+      "observed_in": "0.4.6a1",
+      "severity": "performance",
+      "where": "exacto-caller/src/structs/reference_transcript_sequence.rs:150-190",
+      "detail": "from_reference_transcript issues a separate fasta_reader.query() per base per exon, and is called again for every candidate transcript of every read with no cache. A CPU sample of call-rna-vars found 1,599 of 1,618 samples inside that one function. Cost therefore scales as reads x isoforms x transcript length, which is what makes read depth the dominant runtime factor here. A bgzipped reference makes it worse still, since each query then also pays for a BGZF block decompression: 110 s versus 74 s for the same 1,179 reads.",
+      "workaround": "Read counts are capped per variant and per region, and the masked reference is written uncompressed.",
+      "suggested_fix": "Fetch each exon's sequence in one query, and memoise per transcript id for the lifetime of the run."
+    },
+    {
+      "id": "missing-base-qualities-panic",
+      "title": "call-rna-vars panics on every read when the BAM has no base qualities",
+      "observed_in": "0.4.6a1",
+      "severity": "crash",
+      "where": "exacto-caller/src/structs/alignment.rs:229",
+      "detail": "base_quality_scores[i] is indexed once per base with no length check, so a BAM whose QUAL column is '*' panics on every record ('the len is 0 but the index is 0'). Zero transcript models then get built and the run dies in transcript_model_set.rs:337. This is reachable straight from Exacto's own documented pipeline, which aligns RNA-Bloom2's FASTA output \u2014 FASTA carries no qualities. Exacto's bundled test BAMs all have a flat quality string, which is why the tests do not catch it.",
+      "workaround": "Reads are aligned from FASTQ; assembled contigs get a flat Q40 quality string before alignment.",
+      "suggested_fix": "Treat a missing QUAL as a uniform default rather than indexing into an empty slice."
+    },
+    {
+      "id": "longest-orf-frame-on-partial-transcripts",
+      "title": "longest_orf picks the wrong frame on short or partial transcripts",
+      "observed_in": "0.4.6a1",
+      "severity": "limitation",
+      "where": "translate-structs --strategy longest_orf",
+      "detail": "Three of the five mutant proteoforms recovered at T1 carried the wrong amino acid at the right codon \u2014 DYNC1H1 gave H where the annotation predicts I, VPS13B N for F, MT-ND5 V for T. All three were short ORFs (92-129 aa) on novel or truncated transcript models, one terminating in a stop immediately after the mutation. With no reference CDS to anchor on, the longest open reading frame in a partial transcript is often not the real one, and the peptide that comes out is not the neoantigen.",
+      "workaround": "Not worked around. Every recovered proteoform's residue is checked against the portal's HGVS annotation and a mismatch is reported rather than counted, so the headline is not inflated by these.",
+      "suggested_fix": "Where a transcript model matches a reference transcript, prefer that transcript's CDS frame over the longest ORF, or expose the reference frame as a strategy."
+    }
+  ]
+}

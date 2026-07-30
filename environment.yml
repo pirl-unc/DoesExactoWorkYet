@@ -1,0 +1,26 @@
+name: does-exacto-work-yet
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # Exacto's documented build/runtime stack.
+  - python=3.10
+  - pip
+  - rust=1.88.0
+  - pandas=2.2.3
+  - polars=1.26.0
+  - pyarrow=19.0.1
+
+  # Alignment and BAM handling. samtools/htslib must be curl-enabled: the
+  # reference slices and the ONT reads are range-read straight off Backblaze.
+  - samtools=1.21
+  - htslib=1.21
+  - minimap2=2.28
+
+  # Long-read transcriptome assembly for the `assembly` arm.
+  - rnabloom=2.0.1
+  - openjdk>=17
+
+  - pip:
+      # pip rather than conda, per Exacto's install instructions.
+      - pysam==0.23.0

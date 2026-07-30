@@ -1,0 +1,50 @@
+name: CI
+
+# Fast checks on the harness itself, so a broken encoding or a broken site build
+# is caught in a minute rather than three hours into the Exacto run.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pytest ruff
+
+      - name: Lint
+        run: python -m ruff check pipeline/ tests/
+
+      - name: Unit tests
+        # The tests deliberately import the pipeline without pysam installed —
+        # the site build has to work in this stripped-down environment too.
+        run: python -m pytest tests/ -q
+
+      - name: Smoke test — osteosarc.com is reachable and still has the tables
+        run: python -m pipeline.fetch_osteosarc
+
+      - name: Smoke test — the site builds
+        run: |
+          python -m pipeline.build_site
+          test -s site/index.html
+          test -s site/data.json
+          python -c "import json; json.load(open('site/data.json'))"
+
+      - name: Fail if the variant table drifted from what is committed
+        run: |
+          if ! git diff --quiet results/vaccine_variants.json; then
+            echo "::warning::osteosarc.com's variant tables have changed since the last commit"
+            git --no-pager diff --stat results/vaccine_variants.json
+          fi
