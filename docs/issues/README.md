@@ -15,3 +15,4 @@ Nothing here has been filed — these are drafts.
 | [`unmapped-records-affect-canonical-pipeline-too.md`](unmapped-records-affect-canonical-pipeline-too.md) | crash | The unmapped-record crash is reachable from Nexus's own subworkflow |
 | [`call-rna-vars-memory-scales-with-read-count.md`](call-rna-vars-memory-scales-with-read-count.md) | limitation | call-rna-vars memory grows ~0.55 MB per read, then spikes ~6.8 GB at the end |
 | [`longest-orf-ignores-the-variant-class-it-was-given.md`](longest-orf-ignores-the-variant-class-it-was-given.md) | silent data loss | longest_orf picks a frame from the read alone, and read error moves it |
+| [`deletions-are-called-but-never-translated.md`](deletions-are-called-but-never-translated.md) | silent data loss | translate-structs emits nothing for deletion RNA calls |
