@@ -255,6 +255,14 @@ jobs:
 
   deploy:
     needs: publish
+    # Explicit, because the default is success() over the whole ancestor graph
+    # and `run` is expected to fail sometimes — a crashed sample is a finding
+    # this site exists to report. Without this the first real verdict this
+    # harness ever produced (15/37) was merged, committed, and never deployed:
+    # publish succeeded, deploy skipped because a sibling leg had failed, and
+    # the Site workflow could not pick it up either, since a push made with
+    # GITHUB_TOKEN does not trigger another workflow run.
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
