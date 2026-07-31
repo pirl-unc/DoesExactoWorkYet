@@ -197,6 +197,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The engineering log is read from git log, and the default
+          # shallow clone has exactly one commit in it — which is why the
+          # deployed site showed a one-entry log while local builds showed
+          # twenty.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
