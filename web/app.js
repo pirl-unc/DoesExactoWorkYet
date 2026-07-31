@@ -18,11 +18,21 @@ const RECOVERED = new Set(["peptide", "proteoform"]);
 // RNA never carried is not an Exacto failure; one it carried and Exacto did not
 // translate is.
 const STATES = {
+  // The strongest claim available: the single proteoform a caller would pick,
+  // containing the entire manufactured peptide verbatim. Only reachable for the
+  // 10 mutations the portal published epitopes for — the rest can never show
+  // this, which is a limit of the ground truth, not of the tool.
+  peptide_confirmed: {
+    label: "vaccine peptide recovered", short: "\u2713\u2713", tone: "ok",
+    blurb: "the chosen proteoform contains the whole manufactured vaccine "
+         + "peptide, verbatim — the strongest evidence this test can produce",
+  },
   detected: {
-    label: "detected", short: "\u2713", tone: "ok",
-    blurb: "a mutant protein was translated and it carries what the annotation "
-         + "predicts — the right residue, or the right frame for an indel. "
-         + "Paler where a single read carries the allele",
+    label: "residue confirmed", short: "\u2713", tone: "ok",
+    blurb: "a mutant protein carries what the annotation predicts — the right "
+         + "residue, or the right frame for an indel. Weaker than the row "
+         + "above: one amino acid, and satisfied by any candidate rather than "
+         + "the chosen one. Paler where a single read carries the allele",
   },
   // A protein at the right codon carrying the wrong amino acid is not a
   // recovered neoantigen. It used to render as a green check, which is the
@@ -63,12 +73,14 @@ const STATES = {
     blurb: "no Exacto run for this sample",
   },
 };
-const STATE_ORDER = ["detected", "wrong_residue", "unverified", "missed_with_rna",
+const STATE_ORDER = ["peptide_confirmed", "detected", "wrong_residue",
+                     "unverified", "missed_with_rna",
                      "missed_no_rna", "error", "not_run"];
 // Any judgement resting on a single read is shown paler. One read is not
 // evidence of the same weight as thirty, whichever way the judgement went.
 const SHADED_BY_DEPTH = new Set([
-  "detected", "wrong_residue", "unverified", "missed_with_rna",
+  "peptide_confirmed", "detected", "wrong_residue", "unverified",
+  "missed_with_rna",
 ]);
 
 const TONE_VAR = { ok: "--ok", warn: "--warn", bad: "--bad", none: "--none" };
@@ -137,6 +149,12 @@ function stateOf(variant, sample) {
   const translated = arms.filter(
     (a) => a.outcome === "peptide" || a.outcome === "proteoform");
   if (translated.length) {
+    // Strongest first: the chosen proteoform containing the entire published
+    // vaccine peptide. Distinct from "some candidate had the right residue",
+    // which is one amino acid chosen with hindsight.
+    if (translated.some((a) => a.consensus_vaccine_peptide?.complete)) {
+      return "peptide_confirmed";
+    }
     // expectation_confirmed generalises the check across consequence classes —
     // the residue for missense, the frame for an indel. Older results only have
     // residue_confirmed, so fall back to it rather than showing them unverified.
@@ -483,8 +501,9 @@ function sortValue(variant, key) {
     case "outcome": {
       // Sort on what the cells actually show, so a wrong-residue hit does not
       // sort alongside a confirmed one.
-      const order = ["detected", "unverified", "wrong_residue", "missed_with_rna",
-                     "missed_no_rna", "error", "not_run"];
+      const order = ["peptide_confirmed", "detected", "unverified",
+                     "wrong_residue", "missed_with_rna", "missed_no_rna",
+                     "error", "not_run"];
       const worst = (DATA.samples || [])
         .map((sample) => order.indexOf(stateOf(variant, sample)))
         .filter((i) => i >= 0);
@@ -542,8 +561,16 @@ function sampleCells(variant) {
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
     // Keep the ladder available: it says how far Exacto got, which is the
     // useful detail once you know whose fault the outcome is.
+    const entry = variant.recovery?.samples?.[sample.name];
+    const peptide = Object.values(entry?.arms || {})
+      .map((a) => a.consensus_vaccine_peptide).find(Boolean);
     cell.title = `${sample.label}: ${spec.label}`
       + (depth ? `, ${depth} alt read${depth === 1 ? "" : "s"}` : "")
+      + (peptide
+          ? `, ${peptide.n_epitopes_matched}/${peptide.n_epitopes_total} epitopes`
+          : variant.vaccine_epitopes?.length
+            ? `, ${variant.vaccine_epitopes.length} epitopes published`
+            : ", no published epitope to check against")
       + (OUTCOMES[rung] ? ` (${OUTCOMES[rung].label})` : "");
     wrapper.appendChild(cell);
   }
