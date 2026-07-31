@@ -86,7 +86,22 @@ two coincide.
 
 The harness now reports both — the ceiling, and what the modal-translation rule
 of §6 yields when forced to pick one proteoform per mutation without knowing
-which is right. The single-pick figures land with the run in flight at the time
+which is right.
+
+**The rungs also have different denominators, which is easy to miss.** The first
+four apply to all 37 mutations. The residue check applies only to the 31
+missense ones: a frameshift has no single expected amino acid, because
+everything downstream of the mutation changes and the portal publishes
+`p.Ser775fs` rather than the resulting peptide. So frameshift variants drop out
+of that rung not because they failed but because the question cannot be asked in
+that form — and until this was noticed they did so silently, which looks
+identical to failure. The whole-peptide check has the opposite property: it
+works for any consequence class, since the manufactured peptide is published
+regardless, and its denominator is the 10 mutations that have one. Every rung
+now carries its own denominator for this reason.
+
+That asymmetry is itself an argument for the whole-peptide check over the
+single-residue one. It is stronger evidence *and* it generalises. The single-pick figures land with the run in flight at the time
 of writing; until then, treat every reads-route number in this document as the
 optimistic end of a range whose pessimistic end is not yet measured.
 

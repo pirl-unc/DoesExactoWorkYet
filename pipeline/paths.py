@@ -430,6 +430,29 @@ VARIANT_STAGES = [
      "every published epitope present verbatim in that single chosen proteoform"),
 ]
 
+# Not every rung applies to every mutation, and the denominators differ enough
+# that plotting them on one axis is misleading.
+#
+#   The residue check is defined only for missense. A frameshift has no single
+#   expected amino acid -- the entire downstream sequence changes, and the
+#   portal publishes "p.Ser775fs" rather than the resulting peptide, so there is
+#   nothing to compare one residue against. Frameshift variants therefore drop
+#   out of that rung silently, which looks like a loss and is really a question
+#   that cannot be asked.
+#
+#   The whole-peptide check has the opposite property: it works for any
+#   consequence class, because the manufactured peptide is published regardless.
+#   Its denominator is the mutations that have one -- 10 of 37.
+STAGE_DENOMINATOR = {
+    "covered": "all",
+    "allele": "all",
+    "called": "all",
+    "translated": "all",
+    "residue": "missense",
+    "residue_pick": "missense",
+    "peptide": "with_epitopes",
+}
+
 
 def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[dict] | None:
     """Per sample and method: how many mutations survive each stage."""
@@ -454,6 +477,17 @@ def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[di
             if _supported(variant_id, entry, run.get("timepoint"),
                           run.get("platform"), portal):
                 found.add(variant_id)
+
+    # How many mutations each rung could possibly apply to.
+    from .evaluate import expected_change
+
+    applicable = {
+        "all": len(variants or []),
+        "missense": sum(1 for v in (variants or [])
+                        if expected_change(v)["kind"] == "missense"),
+        "with_epitopes": sum(1 for v in (variants or [])
+                             if v.get("vaccine_epitopes")),
+    }
 
     rows = []
     for run in payload["runs"]:
@@ -502,6 +536,10 @@ def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[di
                     "note": note,
                     "n": counts[key] if measured[key] else None,
                     "pending": not measured[key],
+                    # Stated per rung: "17 of 31 missense" and "8 of 10 with a
+                    # published epitope" are not comparable to "37".
+                    "of": applicable.get(STAGE_DENOMINATOR[key], 0),
+                    "applies_to": STAGE_DENOMINATOR[key],
                     # Retained against the stage before, which is what shows
                     # *where* mutations are lost rather than how many remain.
                     "of_previous": (

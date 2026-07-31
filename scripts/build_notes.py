@@ -36,25 +36,48 @@ def figures(paths: dict) -> None:
                          "axes.spines.top": False, "axes.spines.right": False,
                          "font.family": "DejaVu Sans"})
 
-    fig, ax = plt.subplots(figsize=(7.2, 3.4))
-    stages = ["Reads cover\nlocus", "Allele in\nRNA", "Exacto called\nin RNA",
-              "Protein\ntranslated", "Correct\nresidue"]
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    labels = ["Reads cover\nlocus", "Allele in\nRNA", "Exacto called\nin RNA",
+              "Protein\ntranslated", "Correct residue\n(any candidate)",
+              "Correct residue\n(single pick)"]
+    keys = ["covered", "allele", "called", "translated", "residue", "residue_pick"]
+    any_measured = False
     for row in paths["variant_funnel"]:
-        ys = [s["n"] for s in row["stages"][:5]]
-        if any(y is None for y in ys):
+        by_key = {s["key"]: s for s in row["stages"]}
+        ceiling = [by_key[k]["n"] for k in keys[:5]]
+        if any(v is None for v in ceiling):
             continue
-        style = (
-            {"color": OK, "lw": 2.0, "marker": "o", "ms": 4}
-            if row["method"] == "reads"
-            else {"color": BAD, "lw": 2.0, "marker": "s", "ms": 4, "ls": "--"}
-        )
-        ax.plot(range(5), ys, alpha=.75, **style)
-    ax.set_xticks(range(5)); ax.set_xticklabels(stages)
+        colour = OK if row["method"] == "reads" else BAD
+        style = {"marker": "o", "ms": 4} if row["method"] == "reads" \
+            else {"marker": "s", "ms": 4, "ls": "--"}
+        ax.plot(range(5), ceiling, color=colour, lw=2.0, alpha=.75, **style)
+
+        # The last rung has two versions. "Any candidate" is a ceiling; the
+        # single pick is what a caller actually gets. Drawing only the first
+        # would repeat the overstatement this figure exists to correct.
+        pick = by_key.get("residue_pick")
+        if pick and not pick["pending"]:
+            any_measured = True
+            ax.plot([4, 5], [ceiling[-1], pick["n"]], color=colour, lw=2.0,
+                    alpha=.45, ls=":", marker="D", ms=4)
+
+    ax.set_xticks(range(6 if any_measured else 5))
+    ax.set_xticklabels(labels[:6] if any_measured else labels[:5])
     ax.set_ylabel("mutations remaining (of 37)")
+    if not any_measured:
+        # Say so in the figure, not only in the caption: an axis silently
+        # truncated reads as an axis that does not exist.
+        ax.set_xlim(-0.3, 5.2)
+        ax.axvspan(4.35, 5.2, color="#f0f0f0", zorder=0)
+        ax.annotate("single-pick\nnot yet measured", xy=(4.78, ax.get_ylim()[1] * 0.55),
+                    ha="center", va="center", fontsize=8, color=MUT, style="italic")
     ax.legend(handles=[
         Line2D([], [], color=OK, lw=2, marker="o", ms=4, label="reads"),
         Line2D([], [], color=BAD, lw=2, ls="--", marker="s", ms=4, label="assembly"),
-    ], frameon=False, fontsize=8, loc="upper right")
+        Line2D([], [], color=MUT, lw=2, ls=":", marker="D", ms=4,
+               label="single pick"),
+    ], frameon=False, fontsize=8, loc="upper center",
+       bbox_to_anchor=(0.52, 1.0), ncol=3)
     fig.tight_layout(); fig.savefig(FIGURES / "variant-funnel.png"); plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(7.2, 2.9))
