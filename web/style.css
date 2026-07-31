@@ -1011,3 +1011,8 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   white-space: normal;
   max-width: 74ch;
 }
+
+/* A miss on a single read is the same category as a miss on thousands, but far
+   weaker evidence. Paler rather than a separate colour, so it still reads as a
+   miss at a glance. */
+.tp-cell.thin { opacity: .45; }

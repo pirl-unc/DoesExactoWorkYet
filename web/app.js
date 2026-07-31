@@ -19,13 +19,21 @@ const RECOVERED = new Set(["peptide", "proteoform"]);
 // translate is.
 const STATES = {
   detected: {
-    label: "detected", short: "DET", tone: "ok",
+    label: "detected", short: "\u2713", tone: "ok",
     blurb: "a mutant protein sequence was translated",
   },
   missed_with_rna: {
     label: "missed, allele present", short: "MISS", tone: "bad",
     blurb: "the allele is in this sample's RNA — Exacto called it, or the portal "
          + "genotyped alt reads — but no mutant protein came out",
+  },
+  // Missing an allele carried by one read is a different claim from missing one
+  // carried by thousands. Same category, visibly weaker evidence, so it is not
+  // scored as though it were the H1-2 case.
+  missed_thin: {
+    label: "missed, single read", short: "MISS", tone: "bad",
+    blurb: "as above, but exactly one read carries the allele here — too thin to "
+         + "hold strongly against the caller",
   },
   missed_no_rna: {
     label: "no allele in RNA", short: "·", tone: "none",
@@ -42,7 +50,8 @@ const STATES = {
     blurb: "no Exacto run for this sample",
   },
 };
-const STATE_ORDER = ["detected", "missed_with_rna", "missed_no_rna", "error", "not_run"];
+const STATE_ORDER = ["detected", "missed_with_rna", "missed_thin", "missed_no_rna",
+                     "error", "not_run"];
 
 const TONE_VAR = { ok: "--ok", warn: "--warn", bad: "--bad", none: "--none" };
 const SEVERITY_TONE = {
@@ -82,15 +91,19 @@ function runsFor(sampleName) {
 // portal's own genotyping of the same BAM counted alt reads. The portal only
 // genotyped ONT, so for PacBio the first source is the only one available —
 // which can only ever understate support, never invent it.
-function alleleInRna(variant, sample, entry) {
+function alleleReadsInRna(variant, sample, entry) {
+  let reads = 0;
   for (const arm of Object.values(entry?.arms || {})) {
-    if ((arm.rna_variant_calls || []).length) return true;
+    // Exacto names the reads behind each call it made; older results predate
+    // that field, in which case a call still counts as at least one read.
+    if (arm.alt_reads_in_calls) reads = Math.max(reads, arm.alt_reads_in_calls);
+    else if ((arm.rna_variant_calls || []).length) reads = Math.max(reads, 1);
   }
   if (sample.platform === "ONT") {
     const seen = variant.ont_expectation?.[sample.timepoint];
-    if (seen && (seen.alt_reads || 0) > 0) return true;
+    if (seen) reads = Math.max(reads, seen.alt_reads || 0);
   }
-  return false;
+  return reads;
 }
 
 function stateOf(variant, sample) {
@@ -106,7 +119,9 @@ function stateOf(variant, sample) {
   if (arms.some((a) => a.outcome === "peptide" || a.outcome === "proteoform")) {
     return "detected";
   }
-  return alleleInRna(variant, sample, entry) ? "missed_with_rna" : "missed_no_rna";
+  const reads = alleleReadsInRna(variant, sample, entry);
+  if (!reads) return "missed_no_rna";
+  return reads === 1 ? "missed_thin" : "missed_with_rna";
 }
 
 function outcomeOf(variant, sample) {
@@ -477,14 +492,18 @@ function sampleCells(variant) {
     const rung = outcomeOf(variant, sample.name);
     const cell = el(
       "span",
-      `tp-cell${state === "not_run" ? " not-run" : ""}`,
+      `tp-cell${state === "not_run" ? " not-run" : ""}`
+        + `${state === "missed_thin" ? " thin" : ""}`,
       DATA.has_exacto_run ? spec.short : "·",
     );
     cell.style.background = `var(${TONE_VAR[spec.tone]}-soft)`;
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
     // Keep the ladder available: it says how far Exacto got, which is the
     // useful detail once you know whose fault the outcome is.
+    const depth = alleleReadsInRna(
+      variant, sample, variant.recovery?.samples?.[sample.name]);
     cell.title = `${sample.label}: ${spec.label}`
+      + (depth ? `, ${depth} alt read${depth === 1 ? "" : "s"}` : "")
       + (OUTCOMES[rung] ? ` (${OUTCOMES[rung].label})` : "");
     wrapper.appendChild(cell);
   }
