@@ -271,6 +271,28 @@ def configuration() -> list[dict]:
                     ),
                 },
                 {
+                    "name": "Reads-arm depth cap",
+                    "value": (
+                        f"{extract_reads.READS_ARM_READS_PER_VARIANT} reads per "
+                        "variant, against "
+                        f"{config.SPANNING_READS_PER_VARIANT} for the assembly arm"
+                    ),
+                    "status": "addition",
+                    "canonical": "no such arm — Nexus always assembles first",
+                    "why": (
+                        "The assembly arm collapses every read into a few hundred "
+                        "contigs before Exacto sees them; the reads arm has no such "
+                        "step, so call-rna-vars meets the raw depth. Measured on "
+                        "T2-ONT it accumulates ~0.55 MB of resident memory per read "
+                        "and then allocates a further ~4 GB at the end: at 18,818 "
+                        "reads that exceeded the 16 GB runner and killed it mid-step "
+                        "after 1h45m. At 600 the arm keeps 42% of the reads, peaks "
+                        "near 8 GB, and only the seven deepest variants lose any "
+                        "depth — 600 reads still resolves a 5% VAF variant with 30 "
+                        "supporting reads. Without this the arm cannot run at all."
+                    ),
+                },
+                {
                     "name": "Base qualities, PacBio",
                     "value": (
                         "QUAL is \"*\" on every Iso-Seq record; a flat Q"

@@ -196,3 +196,20 @@ def test_records_without_quality_are_counted_against_records_scanned():
 
     assert scanned["without_quality"] == 1
     assert scanned["records"] == 2
+
+
+def test_reads_arm_cap_is_tighter_than_the_assembly_arm_cap():
+    """The reads arm must not be handed the full depth.
+
+    call-rna-vars meets every read directly on that arm — nothing collapses
+    them into contigs first — and at full depth it exhausts a 16 GB runner.
+
+    Compared against config rather than the extract_reads attribute, which the
+    autouse fixture above shrinks to keep the sampling tests small.
+    """
+    from pipeline import config
+
+    assert (
+        extract_reads.READS_ARM_READS_PER_VARIANT
+        < config.SPANNING_READS_PER_VARIANT
+    )

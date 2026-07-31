@@ -80,6 +80,16 @@
       "detail": "Noted while auditing against Andy Lee's PEPTIDE_PREDICTION_EXACTO subworkflow in Nexus. It pipes minimap2 through 'samtools view -bS | samtools calmd | samtools sort' with no -F 4, so unmapped records reach remove-unspliced-rnas exactly as they did here. This is the same defect as unmapped-records-panic, recorded separately because it means the canonical pipeline is affected, not just this harness's variation on it.",
       "workaround": "This harness drops unmapped records with samtools view -F 4 before sorting.",
       "suggested_fix": "Same as unmapped-records-panic: skip records whose reference sequence id is None."
+    },
+    {
+      "id": "call-rna-vars-memory-scales-with-read-count",
+      "title": "call-rna-vars memory grows ~0.55 MB per read, then spikes ~4 GB at the end",
+      "severity": "limitation",
+      "observed_in": "0.4.6a1",
+      "where": "exacto call-rna-vars",
+      "detail": "Handed 18,818 ONT reads as transcripts (the reads arm, where nothing assembles them into contigs first), call-rna-vars accumulates resident memory linearly at roughly 0.55 MB per read. Sampled every 60 s on a 16 GB GitHub runner for T2-ONT: 14.9 GB available at 00:58 falling to 4.7 GB by 01:48 \u2014 about 2.5 GB per 10 minutes \u2014 then a 57-minute plateau at ~4.5 GB available, then a single 60-second window in which available memory fell to 799 MB and 3 GB of swap was consumed. The runner stopped responding and the job was killed (exit 143) after 1h45m in the step, with no error of its own. The terminal ~4 GB allocation after a long plateau suggests a final aggregation or serialisation pass that holds a second copy of what it has built. Peak is therefore roughly (0.55 MB x reads) + 4 GB, which puts the ceiling near 19,000 reads on a 16 GB machine \u2014 well within what a single long-read sample produces.",
+      "workaround": "Cap the reads arm at 600 reads per variant (42% of the reads, ~8 GB peak) instead of the 3,000 the assembly arm uses. The assembly arm needs no cap because RNA-Bloom2 collapses the reads into a few hundred contigs before Exacto sees them.",
+      "suggested_fix": "Stream transcript models to disk rather than holding all of them, or process reads in bounded batches. Failing that, documenting the memory cost per read would let callers size the machine instead of discovering the limit as an unexplained runner death three hours in."
     }
   ]
 }

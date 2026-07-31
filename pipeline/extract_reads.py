@@ -51,6 +51,22 @@ READS_DIR = WORK_DIR / "reads"
 # invent a quality score cannot drift apart.
 SYNTHETIC_BASE_QUALITY = int(RNABLOOM_FILTER["base-quality"])
 
+# A second, tighter cap for the reads arm alone.
+#
+# The assembly arm hands RNA-Bloom2 every read and RNA-Bloom2 hands Exacto a few
+# hundred contigs, so call-rna-vars never sees the raw depth. The reads arm has
+# no such collapse — every read is its own transcript — and measured on T2-ONT,
+# call-rna-vars accumulates about 0.55 MB of resident memory per read, then
+# allocates a further ~4 GB at the end. At 18,818 reads that is ~10 GB climbing
+# to over 16, and the runner dies mid-step rather than failing.
+#
+# 600 per variant keeps 42% of the reads and holds the peak near 8 GB. The
+# variants that lose depth are only the seven deepest, and 600 reads still
+# resolves a variant at 5% VAF with 30 supporting reads. Reads are taken from
+# the front of each variant's reservoir, which is already a uniform sample of
+# that variant's reads, so a prefix of it is uniform too.
+READS_ARM_READS_PER_VARIANT = 600
+
 # Streaming tens of thousands of BGZF blocks over HTTPS occasionally trips an
 # HTTP/2 framing error or a connection reset. Seen once in testing, so it is
 # worth surviving rather than failing a three-hour CI job.
@@ -82,6 +98,15 @@ def spanning_fastq(sample: Sample) -> Path:
     return READS_DIR / f"{sample.name}.spanning.fastq.gz"
 
 
+def reads_arm_fastq(sample: Sample) -> Path:
+    """The reads arm's input: the same spanning reads, capped harder.
+
+    Separate from spanning_fastq so the assembly arm keeps full depth — more
+    reads make a better assembly, and it is not the arm that runs out of memory.
+    """
+    return READS_DIR / f"{sample.name}.spanning.reads_arm.fastq.gz"
+
+
 def context_fastq(sample: Sample) -> Path:
     """Everything else in the gene — filler that lets RNA-Bloom2 extend
     transcripts. Capped per region."""
@@ -90,6 +115,10 @@ def context_fastq(sample: Sample) -> Path:
 
 def assembly_inputs(sample: Sample) -> list[Path]:
     return [spanning_fastq(sample), context_fastq(sample)]
+
+
+def extraction_outputs(sample: Sample) -> list[Path]:
+    return [spanning_fastq(sample), reads_arm_fastq(sample), context_fastq(sample)]
 
 
 def stats_path(sample: Sample) -> Path:
@@ -242,6 +271,7 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     import pysam
 
     out_spanning = spanning_fastq(sample)
+    out_reads_arm = reads_arm_fastq(sample)
     out_context = context_fastq(sample)
     out_spanning.parent.mkdir(parents=True, exist_ok=True)
 
@@ -257,8 +287,10 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     seen: set[str] = set()
     spanning_seen: dict[str, int] = {variant["variant_id"]: 0 for variant in variants}
     spanning_kept: dict[str, int] = {variant["variant_id"]: 0 for variant in variants}
+    reads_arm_kept: dict[str, int] = {variant["variant_id"]: 0 for variant in variants}
     per_region: list[dict] = []
     n_spanning = 0
+    n_reads_arm = 0
     n_context = 0
     n_bases = 0
     n_records = 0
@@ -267,8 +299,8 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     with pysam.AlignmentFile(
         sample.bam_url, "rb", index_filename=str(index_path)
     ) as bam, gzip.open(out_spanning, "wt") as sink, gzip.open(
-        out_context, "wt"
-    ) as context_sink:
+        out_reads_arm, "wt"
+    ) as reads_arm_sink, gzip.open(out_context, "wt") as context_sink:
         for region in regions:
             in_region = [
                 variant
@@ -289,17 +321,29 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
 
             # A read covering two variants sits in both reservoirs; write once.
             written: set[str] = set()
+            written_reads_arm: set[str] = set()
             region_spanning = 0
+            region_reads_arm = 0
             for variant_id, reservoir in spanning_reservoirs.items():
                 spanning_kept[variant_id] = len(reservoir)
-                for record in reservoir:
-                    if record in written:
-                        continue
-                    written.add(record)
-                    sink.write(record)
-                    n_bases += len(record.split("\n")[1])
-                    region_spanning += 1
+                for index, record in enumerate(reservoir):
+                    if record not in written:
+                        written.add(record)
+                        sink.write(record)
+                        n_bases += len(record.split("\n")[1])
+                        region_spanning += 1
+                    if (
+                        index < READS_ARM_READS_PER_VARIANT
+                        and record not in written_reads_arm
+                    ):
+                        written_reads_arm.add(record)
+                        reads_arm_sink.write(record)
+                        region_reads_arm += 1
+                reads_arm_kept[variant_id] = min(
+                    len(reservoir), READS_ARM_READS_PER_VARIANT
+                )
             n_spanning += region_spanning
+            n_reads_arm += region_reads_arm
 
             for record in context_reservoir:
                 context_sink.write(record)
@@ -331,11 +375,14 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
         "bam_url": sample.bam_url,
         "bam_bytes": bam_bytes,
         "spanning_fastq": str(out_spanning),
+        "reads_arm_fastq": str(out_reads_arm),
         "context_fastq": str(out_context),
         "context_reads_per_region_cap": CONTEXT_READS_PER_REGION,
         "spanning_reads_per_variant_cap": SPANNING_READS_PER_VARIANT,
+        "reads_arm_reads_per_variant_cap": READS_ARM_READS_PER_VARIANT,
         "n_reads": n_reads,
         "n_spanning_reads": n_spanning,
+        "n_reads_arm_reads": n_reads_arm,
         "n_context_reads": n_context,
         "n_bases": n_bases,
         # Counted over every record scanned, not the subset the reservoirs kept
@@ -348,13 +395,15 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
         "synthetic_base_quality": SYNTHETIC_BASE_QUALITY,
         "mean_read_length": round(n_bases / n_reads, 1) if n_reads else 0.0,
         "spanning_reads_by_variant": spanning_kept,
+        "reads_arm_reads_by_variant": reads_arm_kept,
         "spanning_reads_seen_by_variant": spanning_seen,
         "regions": per_region,
     }
     stats_path(sample).write_text(json.dumps(stats, indent=2) + "\n")
     print(
         f"{sample.name}: {n_spanning:,} spanning + {n_context:,} context reads "
-        f"-> {out_spanning.name}, {out_context.name}"
+        f"-> {out_spanning.name}, {out_context.name}; "
+        f"{n_reads_arm:,} for the reads arm -> {out_reads_arm.name}"
     )
     return stats
 
@@ -376,7 +425,7 @@ def main() -> None:
     regions = load_regions()
     variants = load_variants()
     for sample in samples_named(args.samples):
-        done = all(path.exists() for path in assembly_inputs(sample))
+        done = all(path.exists() for path in extraction_outputs(sample))
         if done and stats_path(sample).exists():
             print(f"{sample.name}: reusing {spanning_fastq(sample).parent}")
             continue

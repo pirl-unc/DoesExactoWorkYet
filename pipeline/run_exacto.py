@@ -45,7 +45,7 @@ from .config import (
     minimap2_preset,
     samples_named,
 )
-from .extract_reads import assembly_inputs, spanning_fastq, stats_path
+from .extract_reads import assembly_inputs, reads_arm_fastq, stats_path
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
@@ -395,13 +395,19 @@ def run_arm(
             result["counts"]["assembled_transcripts"] = count_fasta_records(raw_assembly)
             result["counts"]["query_sequences"] = count_fasta_records(query_fasta)
         else:
-            # Only the variant-spanning reads. Without an assembler each read is
-            # its own transcript, so a read that touches no vaccine variant can
-            # never produce one of the mutant proteins under test — it would just
-            # cost Exacto time. minimap2 carries their real base qualities into
-            # the BAM, which Exacto needs.
-            query = spanning_fastq(sample)
-            result["counts"]["query_sequences"] = stats["n_spanning_reads"]
+            # Only the variant-spanning reads, and capped harder than the
+            # assembly arm gets them. Without an assembler each read is its own
+            # transcript, so a read that touches no vaccine variant can never
+            # produce one of the mutant proteins under test — it would just cost
+            # Exacto time — and nothing collapses the depth before call-rna-vars,
+            # which is what exhausts the runner. See READS_ARM_READS_PER_VARIANT.
+            # minimap2 carries their real base qualities into the BAM, which
+            # Exacto needs.
+            query = reads_arm_fastq(sample)
+            result["counts"]["query_sequences"] = stats.get(
+                "n_reads_arm_reads", stats["n_spanning_reads"]
+            )
+            result["counts"]["spanning_reads_available"] = stats["n_spanning_reads"]
 
         aligned_bam = out_dir / f"{prefix}.aligned.bam"
         align(runner, query, sample, arm, aligned_bam)
