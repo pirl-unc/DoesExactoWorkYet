@@ -144,7 +144,12 @@ jobs:
 
   publish:
     needs: run
-    if: always()
+    # Publish whatever the matrix produced, including a partial result when one
+    # sample crashed — a failed sample is a finding, and the site says so. But
+    # not on cancellation: there is nothing to merge, so evaluate --merge-only
+    # exits "no scored samples" and a run the user stopped on purpose is
+    # reported back to them as a failure.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -160,6 +165,14 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
+
+      # results/scored/ is committed, so the checkout arrives carrying the last
+      # run's answers. Left in place, a sample that succeeded last week and
+      # crashed today would have last week's result silently merged in and
+      # published as today's — possibly against a different Exacto version.
+      # Every sample in the verdict has to come from this run or not appear.
+      - name: Discard the previous run's scores
+        run: find results/scored -name '*.json' -delete 2>/dev/null || true
 
       - name: Collect the scored samples
         uses: actions/download-artifact@v4
