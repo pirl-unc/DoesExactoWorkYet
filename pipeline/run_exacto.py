@@ -506,6 +506,7 @@ def run_arm(
             "label": method.label,
             "tool": method.tool,
             "params": method.params,
+            "controls": method.controls,
         },
         "status": "ok",
         "outputs": {},
@@ -532,7 +533,7 @@ def run_arm(
             )
         elif method.family == "corrected":
             query = run_isoncorrect(runner, sample, out_dir, threads)
-            if method.params.get("assemble") == "isonform":
+            if method.controls.get("assemble") == "isonform":
                 # Assemble inside each cluster instead of leaving the corrected
                 # reads as they are. The cluster is already allele-separated, so
                 # this should not average away the minority allele the way a
@@ -612,7 +613,7 @@ def run_arm(
         if (
             method.family == "assembly"
             and query_fasta is not None
-            and method.params.get("unspliced-filter") != "off"
+            and method.controls.get("unspliced-filter") != "off"
         ):
             # Only the documented assembly pipeline filters unspliced RNAs;
             # applied to raw or corrected reads it would throw away most of the

@@ -52,9 +52,16 @@ class Method:
     label: str
     read_types: tuple[str, ...]
     tool: str | None = None
-    # Passed through to whichever tool the family uses. Kept as strings because
-    # that is how they reach a command line.
+    # Passed through verbatim to whichever tool the family uses, as
+    # --key value. Kept as strings because that is how they reach a command
+    # line, and *only* things the tool actually accepts belong here.
     params: dict[str, str] = field(default_factory=dict)
+    # Settings that steer this harness rather than the tool: which optional
+    # steps run, which assembler follows correction. Keeping them out of
+    # `params` is not tidiness — they were previously mixed in and forwarded to
+    # nexus_filter_rnabloom2_transcripts, which exits 2 on an argument it does
+    # not recognise, so every assembly-unspliced leg died before assembling.
+    controls: dict[str, str] = field(default_factory=dict)
     note: str = ""
 
     def applies_to(self, read_type: str) -> bool:
@@ -90,7 +97,7 @@ METHODS = (
         label="isONform",
         read_types=LONG,
         tool="isONclust + isONcorrect + isONform 0.3.9",
-        params={"assemble": "isonform"},
+        controls={"assemble": "isonform"},
         note="The same clustering, then assembled per cluster rather than left "
              "as reads. Assembly that happens inside an allele-separated "
              "cluster should not average the allele away, which is the "
@@ -124,7 +131,8 @@ METHODS = (
         label="RNA-Bloom2, keep unspliced",
         read_types=LONG,
         tool="RNA-Bloom2 2.0.1",
-        params={**NEXUS_FILTER_DEFAULTS, "unspliced-filter": "off"},
+        params=dict(NEXUS_FILTER_DEFAULTS),
+        controls={"unspliced-filter": "off"},
         note="Identical to the canonical route but skipping "
              "remove-unspliced-rnas, which keeps only contigs whose alignment "
              "shows a splice junction and is the single largest loss in the "
