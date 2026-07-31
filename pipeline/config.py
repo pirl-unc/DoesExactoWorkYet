@@ -301,23 +301,16 @@ SPANNING_READS_PER_VARIANT = 3_000
 #              which is what the Exacto docs prescribe for polyA long reads.
 #   reads    — the reads themselves are handed to Exacto as "transcripts",
 #              skipping assembly. Cheaper, and a useful control.
-ARMS = ("assembly", "reads", "corrected")
+from .methods import METHOD_NAMES, methods_for
 
-# Which arms make sense for which kind of read. Enforced rather than left to a
-# CI matrix comment, so an invalid pairing fails loudly instead of producing an
-# empty result that looks like a negative finding.
-ARMS_BY_READ_TYPE = {
-    "long": ("assembly", "reads", "corrected"),
-    # No reads arm: a 150 bp read is not a transcript. No corrected arm:
-    # isONclust/isONcorrect cluster and polish using reads that span shared
-    # transcript structure, which short reads do not.
-    "short": ("assembly",),
-}
+# Kept as a name for compatibility with existing scored results; a run's "arm"
+# is now a method name from methods.py.
+ARMS = METHOD_NAMES
 
 
 def arms_for(sample: Sample, requested: list[str] | None = None) -> list[str]:
-    allowed = ARMS_BY_READ_TYPE.get(sample.read_type, ARMS)
-    return [arm for arm in (requested or ARMS) if arm in allowed]
+    """Method names this sample can run, in the order requested."""
+    return [method.name for method in methods_for(sample.read_type, requested)]
 
 # Andy Lee's Nexus wraps Exacto in a canonical Nextflow subworkflow
 # (PEPTIDE_PREDICTION_EXACTO). Step 6 of it filters RNA-Bloom2's output before
@@ -358,9 +351,16 @@ MINIMAP2_COMMON_FLAGS = ("-uf", "--cs", "--eqx", "-Y", "-L", "--secondary=no")
 
 
 def minimap2_preset(platform: str, arm: str) -> str:
-    """Fail rather than guess: a new platform must state its own preset."""
+    """Fail rather than guess: a new platform must state its own preset.
+
+    Keyed on the method's family, so a parameter sweep of an existing method
+    inherits its preset instead of needing a new entry.
+    """
+    from .methods import METHODS_BY_NAME
+
+    family = METHODS_BY_NAME[arm].family if arm in METHODS_BY_NAME else arm
     try:
-        return MINIMAP2_PRESET[(platform, arm)]
+        return MINIMAP2_PRESET[(platform, family)]
     except KeyError as error:
         raise SystemExit(
             f"no minimap2 preset for platform {platform!r} arm {arm!r}"

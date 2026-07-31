@@ -246,6 +246,127 @@ def _vaf_profile(
     return rows
 
 
+def _supported(variant_id: str, entry: dict, sample_timepoint: str | None,
+               platform: str | None, portal: dict) -> bool:
+    """Was the allele in this sample's RNA at all?
+
+    Either source suffices: Exacto called the variant de novo, or the portal's
+    own genotyping of the same BAM counted alt reads. The portal only genotyped
+    ONT, so for other platforms the first is the only source available — which
+    can understate support but cannot invent it.
+    """
+    if entry.get("rna_variant_calls"):
+        return True
+    if platform == "ONT" and sample_timepoint:
+        seen = (portal.get(variant_id) or {}).get(sample_timepoint)
+        if seen and (seen.get("alt_reads") or 0) > 0:
+            return True
+    return False
+
+
+def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
+    """Sensitivity against specificity, per method and per sample.
+
+    The two pull against each other and no single number captures the trade, so
+    four are reported rather than one score:
+
+    * **sensitivity** — recovered / mutations whose allele is actually in this
+      sample's RNA. Scoring against all 37 would punish a method for mutations
+      that are simply not expressed.
+    * **residue precision** — of the mutations recovered, how many carry the
+      amino acid the annotation predicts. A protein at the right codon in the
+      wrong frame is not a recovered neoantigen.
+    * **in-frame fraction** — of the proteoforms emitted, how many are not
+      frameshifted. The direct measure of sequence integrity.
+    * **candidates per mutation** — how many distinct proteins the method hands
+      back for one mutation. Exacto does not rank them, so this is the work a
+      downstream user inherits, and lower is better.
+    """
+    if not payload or not payload.get("runs"):
+        return None
+    portal = {
+        v["variant_id"]: (v.get("ont_expectation") or {}) for v in (variants or [])
+    }
+    ok_runs = [r for r in payload["runs"] if r.get("status") == "ok"]
+    if not ok_runs:
+        return None
+
+    rows = []
+    for run in ok_runs:
+        supported = recovered = residue_ok = residue_seen = 0
+        forms = frameshifted = 0
+        per_variant: list[int] = []
+        for variant_id, entry in run.get("variants", {}).items():
+            if _supported(variant_id, entry, run.get("timepoint"),
+                          run.get("platform"), portal):
+                supported += 1
+            rank = _RANK.get(entry.get("outcome"), 0)
+            if rank >= _RANK["proteoform"]:
+                recovered += 1
+                per_variant.append(entry.get("n_proteoforms", 0))
+                if entry.get("residue_confirmed") is not None:
+                    residue_seen += 1
+                    residue_ok += bool(entry["residue_confirmed"])
+            for form in entry.get("proteoforms", []):
+                forms += 1
+                frameshifted += bool(form.get("frameshift"))
+        per_variant.sort()
+        method = run.get("method") or {}
+        rows.append({
+            "sample": run["sample"],
+            "platform": run.get("platform"),
+            "method": run.get("arm"),
+            "method_label": method.get("label", run.get("arm")),
+            "family": method.get("family"),
+            "tool": method.get("tool"),
+            "params": method.get("params") or {},
+            "supported": supported,
+            "recovered": recovered,
+            "sensitivity": round(recovered / supported, 4) if supported else None,
+            "residue_precision": round(residue_ok / residue_seen, 4)
+            if residue_seen else None,
+            "inframe_fraction": round(1 - frameshifted / forms, 4) if forms else None,
+            "candidates_per_variant": per_variant[len(per_variant) // 2]
+            if per_variant else None,
+            "seconds": run.get("seconds"),
+        })
+
+    # Rolled up per method across samples, which is what the headline compares.
+    by_method: dict[str, dict] = {}
+    for row in rows:
+        agg = by_method.setdefault(row["method"], {
+            "method": row["method"], "method_label": row["method_label"],
+            "family": row["family"], "tool": row["tool"], "params": row["params"],
+            "supported": 0, "recovered": 0, "samples": 0, "seconds": 0,
+            "_inframe": [], "_precision": [], "_candidates": [],
+        })
+        agg["samples"] += 1
+        agg["supported"] += row["supported"]
+        agg["recovered"] += row["recovered"]
+        agg["seconds"] += row["seconds"] or 0
+        for key, source in (("_inframe", "inframe_fraction"),
+                            ("_precision", "residue_precision"),
+                            ("_candidates", "candidates_per_variant")):
+            if row[source] is not None:
+                agg[key].append(row[source])
+
+    summary = []
+    for agg in by_method.values():
+        def mean(values):
+            return round(sum(values) / len(values), 4) if values else None
+        summary.append({
+            k: v for k, v in agg.items() if not k.startswith("_")
+        } | {
+            "sensitivity": round(agg["recovered"] / agg["supported"], 4)
+            if agg["supported"] else None,
+            "residue_precision": mean(agg["_precision"]),
+            "inframe_fraction": mean(agg["_inframe"]),
+            "candidates_per_variant": mean(agg["_candidates"]),
+        })
+    summary.sort(key=lambda r: -(r["sensitivity"] or 0))
+    return {"by_method": summary, "by_sample": rows}
+
+
 def analyse(
     payload: dict | None, variants: list[dict] | None = None
 ) -> dict[str, Any] | None:
@@ -319,6 +440,7 @@ def analyse(
         "paths": paths,
         "comparison": comparison,
         "vaf_profile": _vaf_profile(reached_by_arm, variants or [], n_variants),
+        "benchmark": benchmark(payload, variants),
         "n_assembly_methods": sum(
             1 for path in paths if path.get("assembler")
         ),

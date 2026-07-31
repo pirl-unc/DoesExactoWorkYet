@@ -112,6 +112,18 @@
     <div id="path-ladder"></div>
     <div id="path-comparison"></div>
 
+    <h3>Methods benchmark: sensitivity against specificity</h3>
+    <p class="section-note">
+      Every way of turning reads into transcripts, scored on the same mutations.
+      Sensitivity is measured against the mutations whose allele is actually in
+      that sample's RNA, not against all 37 — scoring a method for mutations
+      that are not expressed would punish it for the tumour's biology. The other
+      three columns are what that sensitivity costs. Methods and their parameter
+      sets are defined in <code>pipeline/methods.py</code>; a threshold sweep is
+      a row here, not a code path.
+    </p>
+    <div id="benchmark"></div>
+
     <h3>Why assembly is cleaner and still misses more</h3>
     <p class="section-note">
       The tables below are measured. The reading of them that follows is

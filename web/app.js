@@ -812,9 +812,76 @@ function renderPaths() {
   renderPathLadder(data);
   renderPathComparison(data);
   renderPathQuality(data);
+  renderBenchmark(data);
 }
 
 function pct(x) { return x === null || x === undefined ? "—" : `${(x * 100).toFixed(0)}%`; }
+
+function renderBenchmark(data) {
+  const node = $("#benchmark");
+  const bench = data.benchmark;
+  if (!node || !bench?.by_method?.length) return;
+  node.innerHTML = "";
+
+  const cols = [
+    ["method_label", "Method", null],
+    ["sensitivity", "Sensitivity", "recovered / mutations whose allele is in the RNA"],
+    ["residue_precision", "Residue correct", "of those recovered, the right amino acid"],
+    ["inframe_fraction", "In frame", "of proteoforms emitted, not frameshifted"],
+    ["candidates_per_variant", "Candidates", "proteins handed back per mutation — lower is less work"],
+  ];
+  const table = el("table", "ladder-table");
+  const head = el("tr");
+  for (const [key, label, note] of cols) {
+    const th = el("th", key === "method_label" ? null : "num");
+    th.append(el("div", null, label));
+    if (note) th.append(el("div", "locus", note));
+    head.append(th);
+  }
+  const thead = el("thead"); thead.append(head); table.append(thead);
+
+  const body = el("tbody");
+  // Best value per column, so the trade is visible without reading every number.
+  const best = {};
+  for (const [key] of cols.slice(1)) {
+    const vals = bench.by_method.map((r) => r[key]).filter((v) => v !== null);
+    if (!vals.length) continue;
+    best[key] = key === "candidates_per_variant" ? Math.min(...vals) : Math.max(...vals);
+  }
+  for (const row of bench.by_method) {
+    const tr = el("tr");
+    const name = el("td");
+    name.append(el("div", null, row.method_label));
+    const sub = [row.tool, ...Object.entries(row.params || {})
+      .filter(([k]) => k === "min-read-support")
+      .map(([k, v]) => `${k} ${v}`)].filter(Boolean).join(" · ");
+    if (sub) name.append(el("div", "locus", sub));
+    tr.append(name);
+    for (const [key] of cols.slice(1)) {
+      const td = el("td", "num");
+      const v = row[key];
+      const text = v === null || v === undefined ? "—"
+        : key === "candidates_per_variant" ? v.toFixed(1) : `${(v * 100).toFixed(0)}%`;
+      td.append(el("div", v !== null && v === best[key] ? "ladder-best" : null, text));
+      if (key === "sensitivity" && row.supported) {
+        td.append(el("div", "locus", `${row.recovered}/${row.supported}`));
+      }
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  table.append(body);
+  node.append(table);
+
+  const pending = (DATA.samples || []).flatMap((s) => (s.arms || []))
+    .filter((a, i, all) => all.indexOf(a) === i)
+    .filter((a) => !bench.by_method.some((r) => r.method === a));
+  if (pending.length) {
+    node.append(el("p", "conjecture-next",
+      `Defined but not yet reported here: ${pending.join(", ")}. A method appears `
+      + "once a run has produced results for it."));
+  }
+}
 
 function renderPathQuality(data) {
   const node = $("#path-quality");

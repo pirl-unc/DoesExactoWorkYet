@@ -61,9 +61,10 @@ jobs:
       fail-fast: false
       matrix:
         sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio, T2-ILMN]
-        # reads first in the list so it is the one that starts if the runner
-        # pool is tight: it is the cheap arm and the likeliest to finish.
-        arm: [reads, corrected, assembly]
+        # One entry per method in pipeline/methods.py. reads first so it is the
+        # one that starts if the runner pool is tight: it is the cheap method
+        # and the likeliest to finish.
+        arm: [reads, corrected, isonform, assembly, assembly-ms1, spades]
         exclude:
           # Illumina reads are 150 bp. A read that short is not a transcript, so
           # the reads arm is meaningless for it, and isONclust/isONcorrect both
@@ -75,6 +76,21 @@ jobs:
             arm: reads
           - sample: T2-ILMN
             arm: corrected
+          - sample: T2-ILMN
+            arm: isonform
+          - sample: T2-ILMN
+            arm: assembly
+          - sample: T2-ILMN
+            arm: assembly-ms1
+          # rnaSPAdes is the short-read method; it has no long-read counterpart.
+          - sample: T1-ONT
+            arm: spades
+          - sample: T2-ONT
+            arm: spades
+          - sample: T3-ONT
+            arm: spades
+          - sample: T1-PacBio
+            arm: spades
     runs-on: ubuntu-latest
     timeout-minutes: 340
     defaults:

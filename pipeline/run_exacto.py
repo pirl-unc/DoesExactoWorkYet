@@ -38,7 +38,6 @@ from .config import (
     GENE_LEVELS,
     GENE_TYPES,
     MINIMAP2_COMMON_FLAGS,
-    RNABLOOM_FILTER,
     SAMPLES,
     WORK_DIR,
     Sample,
@@ -52,6 +51,7 @@ from .extract_reads import (
     reads_arm_fastq,
     stats_path,
 )
+from .methods import METHODS_BY_NAME
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
@@ -400,6 +400,39 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     return merged
 
 
+def run_isonform(runner: Runner, sample, out_dir: Path, threads: int,
+                 corrected: Path) -> Path:
+    """Assemble each corrected cluster into isoforms.
+
+    The distinction from RNA-Bloom2 is where the collapsing happens. A global
+    assembler pools every read at a locus, so a subclonal allele is a minority
+    inside its own contig and is averaged out. isONform assembles within a
+    cluster that isONclust already separated by transcript structure, so the
+    averaging is over reads that agree, not over reads that differ.
+    """
+    per_cluster = out_dir / "isonclust" / "fastq_files"
+    forms = out_dir / "isonform"
+    if forms.exists():
+        shutil.rmtree(forms)
+    runner.run(
+        "isonform",
+        [
+            "isONform_parallel",
+            "--fastq_folder", str(per_cluster),
+            "--outfolder", str(forms),
+            "--t", str(threads),
+            "--exact_instance_limit", "50",
+            "--split_wrt_batches",
+        ],
+    )
+    merged = out_dir / f"{sample.name}_isonform.fastq"
+    parts = sorted(forms.rglob("transcripts.fastq"))
+    if not parts:
+        raise StepFailed(f"isONform produced no transcripts in {forms}")
+    merged.write_text("".join(part.read_text() for part in parts))
+    return merged
+
+
 def drop_transcriptless_rna_calls(source: Path, dest: Path) -> int:
     """Copy the RNA callset without the rows that crash ``integrate-vars``.
 
@@ -453,7 +486,8 @@ def run_arm(
     variants: list[dict],
     threads: int,
 ) -> dict:
-    """One sample through one arm of the pipeline."""
+    """One sample through one method."""
+    method = METHODS_BY_NAME[arm]
     out_dir = EXACTO_DIR / sample.name / arm
     out_dir.mkdir(parents=True, exist_ok=True)
     runner = Runner(out_dir / "logs", threads)
@@ -466,6 +500,13 @@ def run_arm(
         "assay": sample.assay,
         "label": sample.label,
         "arm": arm,
+        "method": {
+            "name": method.name,
+            "family": method.family,
+            "label": method.label,
+            "tool": method.tool,
+            "params": method.params,
+        },
         "status": "ok",
         "outputs": {},
         "counts": {},
@@ -475,7 +516,7 @@ def run_arm(
     query_fasta: Path | None = None
 
     try:
-        if arm == "assembly" and sample.read_type == "short":
+        if method.family == "assembly" and sample.read_type == "short":
             # Short reads reach Exacto only as contigs. rnaSPAdes emits FASTA
             # with no per-base quality, and call-rna-vars panics without one,
             # so the same flat score Nexus writes for RNA-Bloom2 output is
@@ -489,14 +530,20 @@ def run_arm(
                 f"wrote a flat Q{SYNTHETIC_BASE_QUALITY} for {n:,} rnaSPAdes "
                 "contigs, which carry no quality"
             )
-        elif arm == "corrected":
+        elif method.family == "corrected":
             query = run_isoncorrect(runner, sample, out_dir, threads)
+            if method.params.get("assemble") == "isonform":
+                # Assemble inside each cluster instead of leaving the corrected
+                # reads as they are. The cluster is already allele-separated, so
+                # this should not average away the minority allele the way a
+                # global assembler does — which is the whole hypothesis.
+                query = run_isonform(runner, sample, out_dir, threads, query)
             with open(query) as handle:
                 result["counts"]["query_sequences"] = sum(
                     1 for index, _ in enumerate(handle) if index % 4 == 0
                 )
             result["counts"]["spanning_reads_available"] = stats["n_spanning_reads"]
-        elif arm == "assembly":
+        elif method.family == "assembly":
             assembly_dir = out_dir / "rnabloom"
             if assembly_dir.exists():
                 shutil.rmtree(assembly_dir)
@@ -531,7 +578,7 @@ def run_arm(
                     "--assembly3-map-paf-file", str(assembly_dir / PAF_NAME),
                     *(
                         argument
-                        for key, value in RNABLOOM_FILTER.items()
+                        for key, value in method.params.items()
                         for argument in (f"--{key}", value)
                     ),
                     "--output-reads-tsv-file", str(out_dir / f"{prefix}.reads.tsv"),
@@ -562,7 +609,7 @@ def run_arm(
         align(runner, query, sample, arm, aligned_bam)
         result["counts"]["aligned"] = count_alignments(aligned_bam)
 
-        if arm == "assembly" and query_fasta is not None:
+        if method.family == "assembly" and query_fasta is not None:
             # Only the documented assembly pipeline filters unspliced RNAs;
             # applied to raw or corrected reads it would throw away most of the
             # data, since an individual read need not look spliced.
