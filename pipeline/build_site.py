@@ -13,7 +13,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import assays, inventory
+from . import assays, inventory, paths
 from .config import (
     ARMS,
     REPO_ROOT,
@@ -301,6 +301,7 @@ def build_payload() -> dict:
         "reproduction": reproduction(),
         "findings": (load(RESULTS_DIR / "findings.json") or {}).get("findings", []),
         "worklog": worklog(),
+        "paths": paths.analyse(exacto_payload, variants_payload["variants"]),
         "runs": (exacto_payload or {}).get("runs", []),
         "variants": variants,
         "history": history,

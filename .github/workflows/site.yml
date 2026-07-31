@@ -15,6 +15,7 @@ on:
       - "pipeline/build_site.py"
       - "pipeline/sources.py"
       - "pipeline/assays.py"
+      - "pipeline/paths.py"
       - "pipeline/inventory.py"
       - "pipeline/fetch_osteosarc.py"
       - ".github/workflows/site.yml"

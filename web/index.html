@@ -28,6 +28,7 @@
 <nav class="tabs wrap" aria-label="Sections">
   <a href="#results">Results</a>
   <a href="#variants">Variants</a>
+  <a href="#paths">Paths</a>
   <a href="#config">Configuration</a>
   <a href="#findings">Findings</a>
   <a href="#runs">Pipeline runs</a>
@@ -87,6 +88,110 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+  </section>
+
+  <section id="paths">
+    <h2>Paths to a contig</h2>
+    <p class="section-note">
+      Exacto does not read FASTQs — it reads a BAM of <em>transcripts</em>, and
+      how those are produced is decided before Exacto ever runs. Two routes are
+      taken here. The funnels show how much sequence survives each one; the
+      ladder below shows how many of the 37 vaccine mutations each route
+      actually reaches. They do not agree, and the disagreement is the most
+      consequential thing this test has measured.
+    </p>
+    <div id="path-funnels" class="path-funnels"></div>
+    <h3>What fraction of the variants each path reaches</h3>
+    <p class="section-note">
+      Counted across all samples: a mutation is credited to a route if that
+      route reached the rung in <em>any</em> sample. Both routes start from the
+      same reads, so the first rung is identical by construction — everything
+      below it is the route's own doing.
+    </p>
+    <div id="path-ladder"></div>
+    <div id="path-comparison"></div>
+
+    <h3>Why assembly is cleaner and still misses more</h3>
+    <p class="section-note">
+      The tables below are measured. The reading of them that follows is
+      <strong>conjecture</strong>, labelled as such, and is the kind of claim
+      this harness could be extended to test rather than argue.
+    </p>
+    <div id="path-quality"></div>
+
+    <div class="conjecture">
+      <h4>What the numbers support</h4>
+      <p>
+        Assembly does produce better reading frames, and the gradient is exactly
+        what sequencing error predicts. Raw ONT reads frameshift most; PacBio
+        Iso-Seq reads, which are already circular-consensus corrected, frameshift
+        far less; RNA-Bloom2 contigs, which are a consensus over many reads,
+        do not frameshift at all in this run. An indel miscalled in a homopolymer
+        shifts the frame and everything downstream of the mutation is wrong, and
+        collapsing many reads into one contig is precisely the operation that
+        removes an error appearing in a minority of them.
+      </p>
+      <p>
+        What it does not buy is recovery. Every mutation the assembly route
+        finds, the reads route also finds, and the frameshifts on the reads route
+        largely do not matter for this question: the mutated residue itself still
+        comes out correct in the great majority of proteoforms, and wherever a
+        published vaccine epitope existed alongside a proteoform, that epitope
+        was found verbatim. A frameshift downstream of the mutation ruins the
+        tail of the protein without moving the codon under test.
+      </p>
+
+      <h4>Conjecture: why it misses so much</h4>
+      <p>
+        <strong>Assembly is a consensus, and a subclonal mutation is a minority
+        signal.</strong> The VAF table is the tell — the mutations both routes
+        recover sit near a third of reads, the ones only the reads route recovers
+        sit near a seventh, and the ones nobody recovers are down near one in a
+        hundred. A contig is built from many reads at a locus; if the mutant
+        allele is a minority of them, the consensus is the wild-type sequence and
+        the mutation is averaged away before Exacto ever sees it. Handing reads
+        over individually cannot lose a variant that way, because each read
+        carries its own allele.
+      </p>
+      <p>
+        <strong>The support filter compounds it.</strong>
+        <code>nexus_filter_rnabloom2_transcripts</code> requires three reads
+        behind a contig. For a clonal variant that is trivial; for one at 5% VAF
+        it demands depth the sample may not have at that locus, and the mutant
+        contig is dropped while the wild-type one passes. The filter is not
+        wrong — it exists to remove assembly artefacts — but its cost falls
+        specifically on the low-VAF variants a neoantigen test most wants.
+      </p>
+      <p>
+        <strong>And the splice filter is the largest single loss.</strong> About
+        three quarters of what survives assembly and alignment is then removed by
+        <code>remove-unspliced-rnas</code>. A plausible reading is that
+        subsampled input produces fragmentary contigs which no longer span an
+        intron and so no longer look spliced — in which case the loss is partly
+        an artefact of this harness's read caps, not of the method.
+      </p>
+
+      <h4>Where assembly should still win</h4>
+      <p>
+        None of this says assembly is useless. It is the only route here that
+        reconstructs a full-length transcript, so it is the one that can say
+        <em>which isoform</em> carries a mutation and what the complete protein
+        looks like — a question this test does not currently ask. Its proteoforms
+        are frameshift-free, which matters for any downstream use that depends on
+        sequence far from the mutation. And its advantages should grow with
+        depth: the failure mode conjectured above is a coverage problem, so a
+        clonal variant in a deeply sequenced sample is where assembly should be
+        at its strongest, which is consistent with the three it did recover being
+        the highest-VAF ones in the set.
+      </p>
+      <p class="conjecture-next">
+        Testable next: raise the per-variant read caps and re-run the assembly
+        arm to separate genuine method loss from harness-induced loss; add a
+        second assembler to distinguish RNA-Bloom2's behaviour from assembly in
+        general; and relax the Nexus support threshold to see whether low-VAF
+        mutant contigs reappear.
+      </p>
     </div>
   </section>
 

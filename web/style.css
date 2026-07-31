@@ -896,3 +896,109 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   color: var(--muted);
   max-width: 72ch;
 }
+
+/* Paths to a contig: two funnels side by side, then the variant ladder. */
+.path-funnels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1rem;
+}
+.path-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: var(--card);
+  white-space: normal;
+}
+.path-card.reads { border-top: 3px solid var(--ok); }
+.path-card.assembly { border-top: 3px solid var(--warn); }
+.path-head { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+.path-label { font-weight: 680; font-size: 1.02rem; }
+.path-sub { color: var(--ink-soft); font-size: .85rem; }
+.path-desc {
+  margin: .5rem 0 .9rem;
+  font-size: .86rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.funnel { display: flex; flex-direction: column; gap: .45rem; }
+.funnel-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1.4fr) minmax(60px, 1fr) auto;
+  gap: .6rem;
+  align-items: center;
+}
+.funnel-label { display: flex; flex-direction: column; font-size: .82rem; }
+.funnel-bar {
+  height: 9px;
+  border-radius: 5px;
+  background: var(--line);
+  overflow: hidden;
+}
+.funnel-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  border-radius: 5px;
+}
+.path-card.assembly .funnel-bar span { background: var(--warn); }
+.funnel-num { text-align: right; display: flex; flex-direction: column; }
+.funnel-n { font-family: var(--mono); font-size: .84rem; font-weight: 600; }
+.ladder-table { width: 100%; border-collapse: collapse; margin-top: .4rem; }
+.ladder-table th, .ladder-table td {
+  padding: .5rem .6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  white-space: normal;
+}
+.ladder-table th.num, .ladder-table td.num { text-align: right; }
+.ladder-best { font-weight: 700; color: var(--ok); }
+.path-verdict {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: 8px;
+  padding: .9rem 1.1rem;
+  background: var(--card);
+}
+.path-verdict h4 { margin: 0 0 .5rem; }
+.path-note {
+  margin: .7rem 0 0;
+  font-size: .88rem;
+  line-height: 1.55;
+  max-width: 72ch;
+}
+
+.ladder-bad { color: var(--bad); font-weight: 650; }
+.conjecture {
+  margin-top: 1.2rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--none);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  background: var(--card);
+  white-space: normal;
+}
+.conjecture h4 { margin: 1.1rem 0 .4rem; }
+.conjecture h4:first-child { margin-top: 0; }
+.conjecture p {
+  margin: .5rem 0;
+  font-size: .89rem;
+  line-height: 1.6;
+  max-width: 74ch;
+  color: var(--muted);
+}
+.conjecture strong { color: var(--ink); }
+
+/* Not .locus: that class is nowrap for table cells and would run this
+   paragraph off the page. */
+.conjecture-next {
+  margin-top: .9rem;
+  padding-top: .7rem;
+  border-top: 1px dashed var(--line);
+  font-size: .85rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 74ch;
+  white-space: normal;
+}

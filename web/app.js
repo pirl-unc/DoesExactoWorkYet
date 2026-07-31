@@ -659,6 +659,200 @@ function renderFindings() {
 
 /* ------------------------------------------------------------- run cards */
 
+function renderPaths() {
+  const host = $("#path-funnels");
+  if (!host) return;
+  const data = DATA.paths;
+  if (!data?.paths?.length) {
+    host.append(el("div", "empty", "No Exacto run has been recorded yet."));
+    return;
+  }
+  host.innerHTML = "";
+
+  for (const path of data.paths) {
+    const card = el("div", `path-card ${path.arm}`);
+    const head = el("div", "path-head");
+    head.append(el("span", "path-label", path.label));
+    head.append(el("span", "path-sub", path.subtitle));
+    if (path.assembler) head.append(el("span", "badge none", path.assembler));
+    card.append(head);
+    card.append(el("p", "path-desc", path.description));
+
+    // Bars are scaled to each route's own input, so the shape of the funnel
+    // reads at a glance; the absolute counts are printed because the two
+    // routes start from very different numbers and the shape alone would
+    // invite comparing them directly.
+    const funnel = el("div", "funnel");
+    for (const stage of path.stages) {
+      const row = el("div", "funnel-row");
+      const label = el("div", "funnel-label");
+      label.append(el("span", null, stage.label));
+      label.append(el("span", "locus", stage.note));
+      row.append(label);
+      const barWrap = el("div", "funnel-bar");
+      const fill = el("span");
+      fill.style.width = `${Math.max(stage.of_input * 100, 0.4)}%`;
+      barWrap.append(fill);
+      row.append(barWrap);
+      const num = el("div", "funnel-num");
+      num.append(el("span", "funnel-n", stage.n.toLocaleString()));
+      num.append(el("span", "locus", `${(stage.of_input * 100).toFixed(1)}% of input`));
+      row.append(num);
+      funnel.append(row);
+    }
+    card.append(funnel);
+    card.append(el("div", "locus",
+      `${path.n_samples} samples · ${Math.round(path.seconds / 60)} min of Exacto`));
+    host.append(card);
+  }
+
+  renderPathLadder(data);
+  renderPathComparison(data);
+  renderPathQuality(data);
+}
+
+function pct(x) { return x === null || x === undefined ? "—" : `${(x * 100).toFixed(0)}%`; }
+
+function renderPathQuality(data) {
+  const node = $("#path-quality");
+  if (!node) return;
+  node.innerHTML = "";
+
+  // Frameshift rate by how the sequence was produced. This is the direct test
+  // of "noisy long reads give wrong reading frames": an indel miscalled in a
+  // homopolymer shifts the frame and everything past the mutation is wrong.
+  const rows = [];
+  for (const path of data.paths) {
+    for (const [platform, q] of Object.entries(path.by_platform || {})) {
+      if (!q.n_proteoforms) continue;
+      rows.push({
+        how: `${path.label} · ${platform}`,
+        n: q.n_proteoforms,
+        median: q.median_length,
+        fs: q.frameshift_fraction,
+      });
+    }
+  }
+  rows.sort((a, b) => (b.fs ?? 0) - (a.fs ?? 0));
+
+  const table = el("table", "ladder-table");
+  const head = el("tr");
+  for (const h of ["How the transcript was made", "Proteoforms", "Median length",
+                   "Frameshifted"]) {
+    head.append(el("th", h === "How the transcript was made" ? null : "num", h));
+  }
+  const thead = el("thead");
+  thead.append(head);
+  table.append(thead);
+  const body = el("tbody");
+  for (const r of rows) {
+    const tr = el("tr");
+    tr.append(el("td", null, r.how));
+    tr.append(el("td", "num", r.n.toLocaleString()));
+    tr.append(el("td", "num", r.median ? `${r.median} aa` : "—"));
+    const fs = el("td", "num");
+    fs.append(el("div", r.fs > 0.15 ? "ladder-bad" : null, pct(r.fs)));
+    tr.append(fs);
+    body.append(tr);
+  }
+  table.append(body);
+  node.append(table);
+
+  if (data.vaf_profile) {
+    node.append(el("h4", null, "Where on the VAF scale each route stops working"));
+    const t2 = el("table", "ladder-table");
+    const h2 = el("tr");
+    for (const h of ["Recovered by", "Mutations", "Median ONT VAF"]) {
+      h2.append(el("th", h === "Recovered by" ? null : "num", h));
+    }
+    const thead2 = el("thead");
+  thead2.append(h2);
+  t2.append(thead2);
+    const b2 = el("tbody");
+    for (const row of data.vaf_profile) {
+      const tr = el("tr");
+      tr.append(el("td", null, row.label));
+      tr.append(el("td", "num", String(row.n)));
+      tr.append(el("td", "num",
+        row.median_vaf === null ? "—" : row.median_vaf.toFixed(3)));
+      b2.append(tr);
+    }
+    t2.append(b2);
+    node.append(t2);
+  }
+}
+
+function renderPathLadder(data) {
+  const node = $("#path-ladder");
+  if (!node) return;
+  node.innerHTML = "";
+  const table = el("table", "ladder-table");
+  const head = el("tr");
+  head.append(el("th", null, "Rung"));
+  for (const path of data.paths) head.append(el("th", "num", path.label));
+  const thead = el("thead");
+  thead.append(head);
+  table.append(thead);
+
+  const body = el("tbody");
+  const rungs = data.paths[0].ladder;
+  for (let i = 0; i < rungs.length; i += 1) {
+    const row = el("tr");
+    const cell = el("td");
+    cell.append(el("div", null, rungs[i].label));
+    cell.append(el("div", "locus", rungs[i].note));
+    row.append(cell);
+    const values = data.paths.map((p) => p.ladder[i].n);
+    const best = Math.max(...values);
+    for (const path of data.paths) {
+      const entry = path.ladder[i];
+      const td = el("td", "num");
+      const strong = el("div", entry.n === best && best > 0 ? "ladder-best" : null,
+        `${entry.n} / ${data.n_variants}`);
+      td.append(strong);
+      td.append(el("div", "locus", `${(entry.fraction * 100).toFixed(0)}%`));
+      row.append(td);
+    }
+    body.append(row);
+  }
+  table.append(body);
+  node.append(table);
+}
+
+function renderPathComparison(data) {
+  const node = $("#path-comparison");
+  const c = data.comparison;
+  if (!node || !c) return;
+  node.innerHTML = "";
+
+  const box = el("div", "path-verdict");
+  const only = (list) => (list.length ? list.join(", ") : "none");
+  box.append(el("h4", null, "Which route finds what"));
+  const list = el("dl", "kv");
+  const add = (term, value, note) => {
+    list.append(el("dt", null, term));
+    const dd = el("dd");
+    dd.append(el("div", null, value));
+    if (note) dd.append(el("div", "locus", note));
+    list.append(dd);
+  };
+  add(`Both routes (${c.both.length})`, only(c.both));
+  add(`${c.a_label} only (${c.a_only.length})`, only(c.a_only));
+  add(`${c.b_label} only (${c.b_only.length})`, only(c.b_only));
+  add(`Neither (${c.neither})`, `${c.neither} of ${data.n_variants} mutations`,
+    "covered by reads, but no mutant protein from either route");
+  box.append(list);
+
+  if (!c.b_only.length && c.a_only.length) {
+    box.append(el("p", "path-note",
+      `Every mutation the ${c.b_label.toLowerCase()} route recovers, the `
+      + `${c.a_label.toLowerCase()} route also recovers, and ${c.a_only.length} more. `
+      + `On this data the canonical route is strictly dominated — it is not `
+      + `finding different mutations, it is finding a subset.`));
+  }
+  node.append(box);
+}
+
 function renderWorklog() {
   const node = $("#worklog-list");
   if (!node) return;
@@ -1201,6 +1395,7 @@ async function main() {
     renderConfiguration();
     renderFindings();
     renderRuns();
+    renderPaths();
     renderWorklog();
   }
   renderProvenance();
