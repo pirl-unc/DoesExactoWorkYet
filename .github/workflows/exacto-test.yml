@@ -75,7 +75,7 @@ jobs:
         # one that starts if the runner pool is tight: it is the cheap method
         # and the likeliest to finish.
         arm: [reads, corrected, isonform, assembly, assembly-ms1,
-              assembly-unspliced, spades]
+              assembly-unspliced, assembly-permissive, spades]
         exclude:
           # Illumina reads are 150 bp. A read that short is not a transcript, so
           # the reads arm is meaningless for it, and isONclust/isONcorrect both
@@ -95,6 +95,8 @@ jobs:
             arm: assembly-ms1
           - sample: T2-ILMN
             arm: assembly-unspliced
+          - sample: T2-ILMN
+            arm: assembly-permissive
           # rnaSPAdes is the short-read method; it has no long-read counterpart.
           - sample: T1-ONT
             arm: spades

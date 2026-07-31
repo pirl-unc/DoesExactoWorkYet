@@ -143,6 +143,22 @@ METHODS = (
              "at all. This measures what it costs.",
     ),
     Method(
+        name="assembly-permissive",
+        family="assembly",
+        label="RNA-Bloom2, both filters relaxed",
+        read_types=LONG,
+        tool="RNA-Bloom2 2.0.1",
+        params={**NEXUS_FILTER_DEFAULTS, "min-read-support": "1"},
+        controls={"unspliced-filter": "off"},
+        note="Both defaults relaxed at once. Measured separately, each gains "
+             "recovery -- min-read-support 1 took T1-ONT from 0 to 3 and T2-ONT "
+             "from 1 to 3, and dropping the splice filter took T1-ONT from 0 to "
+             "1. Whether those gains are additive or the same contigs rescued "
+             "twice is the question a one-at-a-time sweep cannot answer, and it "
+             "decides whether the canonical route is recoverable or whether "
+             "assembly is simply the wrong shape for subclonal variants.",
+    ),
+    Method(
         name="spades",
         family="assembly",
         label="rnaSPAdes",
