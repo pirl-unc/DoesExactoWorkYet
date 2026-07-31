@@ -163,7 +163,8 @@ def scan_region(
         spanning_seen: dict[str, int] = {key: 0 for key in spanning_reservoirs}
         names: set[str] = set()
         n_context_seen = 0
-        n_synthetic_quality = 0
+        n_records = 0
+        n_without_quality = 0
 
         try:
             for read in bam.fetch(region["chrom"], region["start"] - 1, region["end"]):
@@ -185,8 +186,9 @@ def scan_region(
                 record = _fastq_record(read)
                 if record is None:
                     continue
+                n_records += 1
                 if read.query_qualities is None:
-                    n_synthetic_quality += 1
+                    n_without_quality += 1
                 names.add(name)
 
                 if covered:
@@ -224,7 +226,8 @@ def scan_region(
             "spanning_seen": spanning_seen,
             "context": context_reservoir,
             "context_seen": n_context_seen,
-            "synthetic_quality": n_synthetic_quality,
+            "records": n_records,
+            "without_quality": n_without_quality,
             "names": names,
         }
 
@@ -258,7 +261,8 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     n_spanning = 0
     n_context = 0
     n_bases = 0
-    n_synthetic_quality = 0
+    n_records = 0
+    n_without_quality = 0
 
     with pysam.AlignmentFile(
         sample.bam_url, "rb", index_filename=str(index_path)
@@ -277,7 +281,8 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
             context_reservoir = scanned["context"]
             spanning_reservoirs = scanned["spanning"]
             n_context_seen = scanned["context_seen"]
-            n_synthetic_quality += scanned["synthetic_quality"]
+            n_records += scanned["records"]
+            n_without_quality += scanned["without_quality"]
             for variant_id, count in scanned["spanning_seen"].items():
                 spanning_seen[variant_id] += count
             seen |= scanned["names"]
@@ -333,8 +338,13 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
         "n_spanning_reads": n_spanning,
         "n_context_reads": n_context,
         "n_bases": n_bases,
-        # Records whose QUAL was "*" and had a flat score written for them.
-        "n_synthetic_quality_reads": n_synthetic_quality,
+        # Counted over every record scanned, not the subset the reservoirs kept
+        # — reservoir sampling decides what is written long after this is known.
+        # Named accordingly: sitting next to n_reads, a bare count of 386,187
+        # "synthetic quality reads" beside 54,062 reads written reads as
+        # nonsense, and the fraction is the honest form of the claim.
+        "n_records_scanned": n_records,
+        "n_records_scanned_without_quality": n_without_quality,
         "synthetic_base_quality": SYNTHETIC_BASE_QUALITY,
         "mean_read_length": round(n_bases / n_reads, 1) if n_reads else 0.0,
         "spanning_reads_by_variant": spanning_kept,

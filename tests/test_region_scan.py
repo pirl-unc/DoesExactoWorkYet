@@ -183,9 +183,16 @@ def test_real_qualities_are_preserved():
     assert set(quality) == {chr(40 + 33)}
 
 
-def test_synthetic_quality_reads_are_counted():
+def test_records_without_quality_are_counted_against_records_scanned():
+    """Both halves of the fraction, because the count alone misleads.
+
+    The counter runs over every record scanned, while only the reservoir
+    survivors are written — so reporting it beside n_reads, with no
+    denominator, invites reading it as a count of reads written.
+    """
     reads = [FakeRead("a", 400, 600, flags=("no_qual",)), FakeRead("b", 700, 900)]
 
     scanned = extract_reads.scan_region(FakeBam(reads), SAMPLE, REGION, SPANS, set())
 
-    assert scanned["synthetic_quality"] == 1
+    assert scanned["without_quality"] == 1
+    assert scanned["records"] == 2
