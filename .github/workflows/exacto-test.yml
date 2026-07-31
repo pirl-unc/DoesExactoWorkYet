@@ -35,12 +35,22 @@ on:
     # label tweak does not queue a three-hour matrix behind itself.
     paths:
       - "pipeline/config.py"
+      # Defines what every method IS -- its tool, thresholds and parameters --
+      # so it changes the science, and was missing here. It only ever fired
+      # because it happened to be edited alongside config.py or run_exacto.py;
+      # a commit adding a method on its own would have silently not run, and
+      # the site would have shown stale results under a new method's name.
+      - "pipeline/methods.py"
       - "pipeline/fetch_osteosarc.py"
       - "pipeline/build_reference.py"
       - "pipeline/extract_reads.py"
       - "pipeline/run_exacto.py"
       - "pipeline/evaluate.py"
-      - "scripts/**"
+      # Was "scripts/**", which is why writing documentation tooling evicted a
+      # queued 25-leg sweep. Only the installer decides which Exacto runs;
+      # build_notes.py and build_issues.py generate documents and must not
+      # queue three hours of compute.
+      - "scripts/install_exacto.sh"
       - "environment.yml"
       - ".github/workflows/exacto-test.yml"
 
