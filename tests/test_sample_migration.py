@@ -8,6 +8,9 @@ that nothing ran.
 
 from __future__ import annotations
 
+import json
+
+from pipeline import evaluate
 from pipeline.build_site import migrate_name, migrate_payload
 
 
@@ -57,3 +60,63 @@ def test_leaves_a_current_payload_alone():
     assert payload["runs"][0]["sample"] == "T1-PacBio"
     assert payload["runs"][0]["platform"] == "PacBio"
     assert payload["variants"][0]["samples"]["T1-PacBio"]["outcome"] == "no_call"
+
+
+# --------------------------------------------------------------------------
+# Scored files are per sample *and* arm, because CI runs them as separate jobs
+# --------------------------------------------------------------------------
+
+
+def _scored(sample, arm, outcome):
+    return {
+        "sample": sample,
+        "arm": arm,
+        "extraction": {"n_reads": 10},
+        "runs": [
+            {
+                "sample": sample,
+                "arm": arm,
+                "status": "ok",
+                "variants": {"GENE-chr1-1": {"outcome": outcome}},
+            }
+        ],
+    }
+
+
+def test_merge_keeps_both_arms_of_one_sample(tmp_path, monkeypatch):
+    """Two legs of the same sample must not overwrite each other.
+
+    Splitting the CI matrix by arm means T1-ONT/reads and T1-ONT/assembly are
+    separate jobs writing separate artifacts. Before they were named per arm
+    both wrote results/scored/T1-ONT.json, and download-artifact's
+    merge-multiple would silently keep whichever landed second.
+    """
+    monkeypatch.setattr(evaluate, "SCORED_DIR", tmp_path)
+    monkeypatch.setattr(evaluate, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(
+        evaluate,
+        "load_variants",
+        lambda: [
+            {
+                "variant_id": "GENE-chr1-1",
+                "gene": "GENE",
+                "protein_change": "p.Ala1Thr",
+                "consequence": "missense_variant",
+            }
+        ],
+    )
+
+    (tmp_path / "T1-ONT.reads.json").write_text(
+        json.dumps(_scored("T1-ONT", "reads", "rna_only"))
+    )
+    (tmp_path / "T1-ONT.assembly.json").write_text(
+        json.dumps(_scored("T1-ONT", "assembly", "proteoform"))
+    )
+
+    payload = evaluate.merge()
+
+    arms = payload["variants"][0]["samples"]["T1-ONT"]["arms"]
+    assert sorted(arms) == ["assembly", "reads"]
+    # The verdict is the better of the two, not whichever file sorted last.
+    assert payload["variants"][0]["samples"]["T1-ONT"]["outcome"] == "proteoform"
+    assert payload["n_recovered"] == 1

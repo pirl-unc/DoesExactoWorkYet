@@ -468,19 +468,22 @@ def score_samples(samples: list[str]) -> list[dict]:
             }
         )
 
+    # One file per sample *and* arm. CI runs them as separate jobs, so two legs
+    # of the same sample would otherwise write the same filename and the second
+    # artifact downloaded would quietly replace the first.
     SCORED_DIR.mkdir(parents=True, exist_ok=True)
-    for name in samples:
-        subset = [run for run in graded_runs if run["sample"] == name]
-        if not subset:
-            continue
+    for run in graded_runs:
+        name = run["sample"]
         # Carry the read-extraction summary along: work/ does not survive between
         # CI jobs, and the site wants to show what went in.
         stats_file = stats_path(SAMPLES_BY_NAME[name])
         stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
-        (SCORED_DIR / f"{name}.json").write_text(
+        out_path = SCORED_DIR / f"{name}.{run['arm']}.json"
+        out_path.write_text(
             json.dumps(
                 {
                     "sample": name,
+                    "arm": run["arm"],
                     "extraction": {
                         key: stats[key]
                         for key in (
@@ -493,13 +496,13 @@ def score_samples(samples: list[str]) -> list[dict]:
                         )
                         if key in stats
                     },
-                    "runs": subset,
+                    "runs": [run],
                 },
                 indent=2,
             )
             + "\n"
         )
-        print(f"scored {name}: {len(subset)} arm(s) -> {SCORED_DIR / f'{name}.json'}")
+        print(f"scored {name}/{run['arm']} -> {out_path}")
     return graded_runs
 
 

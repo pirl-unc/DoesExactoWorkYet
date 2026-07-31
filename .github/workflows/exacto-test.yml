@@ -4,10 +4,14 @@ name: Exacto test
 # result, publish the site and commit the results so the track record builds up
 # over time.
 #
-# Sequencing samples run as a matrix — not timepoints. T1 was sequenced on ONT
-# and again on PacBio, so a leg keyed on the biopsy would have to pick one and
-# drop the other. A single job doing them all would take most of GitHub's
-# six-hour ceiling; in parallel they finish in about as long as the slowest one.
+# The matrix is sample x arm — one job per thing that can independently
+# succeed or fail. Samples rather than timepoints because T1 was sequenced on
+# ONT and again on PacBio, so a leg keyed on the biopsy would have to drop one.
+# Arms because when a runner dies mid-job nothing after it executes, not even
+# an `if: always()` upload: run 93e3d08 lost three legs that way and with them
+# the assembly results they had already finished. Split, a dead assembly leg
+# costs the assembly result and nothing else, and the cheap reads arm — no
+# assembler, no JVM, spanning reads only — lands on its own runner regardless.
 # Scoring happens inside each job because the primary-structures TSVs it reads
 # are far too big to hand between jobs — only the compact scored JSON travels.
 on:
@@ -57,6 +61,9 @@ jobs:
       fail-fast: false
       matrix:
         sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio]
+        # reads first in the list so it is the one that starts if the runner
+        # pool is tight: it is the cheap arm and the likelier to finish.
+        arm: [reads, assembly]
     runs-on: ubuntu-latest
     timeout-minutes: 340
     defaults:
@@ -128,14 +135,14 @@ jobs:
       - name: Extract long reads for ${{ matrix.sample }}
         run: python -m pipeline.extract_reads --samples ${{ matrix.sample }}
 
-      - name: Run Exacto on ${{ matrix.sample }}
+      - name: Run Exacto on ${{ matrix.sample }} (${{ matrix.arm }})
         run: |
           python -m pipeline.run_exacto \
             --threads "$(nproc)" \
             --samples ${{ matrix.sample }} \
-            --arms $ARMS
+            --arms ${{ matrix.arm }}
 
-      - name: Score ${{ matrix.sample }}
+      - name: Score ${{ matrix.sample }} (${{ matrix.arm }})
         run: |
           python -m pipeline.evaluate \
             --samples ${{ matrix.sample }} \
@@ -145,11 +152,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: scored-${{ matrix.sample }}
+          name: scored-${{ matrix.sample }}-${{ matrix.arm }}
           retention-days: 30
           if-no-files-found: warn
           path: |
-            results/scored/${{ matrix.sample }}.json
+            results/scored/${{ matrix.sample }}.${{ matrix.arm }}.json
             results/environment.json
             work/reads/${{ matrix.sample }}.extraction.json
             work/resources.log
@@ -158,14 +165,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: exacto-outputs-${{ matrix.sample }}
+          name: exacto-outputs-${{ matrix.sample }}-${{ matrix.arm }}
           retention-days: 14
           if-no-files-found: warn
           path: |
-            work/exacto/${{ matrix.sample }}/**/run.json
-            work/exacto/${{ matrix.sample }}/**/*.fasta
-            work/exacto/${{ matrix.sample }}/**/logs/*.log
-            work/exacto/${{ matrix.sample }}/**/rna_vars/*rna_variant_calls.tsv
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/run.json
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/*.fasta
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/logs/*.log
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/rna_vars/*rna_variant_calls.tsv
 
   publish:
     needs: run
