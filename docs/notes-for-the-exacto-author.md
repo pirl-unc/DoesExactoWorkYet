@@ -63,7 +63,7 @@ remaining 7 are one systematic failure mode, not seven separate ones.
 This is the single most important result, and it is not about Exacto's
 algorithms.
 
-![Where mutations drop out](figures/variant-funnel.png)
+![Where mutations drop out: the two routes are identical until Exacto calls, then they diverge.](figures/variant-funnel.png)
 
 Two routes to a transcript were run on identical reads:
 
@@ -75,10 +75,25 @@ They are identical up to "allele present in the RNA", because they are the same
 reads. Then they diverge completely: **assembly loses 87–100% of alleles at the
 calling stage; reads loses 8–25%.**
 
+**The final rung of that figure is an upper bound, and should be read as one.**
+"Correct residue" counts a mutation if *any* of the candidate proteoforms
+carries the right amino acid — and the reads route returns a median of 5.5
+candidates per mutation, up to 107, unranked (§4.3). So the reads line answers
+"is the right answer somewhere in the pile", not "does a caller get it". Those
+are very different questions, and the gap between them is entirely a property
+of the reads route: assembly returns about one candidate, so for assembly the
+two coincide.
+
+The harness now reports both — the ceiling, and what the modal-translation rule
+of §6 yields when forced to pick one proteoform per mutation without knowing
+which is right. The single-pick figures land with the run in flight at the time
+of writing; until then, treat every reads-route number in this document as the
+optimistic end of a range whose pessimistic end is not yet measured.
+
 Across all samples: reads recovers 22 mutations, assembly recovers 3, and
 **assembly recovers nothing reads does not.** The assembly-only set is empty.
 
-![Sequence surviving each route](figures/sequence-funnel.png)
+![Sequence surviving each route: 42% versus 0.6% of input reaches variant calling.](figures/sequence-funnel.png)
 
 The sequence funnel shows why: 42% of input survives the reads route, 0.6%
 survives assembly — roughly half lost at `min-read-support 3`, and ~75% of the
@@ -90,7 +105,7 @@ A contig is built from many reads at a locus. If the mutant allele is a minority
 of them, the consensus is the wild-type sequence and the mutation is averaged
 away *before Exacto ever sees it*. The VAF profile is the signature:
 
-![VAF profile](figures/vaf-profile.png)
+![Assembly only reaches the clonal end of the VAF range.](figures/vaf-profile.png)
 
 | recovered by | n | median ONT VAF |
 |---|---|---|
@@ -115,7 +130,7 @@ the cost of allele sensitivity, and subclonal mutations are the target.
 Assembly produces materially cleaner reading frames, and the gradient is exactly
 what sequencing error predicts:
 
-![Frameshift rate by platform](figures/frameshift-by-platform.png)
+![Frameshifts track basecalling accuracy, not biology.](figures/frameshift-by-platform.png)
 
 | how the transcript was made | proteoforms | frameshifted |
 |---|---|---|
@@ -233,7 +248,7 @@ The harness reports four axes per method:
 | axis | definition | why |
 |---|---|---|
 | **sensitivity** | recovered / mutations whose allele is in that sample's RNA | scoring against all 37 punishes a method for what the tumour does not express |
-| **right answer present** | any candidate carries the right residue | a *ceiling*, not a result — flatters high-multiplicity methods badly |
+| **right answer present** | any candidate carries the right residue | a *ceiling*, not a result — flatters high-multiplicity methods badly, and is what §2's figure plots |
 | **consensus pick correct** | the modal translation carries it | what a caller gets choosing without knowing the answer |
 | **candidates per mutation** | distinct proteins returned per mutation | work the user inherits, since nothing ranks them |
 
@@ -290,7 +305,7 @@ determined by the annotation, and read error cannot move it. A proteoform from a
 novel gene has nothing external constraining it, and `longest_orf` is a guess
 that no amount of molecule support can validate.
 
-![How the reading frame is established](figures/orf-provenance.png)
+![How the reading frame is established, best to worst.](figures/orf-provenance.png)
 
 | tier | evidence | frame determined by | externally checkable? |
 |---|---|---|---|

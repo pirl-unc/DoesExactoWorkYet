@@ -51,8 +51,6 @@ def figures(paths: dict) -> None:
         ax.plot(range(5), ys, alpha=.75, **style)
     ax.set_xticks(range(5)); ax.set_xticklabels(stages)
     ax.set_ylabel("mutations remaining (of 37)")
-    ax.set_title("Where mutations drop out: identical until Exacto calls, "
-                 "then they diverge", loc="left", fontsize=10, weight="bold")
     ax.legend(handles=[
         Line2D([], [], color=OK, lw=2, marker="o", ms=4, label="reads"),
         Line2D([], [], color=BAD, lw=2, ls="--", marker="s", ms=4, label="assembly"),
@@ -71,8 +69,6 @@ def figures(paths: dict) -> None:
     ax.set_xticks(range(5))
     ax.set_xticklabels(["input", "assembled /\ncapped", "support\nfilter",
                         "aligned", "spliced\nfilter"])
-    ax.set_title("Sequence surviving each route", loc="left", fontsize=10,
-                 weight="bold")
     ax.legend(frameon=False, fontsize=8)
     fig.tight_layout(); fig.savefig(FIGURES / "sequence-funnel.png"); plt.close(fig)
 
@@ -90,8 +86,9 @@ def figures(paths: dict) -> None:
                     xytext=(0, 3), textcoords="offset points", ha="center",
                     fontsize=8)
     ax.set_ylabel("% of proteoforms frameshifted")
-    ax.set_title("Frameshifts track basecalling accuracy, not biology",
-                 loc="left", fontsize=10, weight="bold")
+    # Room for the value labels sitting above each bar, plus title padding:
+    # without both, the tallest label runs into the title.
+    ax.set_ylim(0, max((r[1] for r in rows), default=1) * 1.42)
     fig.tight_layout(); fig.savefig(FIGURES / "frameshift-by-platform.png")
     plt.close(fig)
 
@@ -105,8 +102,7 @@ def figures(paths: dict) -> None:
                     xytext=(0, 3), textcoords="offset points", ha="center",
                     fontsize=8)
     ax.set_ylabel("median ONT VAF")
-    ax.set_title("Assembly only reaches the clonal end of the VAF range",
-                 loc="left", fontsize=10, weight="bold")
+    ax.set_ylim(0, max((r["median_vaf"] or 0 for r in prof), default=1) * 1.42)
     fig.tight_layout(); fig.savefig(FIGURES / "vaf-profile.png"); plt.close(fig)
 
 
@@ -164,15 +160,18 @@ def orf_provenance_figure() -> None:
         ax.set_xlim(-0.14, 1.06)
         ax.set_ylim(0, 1.0)
         ax.axis("off")
-    fig.suptitle("How the reading frame is established, best to worst",
-                 x=0.012, ha="left", fontsize=11, weight="bold", y=0.995)
-    fig.tight_layout(rect=(0, 0, 1, 0.955))
+    fig.tight_layout()
     fig.savefig(FIGURES / "orf-provenance.png", dpi=160)
     plt.close(fig)
 
 
 CSS = """
-@page { size: A4; margin: 20mm 18mm; }
+@page {
+  size: A4;
+  margin: 20mm 18mm;
+  @bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt;
+                   color: #888; }
+}
 body { font-family: "Charter","Georgia",serif; font-size: 10.5pt; line-height: 1.5;
        color: #1a1a1a; }
 h1 { font-size: 20pt; margin: 0 0 .2em; line-height: 1.2; }
@@ -190,8 +189,10 @@ table { border-collapse: collapse; width: 100%; margin: .8em 0; font-size: 9.5pt
 th, td { border-bottom: 1px solid #ddd; padding: 5px 7px; text-align: left;
          vertical-align: top; }
 th { border-bottom: 1.5px solid #999; font-weight: 600; }
-figure { margin: 1em 0; page-break-inside: avoid; text-align: center; }
+figure { margin: 1.1em 0; page-break-inside: avoid; text-align: center; }
 figure img { max-width: 100%; }
+figcaption { margin-top: .45em; font-size: 9pt; font-weight: 600; color: #333;
+             text-align: left; line-height: 1.35; }
 hr { border: none; border-top: 1px solid #ddd; margin: 1.6em 0; }
 a { color: #1a5490; text-decoration: none; }
 """
@@ -207,7 +208,10 @@ def build_pdf() -> pathlib.Path:
     def embed(match: re.Match) -> str:
         alt, path = match.group(1), match.group(2)
         data = base64.b64encode((DOCS / path).read_bytes()).decode()
-        return f'<figure><img alt="{alt}" src="data:image/png;base64,{data}"></figure>'
+        return (
+            f'<figure><img alt="{alt}" src="data:image/png;base64,{data}">'
+            f'<figcaption>{alt}</figcaption></figure>'
+        )
 
     body = re.sub(r'<p><img alt="([^"]*)" src="([^"]*)"\s*/?></p>', embed, body)
     html = DOCS / "_notes.html"
@@ -217,11 +221,24 @@ def build_pdf() -> pathlib.Path:
         f"<style>{CSS}</style></head><body>{body}</body></html>"
     )
     pdf = DOCS / "notes-for-the-exacto-author.pdf"
+
+    # Chrome rather than wkhtmltopdf. Both embed ToUnicode maps, but
+    # wkhtmltopdf's Qt WebKit lays glyphs out so that Preview cannot select
+    # across them -- the text is present and extractable by pdftotext, and
+    # still unusable to a reader trying to quote it.
+    chrome = next(
+        (c for c in (
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/usr/bin/google-chrome", "/usr/bin/chromium",
+        ) if pathlib.Path(c).exists()),
+        None,
+    )
+    if chrome is None:
+        raise SystemExit("no Chrome found for PDF rendering")
     subprocess.run(
-        ["wkhtmltopdf", "--enable-local-file-access", "--print-media-type",
-         "--footer-center", "[page] / [topage]", "--footer-font-size", "8",
-         "--footer-spacing", "6", str(html), str(pdf)],
-        check=True, capture_output=True,
+        [chrome, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+         f"--print-to-pdf={pdf}", html.as_uri()],
+        check=True, capture_output=True, timeout=120,
     )
     html.unlink(missing_ok=True)
     return pdf

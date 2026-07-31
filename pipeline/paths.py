@@ -417,10 +417,17 @@ VARIANT_STAGES = [
      "an RNA variant call at this exact locus and allele"),
     ("translated", "Mutant protein translated",
      "a proteoform carries the mutation"),
-    ("residue", "Correct residue",
-     "the amino acid the annotation predicts"),
-    ("peptide", "Whole vaccine peptide",
-     "every published epitope present verbatim, spanning the manufactured peptide"),
+    # Two versions on purpose. The first asks whether the right answer is
+    # anywhere in the candidate set -- a ceiling, and the number every earlier
+    # version of this funnel reported without saying so. The second asks what a
+    # caller gets choosing one proteoform without knowing which is right, which
+    # is the number that describes actual use.
+    ("residue", "Correct residue (any candidate)",
+     "some candidate carries the amino acid the annotation predicts — an upper bound"),
+    ("residue_pick", "Correct residue (single pick)",
+     "the modal translation carries it, chosen without knowing the answer"),
+    ("peptide", "Whole vaccine peptide (single pick)",
+     "every published epitope present verbatim in that single chosen proteoform"),
 ]
 
 
@@ -463,6 +470,8 @@ def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[di
         for variant_id, entry in run.get("variants", {}).items():
             if "consensus_vaccine_peptide" in entry:
                 measured["peptide"] = True
+            if "consensus_residue_confirmed" in entry:
+                measured["residue_pick"] = True
             rank = _RANK.get(entry.get("outcome"), 0)
             if entry.get("spanning_reads", 0) > 0:
                 counts["covered"] += 1
@@ -474,6 +483,8 @@ def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[di
                 counts["translated"] += 1
             if entry.get("residue_confirmed"):
                 counts["residue"] += 1
+            if entry.get("consensus_residue_confirmed"):
+                counts["residue_pick"] += 1
             peptide = entry.get("consensus_vaccine_peptide")
             if peptide and peptide.get("complete"):
                 counts["peptide"] += 1
