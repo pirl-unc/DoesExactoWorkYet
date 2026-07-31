@@ -77,6 +77,13 @@ jobs:
       # communication" and yields no diagnosis. Bounded, it fails as a step —
       # which is a finding this harness knows how to publish.
       JAVA_TOOL_OPTIONS: -Xmx9g
+      # Python block-buffers stdout when it is a pipe rather than a TTY, so
+      # every step marker run_exacto printed during the 1h36m before T1-ONT's
+      # runner died was still in the buffer when it was killed — the log shows
+      # extraction finishing and then nothing at all. Unbuffered, the markers
+      # stream live and survive, because GitHub persists log lines as they
+      # arrive even when the runner never comes back.
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - uses: actions/checkout@v5
@@ -111,21 +118,6 @@ jobs:
           key: refdata-${{ hashFiles('pipeline/config.py') }}
           restore-keys: refdata-
 
-      # A job that dies at 03:08 with "the hosted runner lost communication"
-      # leaves nothing behind to diagnose. This does, and costs nothing.
-      - name: Sample memory and disk every 30s
-        run: |
-          mkdir -p work
-          nohup bash -c 'while true; do
-            printf "%s  mem_used=%sMB mem_avail=%sMB  disk_avail=%sMB\n" \
-              "$(date -u +%H:%M:%S)" \
-              "$(free -m | awk "/^Mem:/{print \$3}")" \
-              "$(free -m | awk "/^Mem:/{print \$7}")" \
-              "$(df -m --output=avail "$GITHUB_WORKSPACE" | tail -1 | tr -d " ")"
-            sleep 30
-          done' > work/resources.log 2>&1 &
-          echo "watching -> work/resources.log"
-
       - name: Fetch vaccine variants from osteosarc.com
         run: python -m pipeline.fetch_osteosarc
 
@@ -137,6 +129,19 @@ jobs:
 
       - name: Run Exacto on ${{ matrix.sample }} (${{ matrix.arm }})
         run: |
+          # Into this step's stdout, not a file: GitHub persists log lines as
+          # they stream, so these survive a runner that never comes back. An
+          # artifact does not — the upload step never runs.
+          ( while true; do
+              echo "[res] $(date -u +%H:%M:%S)" \
+                   "mem_avail=$(free -m | awk '/^Mem:/{print $7}')MB" \
+                   "swap_used=$(free -m | awk '/^Swap:/{print $3}')MB" \
+                   "disk_avail=$(df -m --output=avail "$GITHUB_WORKSPACE" | tail -1 | tr -d ' ')MB"
+              sleep 60
+            done ) &
+          watcher=$!
+          trap 'kill $watcher 2>/dev/null || true' EXIT
+
           python -m pipeline.run_exacto \
             --threads "$(nproc)" \
             --samples ${{ matrix.sample }} \
@@ -159,7 +164,6 @@ jobs:
             results/scored/${{ matrix.sample }}.${{ matrix.arm }}.json
             results/environment.json
             work/reads/${{ matrix.sample }}.extraction.json
-            work/resources.log
 
       - name: Upload Exacto outputs
         if: always()
