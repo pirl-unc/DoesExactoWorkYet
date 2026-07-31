@@ -10,9 +10,9 @@
   },
   {
     "date": "2026-07-31",
-    "timestamp": "2026-07-31T18:57:55+00:00",
+    "timestamp": "2026-07-31T21:46:04+00:00",
     "exacto_version": "0.4.6a1",
-    "commit": "4ace095",
+    "commit": "e197f4f",
     "n_variants": 37,
     "n_testable": 37,
     "n_recovered": 22

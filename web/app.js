@@ -18,46 +18,23 @@ const RECOVERED = new Set(["peptide", "proteoform"]);
 // RNA never carried is not an Exacto failure; one it carried and Exacto did not
 // translate is.
 const STATES = {
-  // The strongest claim available: the single proteoform a caller would pick,
-  // containing the entire manufactured peptide verbatim. Only reachable for the
-  // 10 mutations the portal published epitopes for — the rest can never show
-  // this, which is a limit of the ground truth, not of the tool.
-  peptide_confirmed: {
-    label: "vaccine peptide recovered", short: "\u2713\u2713", tone: "ok",
-    blurb: "the chosen proteoform contains the whole manufactured vaccine "
-         + "peptide, verbatim — the strongest evidence this test can produce",
-  },
   detected: {
-    label: "residue confirmed", short: "\u2713", tone: "ok",
-    blurb: "a mutant protein carries what the annotation predicts — the right "
-         + "residue, or the right frame for an indel. Weaker than the row "
-         + "above: one amino acid, and satisfied by any candidate rather than "
-         + "the chosen one. Paler where a single read carries the allele",
-  },
-  // A protein at the right codon carrying the wrong amino acid is not a
-  // recovered neoantigen. It used to render as a green check, which is the
-  // single most misleading thing this page could do: it counts a miss as a win
-  // in the element a reader looks at first.
-  wrong_residue: {
-    label: "wrong product", short: "WRONG", tone: "warn",
-    blurb: "a mutant protein was translated, but it does not carry what the "
-         + "annotation predicts — right locus, wrong product. Paler where a "
-         + "single read carries the allele",
-  },
-  unverified: {
-    label: "unverified", short: "?", tone: "warn",
-    blurb: "a mutant protein was translated and there is nothing to check it "
-         + "against — no predicted residue for this consequence class",
+    label: "detected", short: "\u2713", tone: "ok",
+    blurb: "a mutant protein sequence was translated",
   },
   missed_with_rna: {
-    label: "missed", short: "MISS", tone: "bad",
+    label: "missed, allele present", short: "MISS", tone: "bad",
     blurb: "the allele is in this sample's RNA — Exacto called it, or the portal "
          + "genotyped alt reads — but no mutant protein came out",
   },
   // Missing an allele carried by one read is a different claim from missing one
   // carried by thousands. Same category, visibly weaker evidence, so it is not
   // scored as though it were the H1-2 case.
-
+  missed_thin: {
+    label: "missed, single read", short: "MISS", tone: "bad",
+    blurb: "as above, but exactly one read carries the allele here — too thin to "
+         + "hold strongly against the caller",
+  },
   missed_no_rna: {
     label: "no allele in RNA", short: "·", tone: "none",
     blurb: "no alt reads for this allele in this sample, so nothing could be "
@@ -73,15 +50,8 @@ const STATES = {
     blurb: "no Exacto run for this sample",
   },
 };
-const STATE_ORDER = ["peptide_confirmed", "detected", "wrong_residue",
-                     "unverified", "missed_with_rna",
-                     "missed_no_rna", "error", "not_run"];
-// Any judgement resting on a single read is shown paler. One read is not
-// evidence of the same weight as thirty, whichever way the judgement went.
-const SHADED_BY_DEPTH = new Set([
-  "peptide_confirmed", "detected", "wrong_residue", "unverified",
-  "missed_with_rna",
-]);
+const STATE_ORDER = ["detected", "missed_with_rna", "missed_thin", "missed_no_rna",
+                     "error", "not_run"];
 
 const TONE_VAR = { ok: "--ok", warn: "--warn", bad: "--bad", none: "--none" };
 const SEVERITY_TONE = {
@@ -146,28 +116,12 @@ function stateOf(variant, sample) {
     if (runs.length && runs.some((r) => r.status !== "ok")) return "error";
     return "not_run";
   }
-  const translated = arms.filter(
-    (a) => a.outcome === "peptide" || a.outcome === "proteoform");
-  if (translated.length) {
-    // Strongest first: the chosen proteoform containing the entire published
-    // vaccine peptide. Distinct from "some candidate had the right residue",
-    // which is one amino acid chosen with hindsight.
-    if (translated.some((a) => a.consensus_vaccine_peptide?.complete)) {
-      return "peptide_confirmed";
-    }
-    // expectation_confirmed generalises the check across consequence classes —
-    // the residue for missense, the frame for an indel. Older results only have
-    // residue_confirmed, so fall back to it rather than showing them unverified.
-    const verdicts = translated.map((a) =>
-      a.expectation_confirmed !== undefined && a.expectation_confirmed !== null
-        ? a.expectation_confirmed
-        : a.residue_confirmed);
-    if (verdicts.some((v) => v === true)) return "detected";
-    if (verdicts.some((v) => v === false)) return "wrong_residue";
-    return "unverified";
+  if (arms.some((a) => a.outcome === "peptide" || a.outcome === "proteoform")) {
+    return "detected";
   }
-  return alleleReadsInRna(variant, sample, entry) ? "missed_with_rna"
-                                                  : "missed_no_rna";
+  const reads = alleleReadsInRna(variant, sample, entry);
+  if (!reads) return "missed_no_rna";
+  return reads === 1 ? "missed_thin" : "missed_with_rna";
 }
 
 function outcomeOf(variant, sample) {
@@ -305,18 +259,14 @@ function renderTiles() {
 
   for (const sample of DATA.samples) {
     const extraction = DATA.extraction?.[sample.name];
-    // Counted on the same rule the cells use. Counting any proteoform here
-    // while the cell below says WRONG is the summary contradicting the detail.
-    const hits = DATA.variants
-      .filter((variant) => stateOf(variant, sample) === "detected").length;
-    const wrong = DATA.variants
-      .filter((variant) => stateOf(variant, sample) === "wrong_residue").length;
+    const outcomes = DATA.variants.map((variant) => outcomeOf(variant, sample.name));
+    const hits = outcomes.filter((outcome) => RECOVERED.has(outcome)).length;
     tiles.push({
       label: sample.label,
       value: DATA.has_exacto_run ? String(hits) : "—",
-      sub: (wrong ? `${wrong} wrong product · ` : "") + (extraction
-        ? `${extraction.n_reads.toLocaleString()} reads`
-        : "not extracted"),
+      sub: extraction
+        ? `${extraction.n_reads.toLocaleString()} reads · ${extraction.n_spanning_reads.toLocaleString()} spanning`
+        : "not extracted",
     });
   }
 
@@ -499,15 +449,9 @@ function sortValue(variant, key) {
     case "vaf": return -latestVaf(variant);
     case "reads": return -ontReads(variant);
     case "outcome": {
-      // Sort on what the cells actually show, so a wrong-residue hit does not
-      // sort alongside a confirmed one.
-      const order = ["peptide_confirmed", "detected", "unverified",
-                     "wrong_residue", "missed_with_rna", "missed_no_rna",
-                     "error", "not_run"];
-      const worst = (DATA.samples || [])
-        .map((sample) => order.indexOf(stateOf(variant, sample)))
-        .filter((i) => i >= 0);
-      return worst.length ? Math.min(...worst) : 99;
+      const outcome = outcomeOf(variant, null);
+      const rank = outcome ? OUTCOME_ORDER.indexOf(outcome) : -1;
+      return rank < 0 ? 99 : rank;
     }
     default: return variant.gene;
   }
@@ -520,10 +464,7 @@ function visibleVariants() {
 
   return DATA.variants
     .filter((variant) => {
-      // "only recovered" means the annotation was matched, not merely that
-      // some protein came out.
-      if (onlyRecovered && !(DATA.samples || []).some(
-            (sample) => stateOf(variant, sample) === "detected")) return false;
+      if (onlyRecovered && !RECOVERED.has(outcomeOf(variant, null))) return false;
       if (onlyElispot && variant.elispot.status !== "positive") return false;
       if (!query) return true;
       const haystack = [
@@ -549,28 +490,20 @@ function sampleCells(variant) {
     const state = stateOf(variant, sample);
     const spec = STATES[state];
     const rung = outcomeOf(variant, sample.name);
-    const depth = alleleReadsInRna(
-      variant, sample, variant.recovery?.samples?.[sample.name]);
-    const thin = SHADED_BY_DEPTH.has(state) && depth === 1;
     const cell = el(
       "span",
-      `tp-cell${state === "not_run" ? " not-run" : ""}${thin ? " thin" : ""}`,
+      `tp-cell${state === "not_run" ? " not-run" : ""}`
+        + `${state === "missed_thin" ? " thin" : ""}`,
       DATA.has_exacto_run ? spec.short : "·",
     );
     cell.style.background = `var(${TONE_VAR[spec.tone]}-soft)`;
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
     // Keep the ladder available: it says how far Exacto got, which is the
     // useful detail once you know whose fault the outcome is.
-    const entry = variant.recovery?.samples?.[sample.name];
-    const peptide = Object.values(entry?.arms || {})
-      .map((a) => a.consensus_vaccine_peptide).find(Boolean);
+    const depth = alleleReadsInRna(
+      variant, sample, variant.recovery?.samples?.[sample.name]);
     cell.title = `${sample.label}: ${spec.label}`
       + (depth ? `, ${depth} alt read${depth === 1 ? "" : "s"}` : "")
-      + (peptide
-          ? `, ${peptide.n_epitopes_matched}/${peptide.n_epitopes_total} epitopes`
-          : variant.vaccine_epitopes?.length
-            ? `, ${variant.vaccine_epitopes.length} epitopes published`
-            : ", no published epitope to check against")
       + (OUTCOMES[rung] ? ` (${OUTCOMES[rung].label})` : "");
     wrapper.appendChild(cell);
   }
@@ -1186,54 +1119,6 @@ function renderPathComparison(data) {
   node.append(box);
 }
 
-function renderVersions() {
-  const node = $("#version-table");
-  if (!node) return;
-  const rows = DATA.by_version || [];
-  node.innerHTML = "";
-  if (rows.length < 1) {
-    node.append(el("div", "empty",
-      "No completed run yet — a row appears per Exacto version tested."));
-    return;
-  }
-
-  const table = el("table", "ladder-table");
-  const head = el("tr");
-  for (const [label, cls] of [["Exacto version", null], ["First tested", null],
-                              ["Runs", "num"], ["Recovered", "num"],
-                              ["Change", "num"]]) {
-    head.append(el("th", cls, label));
-  }
-  const thead = el("thead"); thead.append(head); table.append(thead);
-
-  const body = el("tbody");
-  for (const row of [...rows].reverse()) {
-    const tr = el("tr");
-    tr.append(el("td", null, row.exacto_version));
-    const when = el("td");
-    when.append(el("div", null, row.first_seen || "—"));
-    if (row.last_seen && row.last_seen !== row.first_seen) {
-      when.append(el("div", "locus", `last ${row.last_seen}`));
-    }
-    tr.append(when);
-    tr.append(el("td", "num", String(row.runs)));
-    tr.append(el("td", "num", `${row.n_recovered} / ${row.n_testable}`));
-    const change = el("td", "num");
-    if (row.delta === null || row.delta === undefined) {
-      change.append(el("span", "locus", "baseline"));
-    } else {
-      const tone = row.direction === "better" ? "ladder-best"
-        : row.direction === "worse" ? "ladder-bad" : "locus";
-      change.append(el("span", tone,
-        row.delta > 0 ? `+${row.delta}` : String(row.delta)));
-    }
-    tr.append(change);
-    body.append(tr);
-  }
-  table.append(body);
-  node.append(table);
-}
-
 function renderWorklog() {
   const node = $("#worklog-list");
   if (!node) return;
@@ -1781,7 +1666,6 @@ async function main() {
     renderFindings();
     renderRuns();
     renderPaths();
-    renderVersions();
     renderWorklog();
   }
   renderProvenance();
