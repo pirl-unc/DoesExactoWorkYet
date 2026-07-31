@@ -103,6 +103,60 @@ def extraction_summary(exacto_payload: dict | None) -> dict:
     return summary
 
 
+def by_version(history: list[dict]) -> list[dict]:
+    """One row per Exacto version, so a regression is visible as one.
+
+    The track record is a list of runs; what a reader wants is whether the tool
+    got better or worse between releases. Keyed on the version rather than the
+    date because two runs of the same version should not look like progress,
+    and a version tested months apart should still compare to its neighbours.
+
+    Each row carries the best result seen for that version — not the latest.
+    A run that crashed halfway and published a partial verdict should not make
+    a version look worse than it is; that failure is visible in the run records.
+    """
+    versions: dict[str, dict] = {}
+    for entry in history:
+        version = entry.get("exacto_version")
+        if not version or entry.get("n_recovered") is None:
+            continue
+        row = versions.setdefault(version, {
+            "exacto_version": version,
+            "runs": 0,
+            "first_seen": entry.get("date"),
+            "last_seen": entry.get("date"),
+            "n_variants": entry.get("n_variants"),
+            "n_testable": entry.get("n_testable"),
+            "n_recovered": entry.get("n_recovered"),
+            "commit": entry.get("commit"),
+        })
+        row["runs"] += 1
+        row["last_seen"] = entry.get("date") or row["last_seen"]
+        if (entry.get("n_recovered") or 0) > (row["n_recovered"] or 0):
+            row.update({
+                "n_recovered": entry["n_recovered"],
+                "n_testable": entry.get("n_testable"),
+                "commit": entry.get("commit"),
+            })
+
+    rows = sorted(versions.values(), key=lambda r: r["first_seen"] or "")
+    previous = None
+    for row in rows:
+        # Change against the previous version tested, which is the comparison
+        # that answers "did this release help".
+        row["delta"] = (
+            row["n_recovered"] - previous["n_recovered"] if previous else None
+        )
+        row["direction"] = (
+            None if row["delta"] is None
+            else "better" if row["delta"] > 0
+            else "worse" if row["delta"] < 0
+            else "same"
+        )
+        previous = row
+    return rows
+
+
 def update_history(summary: dict) -> list[dict]:
     """Record whether the answer changed, not that the site was rebuilt.
 
@@ -312,6 +366,7 @@ def build_payload() -> dict:
         "runs": (exacto_payload or {}).get("runs", []),
         "variants": variants,
         "history": history,
+        "by_version": by_version(history),
     }
 
 

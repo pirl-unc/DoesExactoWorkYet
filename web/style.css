@@ -1012,9 +1012,9 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   max-width: 74ch;
 }
 
-/* A miss on a single read is the same category as a miss on thousands, but far
-   weaker evidence. Paler rather than a separate colour, so it still reads as a
-   miss at a glance. */
+/* A judgement resting on one read is the same category as one resting on
+   thousands, and far weaker evidence — whichever way it went. Paler rather
+   than a separate colour, so the category still reads at a glance. */
 .tp-cell.thin { opacity: .45; }
 
 /* The single proteoform a caller would carry forward, with the vaccine peptide
@@ -1036,3 +1036,6 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   margin-bottom: .45rem;
 }
 .consensus .seq { word-break: break-all; }
+
+/* "WRONG" needs room the three-letter codes do not. */
+.tp-cell { min-width: 2.6rem; }
