@@ -141,6 +141,65 @@ def update_history(summary: dict) -> list[dict]:
     return history
 
 
+# Enough to cover a few weeks of work without turning data.json into an archive.
+WORKLOG_LIMIT = 30
+
+# git log's own record/field separators, so a commit body containing newlines,
+# tabs or pipes cannot break the parse.
+_RECORD, _FIELD = "\x1e", "\x1f"
+
+
+def worklog(limit: int = WORKLOG_LIMIT) -> list[dict]:
+    """What has been changed in this harness, and why, from the commit log.
+
+    The commit messages already carry the diagnosis — what failed, what the
+    evidence was, what was done about it. Publishing them means the site says
+    why it reports what it reports, rather than presenting a number as though
+    it fell out of the sky. Read from git rather than hand-maintained so it
+    cannot drift from what actually shipped.
+
+    Distinct from findings.json, which is about bugs in *Exacto*; this is about
+    changes to the harness testing it.
+    """
+    raw = git(
+        "log",
+        f"-{limit}",
+        "--date=short",
+        f"--pretty=format:%h{_FIELD}%ad{_FIELD}%an{_FIELD}%s{_FIELD}%b{_RECORD}",
+    )
+    if not raw:
+        return []
+
+    entries = []
+    for record in raw.split(_RECORD):
+        record = record.strip("\n")
+        if not record.strip():
+            continue
+        parts = record.split(_FIELD)
+        if len(parts) < 4:
+            continue
+        sha, date, author, subject = parts[:4]
+        body = parts[4] if len(parts) > 4 else ""
+        entries.append(
+            {
+                "sha": sha,
+                "date": date,
+                "author": author,
+                "subject": subject,
+                # Blank-line-separated paragraphs, rewrapped in the browser.
+                "body": [
+                    " ".join(block.split())
+                    for block in body.strip().split("\n\n")
+                    if block.strip() and not block.startswith("Claude-Session:")
+                ],
+                # Results commits are written by CI, not by a person changing
+                # how the test works; the site separates the two.
+                "kind": "results" if subject.startswith("results:") else "change",
+            }
+        )
+    return entries
+
+
 def build_payload() -> dict:
     variants_payload = load(RESULTS_DIR / "vaccine_variants.json")
     if variants_payload is None:
@@ -241,6 +300,7 @@ def build_payload() -> dict:
         "configuration": configuration(),
         "reproduction": reproduction(),
         "findings": (load(RESULTS_DIR / "findings.json") or {}).get("findings", []),
+        "worklog": worklog(),
         "runs": (exacto_payload or {}).get("runs", []),
         "variants": variants,
         "history": history,

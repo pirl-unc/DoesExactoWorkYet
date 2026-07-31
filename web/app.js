@@ -659,6 +659,43 @@ function renderFindings() {
 
 /* ------------------------------------------------------------- run cards */
 
+function renderWorklog() {
+  const node = $("#worklog-list");
+  if (!node) return;
+  const entries = DATA.worklog || [];
+  node.innerHTML = "";
+  if (!entries.length) {
+    node.append(el("div", "empty", "No commit history available."));
+    return;
+  }
+
+  // Results commits are CI writing down an answer; change commits are somebody
+  // altering how the answer is produced. Only the second kind is an argument,
+  // so only it gets the full body.
+  for (const entry of entries) {
+    // Namespaced: a bare "change" class would collide with the variant table's
+    // .change column, which is monospace and nowrap.
+    const card = el("div", `worklog-entry worklog-${entry.kind}`);
+
+    const head = el("div", "worklog-head");
+    head.append(el("span", `badge ${entry.kind === "results" ? "none" : "ok"}`,
+      entry.kind === "results" ? "result" : "change"));
+    head.append(el("span", "worklog-subject", entry.subject));
+    const sha = el("a", "worklog-sha", entry.sha);
+    sha.href = `https://github.com/${DATA.repo}/commit/${entry.sha}`;
+    sha.target = "_blank";
+    sha.rel = "noreferrer";
+    head.append(sha);
+    head.append(el("span", "locus", entry.date));
+    card.append(head);
+
+    for (const paragraph of entry.body || []) {
+      card.append(el("p", "worklog-body", paragraph));
+    }
+    node.append(card);
+  }
+}
+
 function renderRuns() {
   const node = $("#run-cards");
   node.innerHTML = "";
@@ -1164,6 +1201,7 @@ async function main() {
     renderConfiguration();
     renderFindings();
     renderRuns();
+    renderWorklog();
   }
   renderProvenance();
   renderLiveRun();
