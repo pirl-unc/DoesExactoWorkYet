@@ -112,6 +112,16 @@
     <div id="path-ladder"></div>
     <div id="path-comparison"></div>
 
+    <h3>Where mutations drop out, per sample</h3>
+    <p class="section-note">
+      The funnels above count sequence. This counts mutations: how many of the
+      37 are still in play at each stage, for every sample and method. The gap
+      between <em>allele present in the RNA</em> and <em>Exacto called it</em>
+      is the cost of everything in between — the filters, the preparation, and
+      the caller's own thresholds — and the gap after that is translation.
+    </p>
+    <div id="variant-funnel"></div>
+
     <h3>Methods benchmark: sensitivity against specificity</h3>
     <p class="section-note">
       Every way of turning reads into transcripts, scored on the same mutations.

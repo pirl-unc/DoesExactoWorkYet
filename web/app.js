@@ -847,10 +847,56 @@ function renderPaths() {
   renderPathLadder(data);
   renderPathComparison(data);
   renderPathQuality(data);
+  renderVariantFunnel(data);
   renderBenchmark(data);
 }
 
 function pct(x) { return x === null || x === undefined ? "—" : `${(x * 100).toFixed(0)}%`; }
+
+function renderVariantFunnel(data) {
+  const node = $("#variant-funnel");
+  const rows = data.variant_funnel;
+  if (!node || !rows?.length) return;
+  node.innerHTML = "";
+
+  const stages = rows[0].stages;
+  const table = el("table", "ladder-table");
+  const head = el("tr");
+  head.append(el("th", null, "Sample"));
+  head.append(el("th", null, "Method"));
+  for (const stage of stages) {
+    const th = el("th", "num");
+    th.append(el("div", null, stage.label));
+    th.append(el("div", "locus", stage.note));
+    head.append(th);
+  }
+  const thead = el("thead"); thead.append(head); table.append(thead);
+
+  const body = el("tbody");
+  for (const row of rows) {
+    const tr = el("tr");
+    tr.append(el("td", null, row.label));
+    tr.append(el("td", null, row.method_label));
+    for (const stage of row.stages) {
+      const td = el("td", "num");
+      if (stage.pending) {
+        td.append(el("div", "locus", "pending"));
+      } else {
+        td.append(el("div", null, String(stage.n)));
+        if (stage.of_previous !== null && stage.of_previous !== undefined) {
+          // Retention against the previous stage: where mutations are lost,
+          // not merely how many are left.
+          const drop = stage.of_previous < 0.8 ? "ladder-bad" : "locus";
+          td.append(el("div", drop, `${(stage.of_previous * 100).toFixed(0)}%`));
+        }
+      }
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  table.append(body);
+  node.append(table);
+}
 
 function renderBenchmark(data) {
   const node = $("#benchmark");

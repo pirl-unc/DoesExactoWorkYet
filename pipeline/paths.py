@@ -402,6 +402,113 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
     return {"by_method": summary, "by_sample": rows}
 
 
+# Where a mutation stops being recoverable, per sample. Distinct from the
+# sequence funnel above, which counts how much *sequence* survives: this counts
+# how many of the 37 mutations are still in play at each stage, which is the
+# question a reader actually has. The gap between "allele is in the RNA" and
+# "Exacto called it" is the cost of everything in between — the filters, the
+# preparation, and the caller's own thresholds.
+VARIANT_STAGES = [
+    ("covered", "Reads cover the locus",
+     "at least one read spans the mutation in this sample"),
+    ("allele", "Allele present in the RNA",
+     "alt reads for this allele, from the portal's genotyping or Exacto's own calls"),
+    ("called", "Exacto called it in the RNA",
+     "an RNA variant call at this exact locus and allele"),
+    ("translated", "Mutant protein translated",
+     "a proteoform carries the mutation"),
+    ("residue", "Correct residue",
+     "the amino acid the annotation predicts"),
+    ("peptide", "Whole vaccine peptide",
+     "every published epitope present verbatim, spanning the manufactured peptide"),
+]
+
+
+def variant_funnel(payload: dict | None, variants: list[dict] | None) -> list[dict] | None:
+    """Per sample and method: how many mutations survive each stage."""
+    if not payload or not payload.get("runs"):
+        return None
+    portal = {
+        v["variant_id"]: (v.get("ont_expectation") or {}) for v in (variants or [])
+    }
+    # Whether the allele is in a sample's RNA is a property of the sample, not
+    # of the method used to look. For ONT the portal's genotyping settles it
+    # independently; for PacBio and Illumina it does not exist, so the only
+    # evidence is Exacto's own calls — and taking those per method made the
+    # stage method-dependent, showing 0 for one method and 18 for another on
+    # the same sample. Pooled across every method that ran on the sample, which
+    # is the closest thing to a method-independent answer available.
+    allele_by_sample: dict[str, set[str]] = {}
+    for run in payload["runs"]:
+        if run.get("status") != "ok":
+            continue
+        found = allele_by_sample.setdefault(run["sample"], set())
+        for variant_id, entry in run.get("variants", {}).items():
+            if _supported(variant_id, entry, run.get("timepoint"),
+                          run.get("platform"), portal):
+                found.add(variant_id)
+
+    rows = []
+    for run in payload["runs"]:
+        if run.get("status") != "ok":
+            continue
+        counts = dict.fromkeys((key for key, _, _ in VARIANT_STAGES), 0)
+        # A stage whose field does not exist in this result is pending, not
+        # zero. Reporting "0 whole vaccine peptides" for a run computed before
+        # that field existed would read as a finding rather than as a question
+        # not yet asked.
+        measured = dict.fromkeys((key for key, _, _ in VARIANT_STAGES), False)
+        for key in ("covered", "allele", "called", "translated", "residue"):
+            measured[key] = True
+        for variant_id, entry in run.get("variants", {}).items():
+            if "consensus_vaccine_peptide" in entry:
+                measured["peptide"] = True
+            rank = _RANK.get(entry.get("outcome"), 0)
+            if entry.get("spanning_reads", 0) > 0:
+                counts["covered"] += 1
+            if variant_id in allele_by_sample.get(run["sample"], ()):
+                counts["allele"] += 1
+            if rank >= _RANK["rna_only"]:
+                counts["called"] += 1
+            if rank >= _RANK["proteoform"]:
+                counts["translated"] += 1
+            if entry.get("residue_confirmed"):
+                counts["residue"] += 1
+            peptide = entry.get("consensus_vaccine_peptide")
+            if peptide and peptide.get("complete"):
+                counts["peptide"] += 1
+        method = run.get("method") or {}
+        rows.append({
+            "sample": run["sample"],
+            "label": run.get("label", run["sample"]),
+            "platform": run.get("platform"),
+            "method": run.get("arm"),
+            "method_label": method.get("label", run.get("arm")),
+            "stages": [
+                {
+                    "key": key,
+                    "label": label,
+                    "note": note,
+                    "n": counts[key] if measured[key] else None,
+                    "pending": not measured[key],
+                    # Retained against the stage before, which is what shows
+                    # *where* mutations are lost rather than how many remain.
+                    "of_previous": (
+                        round(counts[key] / counts[previous], 4)
+                        if previous and counts[previous] and measured[key]
+                        else None
+                    ),
+                }
+                for (key, label, note), previous in zip(
+                    VARIANT_STAGES,
+                    [None] + [k for k, _, _ in VARIANT_STAGES[:-1]],
+                    strict=True,
+                )
+            ],
+        })
+    return rows
+
+
 def analyse(
     payload: dict | None, variants: list[dict] | None = None
 ) -> dict[str, Any] | None:
@@ -476,6 +583,7 @@ def analyse(
         "comparison": comparison,
         "vaf_profile": _vaf_profile(reached_by_arm, variants or [], n_variants),
         "benchmark": benchmark(payload, variants),
+        "variant_funnel": variant_funnel(payload, variants),
         "n_assembly_methods": sum(
             1 for path in paths if path.get("assembler")
         ),
