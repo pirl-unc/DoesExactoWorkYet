@@ -20,6 +20,7 @@ so a failure shows up on the site as a failure rather than as a silent zero.
 
 from __future__ import annotations
 
+import gzip
 import json
 import shutil
 import subprocess
@@ -359,12 +360,25 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     clusters = out_dir / "isonclust"
     if clusters.exists():
         shutil.rmtree(clusters)
+
+    # isONclust reads the FASTQ with a plain open(path, "r") and has no gzip
+    # handling, so a .fastq.gz dies on the gzip magic number:
+    #   UnicodeDecodeError: 'utf-8' codec can't decode byte 0x8b in position 1
+    # Everything else in this pipeline takes gzip, so the reads are written
+    # compressed; decompress once here rather than storing them twice for every
+    # arm that does not need it.
+    plain = out_dir / f"{sample.name}.reads_arm.fastq"
+    if not plain.exists():
+        with gzip.open(reads_arm_fastq(sample), "rb") as source, \
+                open(plain, "wb") as sink:
+            shutil.copyfileobj(source, sink)
+
     mode = "--isoseq" if sample.platform == "PacBio" else "--ont"
     runner.run(
         "isonclust",
         [
             "isONclust", mode,
-            "--fastq", str(reads_arm_fastq(sample)),
+            "--fastq", str(plain),
             "--outfolder", str(clusters),
             "--t", str(threads),
         ],
@@ -375,7 +389,7 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
         [
             "isONclust", "write_fastq",
             "--clusters", str(clusters / "final_clusters.tsv"),
-            "--fastq", str(reads_arm_fastq(sample)),
+            "--fastq", str(plain),
             "--outfolder", str(per_cluster),
             "--N", "1",
         ],

@@ -74,3 +74,21 @@ def test_sweeps_differ_from_the_canonical_method_in_exactly_one_setting():
 def test_short_reads_get_only_the_short_read_method():
     assert [m.name for m in methods_for("short")] == ["spades"]
     assert "spades" not in [m.name for m in methods_for("long")]
+
+
+def test_isonclust_is_handed_an_uncompressed_fastq():
+    """isONclust has no gzip handling and dies on the magic number.
+
+    It opens the file with a plain open(path, "r"), so a .fastq.gz fails with
+    UnicodeDecodeError on byte 0x8b. Everything else in this pipeline takes
+    gzip, so the mismatch is easy to reintroduce.
+    """
+    source = inspect.getsource(run_exacto.run_isoncorrect)
+    assert "gzip.open" in source, "the reads must be decompressed for isONclust"
+    assert '"--fastq", str(plain)' in source, (
+        "isONclust and isONclust write_fastq must both read the plain copy"
+    )
+    assert "reads_arm_fastq(sample)" in source
+    assert 'str(reads_arm_fastq(sample))' not in source.split("plain = ")[1], (
+        "no command may be handed the gzipped path after decompression"
+    )
