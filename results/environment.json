@@ -1,0 +1,10 @@
+{
+  "exacto_version": "0.4.6a1",
+  "exacto_ref": "v0.4.6a1",
+  "exacto_source": "release",
+  "python": "3.10.20",
+  "platform": "Linux-6.17.0-1020-azure-x86_64-with-glibc2.39",
+  "samtools": "samtools 1.21",
+  "minimap2": "2.28-r1209",
+  "rnabloom": "RNA-Bloom v2.0.1"
+}

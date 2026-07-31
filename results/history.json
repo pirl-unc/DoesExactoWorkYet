@@ -1,0 +1,11 @@
+[
+  {
+    "date": "2026-07-31",
+    "timestamp": "2026-07-31T03:06:47+00:00",
+    "exacto_version": "0.4.6a1",
+    "commit": "153ea6f",
+    "n_variants": 37,
+    "n_testable": 37,
+    "n_recovered": 15
+  }
+]
