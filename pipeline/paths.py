@@ -294,7 +294,10 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
     rows = []
     for run in ok_runs:
         supported = recovered = residue_ok = residue_seen = 0
+        consensus_ok = consensus_seen = 0
+        candidates_total = candidates_correct = 0
         forms = frameshifted = 0
+        epi_any = epi_consensus = epi_possible = 0
         per_variant: list[int] = []
         for variant_id, entry in run.get("variants", {}).items():
             if _supported(variant_id, entry, run.get("timepoint"),
@@ -307,6 +310,16 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
                 if entry.get("residue_confirmed") is not None:
                     residue_seen += 1
                     residue_ok += bool(entry["residue_confirmed"])
+                if entry.get("consensus_residue_confirmed") is not None:
+                    consensus_seen += 1
+                    consensus_ok += bool(entry["consensus_residue_confirmed"])
+                if entry.get("n_vaccine_epitopes"):
+                    epi_possible += 1
+                    epi_any += bool(entry.get("n_matched_epitopes"))
+                    epi_consensus += bool(entry.get("n_consensus_matched_epitopes"))
+                if entry.get("n_residue_correct") is not None:
+                    candidates_total += entry.get("n_proteoforms", 0)
+                    candidates_correct += entry["n_residue_correct"]
             for form in entry.get("proteoforms", []):
                 forms += 1
                 frameshifted += bool(form.get("frameshift"))
@@ -325,6 +338,19 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
             "sensitivity": round(recovered / supported, 4) if supported else None,
             "residue_precision": round(residue_ok / residue_seen, 4)
             if residue_seen else None,
+            # What a caller gets picking the modal translation, with no
+            # knowledge of the answer. The honest single-answer number.
+            "consensus_precision": round(consensus_ok / consensus_seen, 4)
+            if consensus_seen else None,
+            # And what one gets picking blindly: the fraction of all candidates
+            # that are right.
+            "candidate_precision": round(candidates_correct / candidates_total, 4)
+            if candidates_total else None,
+            # The whole manufactured peptide, not one residue. In any candidate,
+            # and in the one a caller would pick.
+            "epitope_any": round(epi_any / epi_possible, 4) if epi_possible else None,
+            "epitope_consensus": round(epi_consensus / epi_possible, 4)
+            if epi_possible else None,
             "inframe_fraction": round(1 - frameshifted / forms, 4) if forms else None,
             "candidates_per_variant": per_variant[len(per_variant) // 2]
             if per_variant else None,
@@ -339,6 +365,7 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
             "family": row["family"], "tool": row["tool"], "params": row["params"],
             "supported": 0, "recovered": 0, "samples": 0, "seconds": 0,
             "_inframe": [], "_precision": [], "_candidates": [],
+            "_consensus": [], "_candprec": [], "_epiany": [], "_epicons": [],
         })
         agg["samples"] += 1
         agg["supported"] += row["supported"]
@@ -346,6 +373,10 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
         agg["seconds"] += row["seconds"] or 0
         for key, source in (("_inframe", "inframe_fraction"),
                             ("_precision", "residue_precision"),
+                            ("_consensus", "consensus_precision"),
+                            ("_candprec", "candidate_precision"),
+                            ("_epiany", "epitope_any"),
+                            ("_epicons", "epitope_consensus"),
                             ("_candidates", "candidates_per_variant")):
             if row[source] is not None:
                 agg[key].append(row[source])
@@ -360,6 +391,10 @@ def benchmark(payload: dict | None, variants: list[dict] | None) -> dict | None:
             "sensitivity": round(agg["recovered"] / agg["supported"], 4)
             if agg["supported"] else None,
             "residue_precision": mean(agg["_precision"]),
+            "consensus_precision": mean(agg["_consensus"]),
+            "candidate_precision": mean(agg["_candprec"]),
+            "epitope_any": mean(agg["_epiany"]),
+            "epitope_consensus": mean(agg["_epicons"]),
             "inframe_fraction": mean(agg["_inframe"]),
             "candidates_per_variant": mean(agg["_candidates"]),
         })

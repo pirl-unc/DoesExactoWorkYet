@@ -128,3 +128,45 @@ def test_ungrouped_file_is_rejected_rather_than_silently_truncated(tmp_path):
 
     with pytest.raises(SystemExit, match="not grouped by peptide_id"):
         proteoforms_by_rna_call(path, {"1"})
+
+
+# --------------------------------------------------------------------------
+# Resolving many candidates to one, without knowing the answer
+# --------------------------------------------------------------------------
+
+from pipeline.evaluate import _consensus_form
+
+
+def _form(peptide_id, protein, residues):
+    return {"peptide_id": peptide_id, "protein": protein, "mutant_residues": residues}
+
+
+def test_consensus_picks_the_recurring_sequence_not_the_erroneous_one():
+    """Errors are independent between reads; the true sequence recurs.
+
+    Three reads agree on the same translation and two disagree in different
+    ways, which is what a basecalling indel looks like: present in the read that
+    carried it and nowhere else.
+    """
+    forms = [
+        _form(1, "MKTAYIAKQR", "T"),
+        _form(2, "MKTAYIAKQR", "T"),
+        _form(3, "MKTGYIAKQR", "G"),   # one read's error
+        _form(4, "MKTAYIAKQR", "T"),
+        _form(5, "MKTWYIAKQR", "W"),   # a different read's error
+    ]
+
+    consensus = _consensus_form(forms)
+
+    assert consensus["protein"] == "MKTAYIAKQR"
+    assert consensus["consensus_support"] == 3
+
+
+def test_consensus_is_deterministic_under_a_tie():
+    forms = [_form(7, "AAA", "A"), _form(3, "BBB", "B")]
+
+    assert _consensus_form(forms)["peptide_id"] == _consensus_form(forms)["peptide_id"]
+
+
+def test_consensus_of_nothing_is_none():
+    assert _consensus_form([]) is None

@@ -826,7 +826,16 @@ function renderBenchmark(data) {
   const cols = [
     ["method_label", "Method", null],
     ["sensitivity", "Sensitivity", "recovered / mutations whose allele is in the RNA"],
-    ["residue_precision", "Residue correct", "of those recovered, the right amino acid"],
+    ["residue_precision", "Right answer present",
+     "any of the candidates carries the right residue — a ceiling"],
+    ["consensus_precision", "Consensus pick correct",
+     "the modal translation carries it — what you get choosing blind"],
+    ["candidate_precision", "Candidates correct",
+     "fraction of all candidates that carry it"],
+    ["epitope_any", "Vaccine peptide found",
+     "the whole manufactured epitope, verbatim, in any candidate"],
+    ["epitope_consensus", "…in the consensus pick",
+     "the same, in the single candidate chosen without knowing the answer"],
     ["inframe_fraction", "In frame", "of proteoforms emitted, not frameshifted"],
     ["candidates_per_variant", "Candidates", "proteins handed back per mutation — lower is less work"],
   ];

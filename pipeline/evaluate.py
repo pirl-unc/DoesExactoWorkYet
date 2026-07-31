@@ -339,15 +339,52 @@ def evaluate_arm(
         else:
             outcome = "no_call"
 
+        # Three different questions, deliberately kept apart.
+        #
+        # residue_confirmed  -- is the right answer anywhere in the candidate
+        #                       set? A ceiling. Generous, and it flatters a
+        #                       method that emits many candidates: one correct
+        #                       proteoform among a hundred wrong ones scores the
+        #                       same as one correct proteoform on its own.
+        # residue_precision  -- what fraction of the candidates are right? What
+        #                       a user picking blindly would get.
+        # consensus_*        -- what a user gets picking deterministically, with
+        #                       no knowledge of the answer. See _consensus_form.
         residue_confirmed = None
+        n_residue_correct = None
+        consensus_residue_confirmed = None
+        # Picked for every variant, not only missense ones: the epitope check
+        # below applies whatever the consequence class.
+        consensus = _consensus_form(variant_proteoforms)
         if expectation["kind"] == "missense" and variant_proteoforms:
             expected_aa = expectation["alt_aa"]
-            residue_confirmed = any(
-                expected_aa and expected_aa in form["mutant_residues"]
-                for form in variant_proteoforms
-            )
+            correct = [
+                form for form in variant_proteoforms
+                if expected_aa and expected_aa in form["mutant_residues"]
+            ]
+            residue_confirmed = bool(correct)
+            n_residue_correct = len(correct)
+            if consensus is not None:
+                consensus_residue_confirmed = bool(
+                    expected_aa and expected_aa in consensus["mutant_residues"]
+                )
 
+        # Two strengths of evidence, both reported.
+        #
+        #   residue    one amino acid: does the codon under test change to what
+        #              the annotation predicts.
+        #   epitope    the entire manufactured peptide -- an 8-11mer for class I
+        #              or up to a 17mer for class II -- found verbatim as a
+        #              substring of the whole translated protein, not of the
+        #              trimmed display context. Far stronger: it requires the
+        #              sequence either side of the mutation to be right too,
+        #              which is exactly what a frameshift destroys.
         epitope_hits = matched_epitopes(variant, variant_proteoforms)
+        # And the same question asked of the single candidate a caller would
+        # actually pick, rather than of the whole set.
+        consensus_epitopes = (
+            matched_epitopes(variant, [consensus]) if consensus else []
+        )
 
         graded[variant_id] = {
             "dna_variant_call_id": call_id,
@@ -358,11 +395,16 @@ def evaluate_arm(
             ),
             "expected": expectation,
             "residue_confirmed": residue_confirmed,
+            "n_residue_correct": n_residue_correct,
+            "consensus_residue_confirmed": consensus_residue_confirmed,
+            "consensus_peptide_id": (consensus or {}).get("peptide_id"),
+            "consensus_support": (consensus or {}).get("consensus_support"),
             "n_vaccine_epitopes": len(variant.get("vaccine_epitopes") or []),
             # Not truncated: the per-variant roll-up counts from this list, and
             # a variant can legitimately match dozens of overlapping epitopes.
             "matched_epitopes": epitope_hits,
             "n_matched_epitopes": len(epitope_hits),
+            "n_consensus_matched_epitopes": len(consensus_epitopes),
             "rna_variant_calls": variant_rna,
             "alt_reads_in_calls": alt_reads,
             # Rows in the primary-structures table that name this variant's RNA
@@ -383,6 +425,44 @@ def evaluate_arm(
             "n_mutant_peptides": len(variant_peptides),
         }
     return graded
+
+
+def _consensus_form(forms: list[dict]) -> dict | None:
+    """The candidate a caller would pick with no knowledge of the answer.
+
+    Take the modal protein sequence. Basecalling errors are independent between
+    reads, so a spurious indel appears in the read that carried it and nowhere
+    else, while the true sequence recurs across every read that covers the
+    locus. Counting identical translations is therefore a consensus taken at the
+    protein level rather than the nucleotide level — and unlike assembly, it
+    happens *after* the allele has already been separated onto its own reads, so
+    it cannot average a minority allele away.
+
+    Ties break on the lowest peptide id, which is arbitrary but deterministic;
+    a tie means the reads genuinely disagree and no rule saves you.
+
+    This is a rule the harness applies, not something Exacto does. Exacto emits
+    the candidates unranked.
+    """
+    if not forms:
+        return None
+    counts: dict[str, int] = {}
+    for form in forms:
+        protein = form.get("protein") or form.get("context") or ""
+        counts[protein] = counts.get(protein, 0) + 1
+    best = max(
+        forms,
+        key=lambda form: (
+            counts.get(form.get("protein") or form.get("context") or "", 0),
+            -form["peptide_id"],
+        ),
+    )
+    return {
+        **best,
+        "consensus_support": counts.get(
+            best.get("protein") or best.get("context") or "", 0
+        ),
+    }
 
 
 def _dedupe_proteoforms(forms: list[dict]) -> list[dict]:
