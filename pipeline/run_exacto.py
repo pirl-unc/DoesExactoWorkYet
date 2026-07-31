@@ -42,10 +42,16 @@ from .config import (
     SAMPLES,
     WORK_DIR,
     Sample,
+    arms_for,
     minimap2_preset,
     samples_named,
 )
-from .extract_reads import assembly_inputs, reads_arm_fastq, stats_path
+from .extract_reads import (
+    SYNTHETIC_BASE_QUALITY,
+    assembly_inputs,
+    reads_arm_fastq,
+    stats_path,
+)
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
@@ -272,6 +278,128 @@ def align(
     mapped.unlink(missing_ok=True)
 
 
+def fasta_to_fastq(source: Path, dest: Path, quality: int) -> int:
+    """Give assembled contigs a flat quality so call-rna-vars will read them.
+
+    Nexus does this for RNA-Bloom2 output inside its own filter. rnaSPAdes has
+    no such wrapper, so the same trick is applied here — and it is the same
+    fabrication, disclosed the same way.
+    """
+    written = 0
+    with open(source) as handle, open(dest, "w") as sink:
+        name, chunks = None, []
+
+        def flush() -> None:
+            nonlocal written
+            if name is None:
+                return
+            sequence = "".join(chunks)
+            if not sequence:
+                return
+            sink.write(f"@{name}\n{sequence}\n+\n{chr(quality + 33) * len(sequence)}\n")
+            written += 1
+
+        for line in handle:
+            line = line.rstrip("\n")
+            if line.startswith(">"):
+                flush()
+                name, chunks = line[1:].split()[0], []
+            elif name is not None:
+                chunks.append(line.strip())
+        flush()
+    return written
+
+
+def run_rnaspades(runner: Runner, sample, out_dir: Path, threads: int) -> Path:
+    """Assemble short reads into transcript-like contigs.
+
+    Exacto is a long-read tool and says so, but it never asks where a sequence
+    came from — it wants transcripts. rnaSPAdes turns short reads into exactly
+    that, which is the only honest way to ask whether the long-read requirement
+    is about the reads themselves or about the assembly they make possible.
+
+    Run in single-end mode. The mates are extracted independently by region, so
+    a pair is frequently split across the spanning/context files or has one mate
+    outside the window entirely; feeding that to -1/-2 as though it were an
+    intact library would be worse than not claiming pairing at all.
+    """
+    assembly_dir = out_dir / "rnaspades"
+    if assembly_dir.exists():
+        shutil.rmtree(assembly_dir)
+    runner.run(
+        "rnaspades",
+        [
+            "rnaspades.py",
+            *(arg for path in assembly_inputs(sample) for arg in ("-s", str(path))),
+            "-o", str(assembly_dir),
+            "-t", str(threads),
+            "-m", "12",
+        ],
+    )
+    contigs = assembly_dir / "transcripts.fasta"
+    if not contigs.exists() or not contigs.stat().st_size:
+        raise StepFailed(f"rnaSPAdes produced no transcripts in {assembly_dir}")
+    return contigs
+
+
+def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path:
+    """Cluster long reads by shared structure, then error-correct within cluster.
+
+    The point is to remove basecalling indels without removing the variant.
+    Assembly does both: it averages over every read at a locus, so a subclonal
+    allele is outvoted and disappears. isONclust groups reads that share
+    transcript structure and isONcorrect polishes each read against the others
+    in its own group, emitting one corrected read per input read — so a minority
+    allele keeps its own read and nothing outvotes it.
+
+    Reference-free throughout, which is why this is preferred to anchoring on an
+    annotated transcript: a novel junction defines its own cluster instead of
+    being measured against a reference that does not contain it.
+    """
+    clusters = out_dir / "isonclust"
+    if clusters.exists():
+        shutil.rmtree(clusters)
+    mode = "--isoseq" if sample.platform == "PacBio" else "--ont"
+    runner.run(
+        "isonclust",
+        [
+            "isONclust", mode,
+            "--fastq", str(reads_arm_fastq(sample)),
+            "--outfolder", str(clusters),
+            "--t", str(threads),
+        ],
+    )
+    per_cluster = clusters / "fastq_files"
+    runner.run(
+        "isonclust_write_fastq",
+        [
+            "isONclust", "write_fastq",
+            "--clusters", str(clusters / "final_clusters.tsv"),
+            "--fastq", str(reads_arm_fastq(sample)),
+            "--outfolder", str(per_cluster),
+            "--N", "1",
+        ],
+    )
+    corrected_dir = out_dir / "isoncorrect"
+    if corrected_dir.exists():
+        shutil.rmtree(corrected_dir)
+    runner.run(
+        "isoncorrect",
+        [
+            "run_isoncorrect",
+            "--fastq_folder", str(per_cluster),
+            "--outfolder", str(corrected_dir),
+            "--t", str(threads),
+        ],
+    )
+    merged = out_dir / f"{sample.name}_corrected.fastq"
+    parts = sorted(corrected_dir.glob("*/corrected_reads.fastq"))
+    if not parts:
+        raise StepFailed(f"isONcorrect produced no corrected reads in {corrected_dir}")
+    merged.write_text("".join(part.read_text() for part in parts))
+    return merged
+
+
 def drop_transcriptless_rna_calls(source: Path, dest: Path) -> int:
     """Copy the RNA callset without the rows that crash ``integrate-vars``.
 
@@ -347,7 +475,28 @@ def run_arm(
     query_fasta: Path | None = None
 
     try:
-        if arm == "assembly":
+        if arm == "assembly" and sample.read_type == "short":
+            # Short reads reach Exacto only as contigs. rnaSPAdes emits FASTA
+            # with no per-base quality, and call-rna-vars panics without one,
+            # so the same flat score Nexus writes for RNA-Bloom2 output is
+            # written here.
+            query_fasta = run_rnaspades(runner, sample, out_dir, threads)
+            query = out_dir / f"{prefix}.transcripts.fastq"
+            n = fasta_to_fastq(query_fasta, query, SYNTHETIC_BASE_QUALITY)
+            result["counts"]["assembled_transcripts"] = n
+            result["counts"]["query_sequences"] = n
+            result.setdefault("workarounds", []).append(
+                f"wrote a flat Q{SYNTHETIC_BASE_QUALITY} for {n:,} rnaSPAdes "
+                "contigs, which carry no quality"
+            )
+        elif arm == "corrected":
+            query = run_isoncorrect(runner, sample, out_dir, threads)
+            with open(query) as handle:
+                result["counts"]["query_sequences"] = sum(
+                    1 for index, _ in enumerate(handle) if index % 4 == 0
+                )
+            result["counts"]["spanning_reads_available"] = stats["n_spanning_reads"]
+        elif arm == "assembly":
             assembly_dir = out_dir / "rnabloom"
             if assembly_dir.exists():
                 shutil.rmtree(assembly_dir)
@@ -413,9 +562,10 @@ def run_arm(
         align(runner, query, sample, arm, aligned_bam)
         result["counts"]["aligned"] = count_alignments(aligned_bam)
 
-        if arm == "assembly":
+        if arm == "assembly" and query_fasta is not None:
             # Only the documented assembly pipeline filters unspliced RNAs;
-            # applied to raw reads it would throw away most of the data.
+            # applied to raw or corrected reads it would throw away most of the
+            # data, since an individual read need not look spliced.
             filtered_bam = out_dir / f"{prefix}.filtered.bam"
             try:
                 runner.run(
@@ -595,7 +745,11 @@ def main() -> None:
     variants = load_variants()
     runs = []
     for sample in samples_named(args.samples):
-        for arm in args.arms:
+        skipped = [a for a in args.arms if a not in arms_for(sample, args.arms)]
+        for name in skipped:
+            print(f"== {sample.name} / {name}: not applicable to "
+                  f"{sample.read_type} reads, skipping ==")
+        for arm in arms_for(sample, args.arms):
             print(f"== {sample.name} / {arm} ==")
             runs.append(run_arm(sample, arm, variants, args.threads))
 

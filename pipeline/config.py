@@ -117,6 +117,10 @@ class Sample:
     name: str
     timepoint: str
     platform: str
+    # "long" or "short". Decides which preprocessing an arm can offer: a 150 bp
+    # read is not a transcript, so the reads and corrected arms are meaningless
+    # for it, while assembly is the only way it can reach Exacto at all.
+    read_type: str
     # Key into assays.ASSAY_META, so a sample and a portal VAF column that mean
     # the same sequencing agree on their label rather than drifting apart.
     assay: str
@@ -156,19 +160,19 @@ _ONT_PROVENANCE = (
 
 SAMPLES = (
     Sample(
-        name="T1-ONT", timepoint="T1", platform="ONT", assay="scRNA_ONT",
+        name="T1-ONT", timepoint="T1", platform="ONT", assay="scRNA_ONT", read_type="long",
         label="T1 · ONT", biopsy_date="2024-06", biosample="IPISRC044_T1",
         bam_url=_ont_bam("T1"), library="single-cell, long read",
         portal_genotyped=True, provenance=_ONT_PROVENANCE,
     ),
     Sample(
-        name="T2-ONT", timepoint="T2", platform="ONT", assay="scRNA_ONT",
+        name="T2-ONT", timepoint="T2", platform="ONT", assay="scRNA_ONT", read_type="long",
         label="T2 · ONT", biopsy_date="2025-01", biosample="IPISRC044_T2",
         bam_url=_ont_bam("T2"), library="single-cell, long read",
         portal_genotyped=True, provenance=_ONT_PROVENANCE,
     ),
     Sample(
-        name="T3-ONT", timepoint="T3", platform="ONT", assay="scRNA_ONT",
+        name="T3-ONT", timepoint="T3", platform="ONT", assay="scRNA_ONT", read_type="long",
         label="T3 · ONT", biopsy_date="2025-04", biosample="IPISRC044_T3",
         bam_url=_ont_bam("T3"), library="single-cell, long read",
         portal_genotyped=True, provenance=_ONT_PROVENANCE,
@@ -182,6 +186,7 @@ SAMPLES = (
     # makes it a real control on how much of a miss is ONT's error rate.
     Sample(
         name="T1-PacBio", timepoint="T1", platform="PacBio", assay="scRNA_PacBio",
+        read_type="long",
         label="T1 · PacBio Iso-Seq", biopsy_date="2024-06",
         biosample="IPISRC044_T1_sclrs_live",
         bam_url=f"{B2}/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
@@ -192,6 +197,34 @@ SAMPLES = (
             "(--keep-non-real-cells), aligned with pbmm2 1.14 --preset ISOSEQ "
             "to refdata-gex-GRCh38-2020-A. Records are deduplicated consensus "
             "transcripts, not raw subreads."
+        ),
+    ),
+)
+
+SAMPLES = SAMPLES + (
+    # Illumina bulk RNA-seq. Exacto calls itself a long-read toolkit and it is
+    # right to: a 150 bp read cannot carry a transcript structure, so raw short
+    # reads have no meaningful path in. Assembled contigs do — they are
+    # transcript-like sequences and Exacto does not ask where a sequence came
+    # from. Including this is the only way to answer whether the long-read
+    # requirement is about the reads or about the assembly they enable.
+    #
+    # 2025.01.06 is the UCLA resection matching the T2 biopsy; it is the one
+    # bulk RNA alignment on the portal that is coordinate-sorted and indexed,
+    # which byte-range access requires.
+    Sample(
+        name="T2-ILMN", timepoint="T2", platform="Illumina", assay="RNA",
+        read_type="short",
+        label="T2 · Illumina bulk", biopsy_date="2025-01",
+        biosample="sj.rna.2025.01.resection.ucla",
+        bam_url=f"{B2}/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna."
+                "ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection."
+                "tcga.d32.protocolAligned.sorted.bam",
+        library="bulk, short read",
+        portal_genotyped=True,
+        provenance=(
+            "STAR, TCGA protocol, GENCODE d32, UCLA Clinical Genomics. "
+            "Coordinate-sorted and indexed, so the same byte-range access works."
         ),
     ),
 )
@@ -268,7 +301,23 @@ SPANNING_READS_PER_VARIANT = 3_000
 #              which is what the Exacto docs prescribe for polyA long reads.
 #   reads    — the reads themselves are handed to Exacto as "transcripts",
 #              skipping assembly. Cheaper, and a useful control.
-ARMS = ("assembly", "reads")
+ARMS = ("assembly", "reads", "corrected")
+
+# Which arms make sense for which kind of read. Enforced rather than left to a
+# CI matrix comment, so an invalid pairing fails loudly instead of producing an
+# empty result that looks like a negative finding.
+ARMS_BY_READ_TYPE = {
+    "long": ("assembly", "reads", "corrected"),
+    # No reads arm: a 150 bp read is not a transcript. No corrected arm:
+    # isONclust/isONcorrect cluster and polish using reads that span shared
+    # transcript structure, which short reads do not.
+    "short": ("assembly",),
+}
+
+
+def arms_for(sample: Sample, requested: list[str] | None = None) -> list[str]:
+    allowed = ARMS_BY_READ_TYPE.get(sample.read_type, ARMS)
+    return [arm for arm in (requested or ARMS) if arm in allowed]
 
 # Andy Lee's Nexus wraps Exacto in a canonical Nextflow subworkflow
 # (PEPTIDE_PREDICTION_EXACTO). Step 6 of it filters RNA-Bloom2's output before
@@ -296,8 +345,14 @@ RNABLOOM_FILTER = {
 MINIMAP2_PRESET = {
     ("ONT", "assembly"): "splice:hq",
     ("ONT", "reads"): "splice",
+    # Corrected reads are consensus-polished, so they earn the high-quality
+    # preset the raw ONT reads do not.
+    ("ONT", "corrected"): "splice:hq",
     ("PacBio", "assembly"): "splice:hq",
     ("PacBio", "reads"): "splice:hq",
+    ("PacBio", "corrected"): "splice:hq",
+    # rnaSPAdes contigs are short-read assemblies: accurate, so splice:hq.
+    ("Illumina", "assembly"): "splice:hq",
 }
 MINIMAP2_COMMON_FLAGS = ("-uf", "--cs", "--eqx", "-Y", "-L", "--secondary=no")
 

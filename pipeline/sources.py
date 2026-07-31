@@ -352,16 +352,60 @@ def configuration() -> list[dict]:
                     ),
                 },
                 {
-                    "name": "Illumina short read",
-                    "value": "not run",
-                    "status": "checked",
-                    "canonical": "Exacto is a long-read tool",
+                    "name": "Arms per read type",
+                    "value": "long reads: reads, corrected, assembly · "
+                    "short reads: assembly only",
+                    "status": "addition",
+                    "canonical": "Nexus offers one route, assembly",
                     "why": (
-                        "The bulk and 10x RNA on the portal is all Illumina. It "
-                        "supplies the VAF columns in the variant table for context, "
-                        "but Exacto's transcript-model construction assumes reads "
-                        "that span a transcript, so running it on 100 bp reads "
-                        "would test the wrong thing."
+                        "Each input gets the preparation that suits it rather "
+                        "than one route imposed on all of them. A 150 bp read is "
+                        "not a transcript, so the reads arm is meaningless for "
+                        "Illumina, and isONclust/isONcorrect both assume reads "
+                        "spanning shared transcript structure — assembly is the "
+                        "only way short reads reach Exacto at all. The rule is "
+                        "enforced in config.arms_for, so an invalid pairing "
+                        "skips loudly instead of returning an empty result that "
+                        "would read as a negative finding."
+                    ),
+                },
+                {
+                    "name": "Illumina short read",
+                    "value": "bulk RNA at T2, assembled with rnaSPAdes",
+                    "status": "addition",
+                    "canonical": "Exacto calls itself a long-read toolkit",
+                    "why": (
+                        "Exacto never asks where a sequence came from — it wants "
+                        "transcripts — so assembled short-read contigs are a "
+                        "legitimate input even though raw short reads are not. "
+                        "Including it is the only way to ask whether the "
+                        "long-read requirement is about the reads themselves or "
+                        "about the assembly they make possible. Run single-end: "
+                        "mates are extracted per region, so a pair is often split "
+                        "across files or has one mate outside the window, and "
+                        "claiming intact pairing would be worse than not claiming "
+                        "it."
+                    ),
+                },
+                {
+                    "name": "Corrected arm",
+                    "value": "isONclust + isONcorrect, then one corrected read "
+                    "per input read",
+                    "status": "addition",
+                    "canonical": "no such arm",
+                    "why": (
+                        "An attempt at the reads arm's recall without its "
+                        "frameshifts. Assembly removes basecalling error by "
+                        "averaging over every read at a locus, which is also how "
+                        "it loses subclonal alleles — 0 of 6 deletions and 3 of "
+                        "37 mutations. isONcorrect polishes each read against "
+                        "others sharing its transcript structure and emits one "
+                        "read per read, so a minority allele keeps its own read. "
+                        "Reference-free, so a novel junction defines its own "
+                        "cluster instead of being measured against an annotation "
+                        "that does not contain it — which matters for the "
+                        "structural variants Exacto's breakpoint encoding exists "
+                        "for, even though none are tested here."
                     ),
                 },
             ],

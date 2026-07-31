@@ -164,7 +164,13 @@ def _fastq_record(read: pysam.AlignedSegment) -> str | None:
         quality_string = "".join(
             chr(value + 33) for value in read.get_forward_qualities()
         )
-    return f"@{read.query_name}\n{sequence}\n+\n{quality_string}\n"
+    # Both mates of an Illumina pair carry the same query name. Written
+    # verbatim that is a FASTQ with duplicate ids, which assemblers either
+    # reject or silently treat as one read.
+    name = read.query_name
+    if read.is_paired:
+        name += "/2" if read.is_read2 else "/1"
+    return f"@{name}\n{sequence}\n+\n{quality_string}\n"
 
 
 def scan_region(

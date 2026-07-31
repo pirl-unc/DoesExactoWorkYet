@@ -27,6 +27,8 @@ class FakeRead:
         # as query_qualities None — and get_forward_qualities() then raises
         # rather than returning None, exactly as it does on a real BAM.
         self.query_qualities = None if "no_qual" in flags else [40] * len(self._sequence)
+        self.is_paired = "paired" in flags
+        self.is_read2 = "read2" in flags
 
     def get_forward_sequence(self):
         return self._sequence
@@ -213,3 +215,16 @@ def test_reads_arm_cap_is_tighter_than_the_assembly_arm_cap():
         extract_reads.READS_ARM_READS_PER_VARIANT
         < config.SPANNING_READS_PER_VARIANT
     )
+
+
+def test_paired_mates_get_distinct_fastq_ids():
+    """Both mates share a query name; a FASTQ with duplicate ids is not valid."""
+    r1 = FakeRead("pair", 400, 600, flags=("paired",))
+    r2 = FakeRead("pair", 400, 600, flags=("paired", "read2"))
+
+    assert extract_reads._fastq_record(r1).split("\n")[0] == "@pair/1"
+    assert extract_reads._fastq_record(r2).split("\n")[0] == "@pair/2"
+
+
+def test_unpaired_reads_keep_their_name():
+    assert extract_reads._fastq_record(FakeRead("ont", 400, 600)).split("\n")[0] == "@ont"

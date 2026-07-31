@@ -831,6 +831,8 @@ function renderPathQuality(data) {
       rows.push({
         how: `${path.label} · ${platform}`,
         n: q.n_proteoforms,
+        perVariant: q.median_per_variant,
+        maxPerVariant: q.max_per_variant,
         median: q.median_length,
         fs: q.frameshift_fraction,
       });
@@ -840,8 +842,8 @@ function renderPathQuality(data) {
 
   const table = el("table", "ladder-table");
   const head = el("tr");
-  for (const h of ["How the transcript was made", "Proteoforms", "Median length",
-                   "Frameshifted"]) {
+  for (const h of ["How the transcript was made", "Proteoforms", "Per variant",
+                   "Median length", "Frameshifted"]) {
     head.append(el("th", h === "How the transcript was made" ? null : "num", h));
   }
   const thead = el("thead");
@@ -852,6 +854,10 @@ function renderPathQuality(data) {
     const tr = el("tr");
     tr.append(el("td", null, r.how));
     tr.append(el("td", "num", r.n.toLocaleString()));
+    const pv = el("td", "num");
+    pv.append(el("div", null, r.perVariant ? `median ${r.perVariant}` : "—"));
+    if (r.maxPerVariant) pv.append(el("div", "locus", `max ${r.maxPerVariant}`));
+    tr.append(pv);
     tr.append(el("td", "num", r.median ? `${r.median} aa` : "—"));
     const fs = el("td", "num");
     fs.append(el("div", r.fs > 0.15 ? "ladder-bad" : null, pct(r.fs)));

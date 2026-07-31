@@ -21,6 +21,10 @@ dependencies:
   - rnabloom=2.0.1
   - openjdk>=17
 
+  # Short-read transcriptome assembly: the only route by which Illumina reads
+  # can become the transcripts Exacto wants.
+  - spades=4.0.0
+
   # pysam bundles a libcurl that cannot find the conda trust store on its own;
   # certifi gives pipeline.config.ensure_ca_bundle something to point it at.
   - certifi
@@ -28,6 +32,14 @@ dependencies:
   - pip:
       # pip rather than conda, per Exacto's install instructions.
       - pysam==0.23.0
+      # The `corrected` arm. isONclust groups long reads by shared transcript
+      # structure and isONcorrect polishes each read against its own group,
+      # emitting one corrected read per input read — so basecalling indels are
+      # removed without a consensus averaging away a minority allele, which is
+      # what assembly does. Reference-free, so a novel junction defines its own
+      # cluster rather than being measured against an annotation.
+      - isONclust==0.0.6.1
+      - isONcorrect==0.1.3.5
       # Andy's Nexus, pinned. Step 6 of his canonical PEPTIDE_PREDICTION_EXACTO
       # subworkflow is nexus_filter_rnabloom2_transcripts; running his code beats
       # reimplementing it.

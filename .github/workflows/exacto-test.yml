@@ -60,10 +60,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio]
+        sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio, T2-ILMN]
         # reads first in the list so it is the one that starts if the runner
-        # pool is tight: it is the cheap arm and the likelier to finish.
-        arm: [reads, assembly]
+        # pool is tight: it is the cheap arm and the likeliest to finish.
+        arm: [reads, corrected, assembly]
+        exclude:
+          # Illumina reads are 150 bp. A read that short is not a transcript, so
+          # the reads arm is meaningless for it, and isONclust/isONcorrect both
+          # assume reads spanning shared transcript structure. Assembly is the
+          # only route by which short reads reach Exacto at all. config.arms_for
+          # enforces the same rule, so a leg added here by mistake skips rather
+          # than producing an empty result that reads as a negative finding.
+          - sample: T2-ILMN
+            arm: reads
+          - sample: T2-ILMN
+            arm: corrected
     runs-on: ubuntu-latest
     timeout-minutes: 340
     defaults:

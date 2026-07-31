@@ -169,8 +169,16 @@ def _quality(runs: list[dict]) -> dict[str, Any]:
     frameshifted = 0
     residue_ok = residue_checked = 0
     epitope_hit = epitope_possible = 0
+    # How many candidate proteins a route hands you for one mutation. The reads
+    # route gives one per read that carries the allele, so a downstream user has
+    # to choose among them and Exacto does not rank them; the assembly route
+    # gives about one. Recall and per-answer precision trade against each other
+    # here, and the count is the visible form of that trade.
+    per_variant: list[int] = []
     for run in runs:
         for entry in run.get("variants", {}).values():
+            if entry.get("n_proteoforms"):
+                per_variant.append(entry["n_proteoforms"])
             for form in entry.get("proteoforms", []):
                 lengths.append(form.get("protein_length", 0))
                 if form.get("frameshift"):
@@ -182,8 +190,12 @@ def _quality(runs: list[dict]) -> dict[str, Any]:
                 epitope_possible += 1
                 epitope_hit += bool(entry.get("n_matched_epitopes"))
     lengths.sort()
+    per_variant.sort()
     return {
         "n_proteoforms": len(lengths),
+        "median_per_variant": per_variant[len(per_variant) // 2] if per_variant else None,
+        "max_per_variant": per_variant[-1] if per_variant else None,
+        "n_recovered_variant_runs": len(per_variant),
         "median_length": lengths[len(lengths) // 2] if lengths else None,
         "frameshift_fraction": round(frameshifted / len(lengths), 4) if lengths else None,
         "residue_ok": residue_ok,

@@ -20,6 +20,7 @@ from .config import (
     RESULTS_DIR,
     SAMPLES,
     SITE_DIR,
+    arms_for,
     minimap2_preset,
 )
 from .extract_reads import stats_path
@@ -275,6 +276,7 @@ def build_payload() -> dict:
                 "name": sample.name,
                 "timepoint": sample.timepoint,
                 "platform": sample.platform,
+                "read_type": sample.read_type,
                 "assay": sample.assay,
                 "label": sample.label,
                 "biopsy_date": sample.biopsy_date,
@@ -283,8 +285,13 @@ def build_payload() -> dict:
                 "bam_url": sample.bam_url,
                 "portal_genotyped": sample.portal_genotyped,
                 "provenance": sample.provenance,
+                # Only the arms this read type can actually run: asking for an
+                # Illumina "reads" preset is a question with no answer, and
+                # minimap2_preset is deliberately strict about that.
+                "arms": arms_for(sample),
                 "minimap2_preset": {
-                    arm: minimap2_preset(sample.platform, arm) for arm in ARMS
+                    arm: minimap2_preset(sample.platform, arm)
+                    for arm in arms_for(sample)
                 },
             }
             for sample in SAMPLES
