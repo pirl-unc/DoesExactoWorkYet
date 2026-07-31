@@ -149,6 +149,11 @@ jobs:
           cache-environment: true
 
       - name: Install Exacto
+        # Authenticates the release lookup: 25 legs sharing runner egress
+        # exhaust the 60/hour unauthenticated API limit and 403 before any of
+        # them does useful work.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/install_exacto.sh
 
       - name: Cache GENCODE and the hg38 index

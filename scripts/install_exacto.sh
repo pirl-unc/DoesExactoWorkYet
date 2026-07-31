@@ -15,9 +15,30 @@ mkdir -p "$WORK" "$RESULTS"
 
 api_repo="${REPO#https://github.com/}"
 
+# api.github.com allows 60 unauthenticated requests per hour per IP, and CI
+# runners share egress. At eight matrix legs that was invisible; at twenty-five
+# starting together it returns 403 and every leg dies in its install step
+# before doing any work. A token raises the limit to 5,000/hour and costs
+# nothing -- GITHUB_TOKEN is already present in Actions.
+gh_api() {
+  local url="$1" attempt
+  for attempt in 1 2 3; do
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+      curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+           -H "X-GitHub-Api-Version: 2022-11-28" "$url" && return 0
+    else
+      curl -fsSL "$url" && return 0
+    fi
+    echo "  ${url} failed (attempt ${attempt}/3); retrying in $((attempt * 10))s" >&2
+    sleep $((attempt * 10))
+  done
+  echo "could not reach ${url} after 3 attempts" >&2
+  return 1
+}
+
 if [[ "$VERSION" == "latest-release" ]]; then
   echo "resolving latest Exacto release..."
-  release_json="$(curl -fsSL "https://api.github.com/repos/${api_repo}/releases/latest")"
+  release_json="$(gh_api "https://api.github.com/repos/${api_repo}/releases/latest")"
   # strict=False: release notes routinely contain raw control characters, which
   # the default JSON decoder rejects.
   read -r tag asset_url <<<"$(printf '%s' "$release_json" | python3 -c '
