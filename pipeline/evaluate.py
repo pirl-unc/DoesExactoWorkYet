@@ -121,6 +121,13 @@ def rna_calls_by_variant(path: Path, variants: list[dict]) -> dict[str, list[dic
                 "reference_transcript_ids": (
                     row.get("reference_transcript_ids") or ""
                 ).strip('"'),
+                # Exacto names the reads behind each call. Counting them gives
+                # allele support derived from this run rather than read off the
+                # portal — the only way to get a number for PacBio, which the
+                # portal's variant table never genotyped.
+                "n_supporting_reads": len(
+                    split_ids(row.get("consensus_read_names"))
+                ),
             }
         )
     return hits
@@ -138,7 +145,9 @@ def integrated_pairs(path: Path) -> dict[str, set[str]]:
     return pairs
 
 
-def proteoforms_by_rna_call(path: Path, call_ids: set[str]) -> dict[str, list[dict]]:
+def proteoforms_by_rna_call(
+    path: Path, call_ids: set[str], references: dict[str, dict] | None = None
+) -> dict[str, list[dict]]:
     """Pull the translated protein around each mutation.
 
     Keyed on *RNA* variant call ids, not DNA ones. Exacto's ``integrate-vars``
@@ -210,11 +219,17 @@ def proteoforms_by_rna_call(path: Path, call_ids: set[str]) -> dict[str, list[di
         if row["codon_index"] == "0":
             residues[int(row["amino_acid_index"])] = row["amino_acid"]
 
-        if row["amino_acid_change"] != "mutant":
-            continue
         linked = split_ids(row["codon_rna_variant_call_ids"]) | split_ids(
             row["rna_variant_call_ids"]
         )
+        if references is not None:
+            for call_id in linked & call_ids:
+                tally = references.setdefault(call_id, {})
+                key = row["amino_acid_change"] or "?"
+                tally[key] = tally.get(key, 0) + 1
+
+        if row["amino_acid_change"] != "mutant":
+            continue
         for call_id in linked & call_ids:
             entry = hits.setdefault(
                 call_id,
@@ -278,8 +293,13 @@ def evaluate_arm(
     }
     all_rna_ids = set().union(*rna_ids_by_variant.values()) if rna_ids_by_variant else set()
 
+    # Why did a call that Exacto made produce no protein? Answering that needs
+    # to know whether translate-structs referenced the call at all.
+    references: dict[str, dict] = {}
     proteoforms_by_rna = proteoforms_by_rna_call(
-        Path(outputs.get("primary_structures_tsv", "/nonexistent")), all_rna_ids
+        Path(outputs.get("primary_structures_tsv", "/nonexistent")),
+        all_rna_ids,
+        references,
     )
     peptides_by_rna = peptides_by_rna_call(
         Path(outputs.get("peptide_variants", "/nonexistent")), all_rna_ids
@@ -299,6 +319,10 @@ def evaluate_arm(
             [item for rna_id in rna_ids for item in peptides_by_rna.get(rna_id, [])]
         )
         variant_rna = rna_hits.get(variant_id, [])
+        # Alt-read support for this allele, as Exacto itself saw it. Deduped
+        # across calls would be better, but Exacto does not tell us whether two
+        # calls share reads, so this is a ceiling and is labelled as one.
+        alt_reads = sum(hit.get("n_supporting_reads", 0) for hit in variant_rna)
         # Recorded for reference, not used to decide anything: integrate-vars is
         # far too permissive to mean "Exacto found this variant" (see
         # proteoforms_by_rna_call).
@@ -340,6 +364,15 @@ def evaluate_arm(
             "matched_epitopes": epitope_hits,
             "n_matched_epitopes": len(epitope_hits),
             "rna_variant_calls": variant_rna,
+            "alt_reads_in_calls": alt_reads,
+            # Rows in the primary-structures table that name this variant's RNA
+            # calls, by what translate-structs said the amino acid did. Empty
+            # means the call was never referenced; {"reference": n} means it was
+            # seen and judged not to change the protein.
+            "primary_structure_rows": {
+                rna_id: references[rna_id] for rna_id in sorted(rna_ids)
+                if rna_id in references
+            },
             "integrated_rna_call_ids": variant_integrated,
             "proteoforms": [
                 {key: value for key, value in form.items() if key != "protein"}

@@ -1002,3 +1002,12 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
   max-width: 74ch;
   white-space: normal;
 }
+
+.legend-note {
+  flex-basis: 100%;
+  margin: .5rem 0 .2rem;
+  font-size: .8rem;
+  color: var(--ink-soft);
+  white-space: normal;
+  max-width: 74ch;
+}

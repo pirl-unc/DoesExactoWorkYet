@@ -12,6 +12,38 @@ const OUTCOME_ORDER = ["peptide", "proteoform", "rna_only", "no_call", "no_reads
 const LEGEND_ORDER = [...OUTCOME_ORDER, "not_run"];
 const RECOVERED = new Set(["peptide", "proteoform"]);
 
+// What actually happened for one mutation in one sample. Distinct from the
+// verdict ladder above, which grades how far Exacto got: this separates whose
+// fault a miss is, which is the question a reader actually has. A mutation the
+// RNA never carried is not an Exacto failure; one it carried and Exacto did not
+// translate is.
+const STATES = {
+  detected: {
+    label: "detected", short: "DET", tone: "ok",
+    blurb: "a mutant protein sequence was translated",
+  },
+  missed_with_rna: {
+    label: "missed, allele present", short: "MISS", tone: "bad",
+    blurb: "the allele is in this sample's RNA — Exacto called it, or the portal "
+         + "genotyped alt reads — but no mutant protein came out",
+  },
+  missed_no_rna: {
+    label: "no allele in RNA", short: "·", tone: "none",
+    blurb: "no alt reads for this allele in this sample, so nothing could be "
+         + "recovered by anyone",
+  },
+  error: {
+    label: "crashed", short: "ERR", tone: "warn",
+    blurb: "a pipeline step exited non-zero for this sample — says nothing about "
+         + "the mutation",
+  },
+  not_run: {
+    label: "not run", short: "⋯", tone: "none",
+    blurb: "no Exacto run for this sample",
+  },
+};
+const STATE_ORDER = ["detected", "missed_with_rna", "missed_no_rna", "error", "not_run"];
+
 const TONE_VAR = { ok: "--ok", warn: "--warn", bad: "--bad", none: "--none" };
 const SEVERITY_TONE = {
   crash: "bad", "silent data loss": "bad",
@@ -39,6 +71,42 @@ const el = (tag, className, text) => {
 // kept at the top of it too.
 function ran(entry) {
   return Boolean(entry && Object.keys(entry.arms || {}).length);
+}
+
+function runsFor(sampleName) {
+  return (DATA.runs || []).filter((r) => r.sample === sampleName);
+}
+
+// Did this sample's RNA carry the allele at all? Two independent sources, and
+// either is sufficient: Exacto called the variant de novo in the RNA, or the
+// portal's own genotyping of the same BAM counted alt reads. The portal only
+// genotyped ONT, so for PacBio the first source is the only one available —
+// which can only ever understate support, never invent it.
+function alleleInRna(variant, sample, entry) {
+  for (const arm of Object.values(entry?.arms || {})) {
+    if ((arm.rna_variant_calls || []).length) return true;
+  }
+  if (sample.platform === "ONT") {
+    const seen = variant.ont_expectation?.[sample.timepoint];
+    if (seen && (seen.alt_reads || 0) > 0) return true;
+  }
+  return false;
+}
+
+function stateOf(variant, sample) {
+  const entry = variant.recovery?.samples?.[sample.name];
+  const arms = Object.values(entry?.arms || {});
+  if (!arms.length) {
+    // No graded result. A crashed run and a run that never happened look the
+    // same in the variant table unless we go and ask the run records.
+    const runs = runsFor(sample.name);
+    if (runs.length && runs.some((r) => r.status !== "ok")) return "error";
+    return "not_run";
+  }
+  if (arms.some((a) => a.outcome === "peptide" || a.outcome === "proteoform")) {
+    return "detected";
+  }
+  return alleleInRna(variant, sample, entry) ? "missed_with_rna" : "missed_no_rna";
 }
 
 function outcomeOf(variant, sample) {
@@ -211,6 +279,18 @@ function renderTiles() {
 function renderLegend() {
   const node = $("#legend");
   node.innerHTML = "";
+  for (const state of STATE_ORDER) {
+    const spec = STATES[state];
+    const item = el("span");
+    const swatch = el("span", "swatch");
+    swatch.style.background = `var(${TONE_VAR[spec.tone]})`;
+    item.append(swatch, document.createTextNode(`${spec.label} — ${spec.blurb}`));
+    node.appendChild(item);
+  }
+  node.appendChild(el("div", "legend-note",
+    "Cells above are coloured by whose result it is. Hover for how far Exacto "
+    + "got on the verdict ladder below, which grades the pipeline rather than "
+    + "the mutation."));
   for (const outcome of LEGEND_ORDER) {
     const spec = OUTCOMES[outcome];
     const item = el("span");
@@ -392,16 +472,20 @@ function visibleVariants() {
 function sampleCells(variant) {
   const wrapper = el("div", "tp-cells");
   for (const sample of DATA.samples) {
-    const outcome = outcomeOf(variant, sample.name);
-    const spec = OUTCOMES[outcome] || OUTCOMES.no_reads;
+    const state = stateOf(variant, sample);
+    const spec = STATES[state];
+    const rung = outcomeOf(variant, sample.name);
     const cell = el(
       "span",
-      `tp-cell${outcome === "not_run" ? " not-run" : ""}`,
+      `tp-cell${state === "not_run" ? " not-run" : ""}`,
       DATA.has_exacto_run ? spec.short : "·",
     );
     cell.style.background = `var(${TONE_VAR[spec.tone]}-soft)`;
     cell.style.color = `var(${TONE_VAR[spec.tone]})`;
-    cell.title = `${sample.label}: ${spec.label}`;
+    // Keep the ladder available: it says how far Exacto got, which is the
+    // useful detail once you know whose fault the outcome is.
+    cell.title = `${sample.label}: ${spec.label}`
+      + (OUTCOMES[rung] ? ` (${OUTCOMES[rung].label})` : "");
     wrapper.appendChild(cell);
   }
   return wrapper;
