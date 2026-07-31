@@ -281,7 +281,85 @@ positive-only benchmark can: whether Exacto's transcript-model construction
 manufactures plausible mutant proteins from noise, which is precisely the risk
 when each of thousands of noisy reads is its own transcript.
 
-### 6.3 Confidence tiers calibrated to protein sequence
+### 6.3 How the reading frame was established
+
+Before any of the evidence axes below, there is a prior question that decides
+how much any of them are worth: **what fixed the reading frame at all?** A
+proteoform whose transcript reaches an annotated start codon has its frame
+determined by the annotation, and read error cannot move it. A proteoform from a
+novel gene has nothing external constraining it, and `longest_orf` is a guess
+that no amount of molecule support can validate.
+
+![How the reading frame is established](figures/orf-provenance.png)
+
+| tier | evidence | frame determined by | externally checkable? |
+|---|---|---|---|
+| **A · anchored** | transcript spans back to the annotated start codon of a matched reference transcript | annotation | **yes** — against the reference CDS |
+| **B · anchored, 5′-truncated** | matches a reference transcript over enough sequence to fix the frame, but does not reach the start | annotation, plus an inference that the frame is preserved to the 5′ end | partially |
+| **C · stitched** | fragment must be joined to a reference transcript by sequence overlap before a frame can be assigned | the inferred join | weakly — a wrong isoform choice changes the frame |
+| **D · de novo** | no annotated transcript applies: novel gene, translocation into non-coding sequence, cryptic exon from an intronic insertion | longest-ORF or equivalent | **no** |
+
+Two things follow immediately.
+
+**The tier is largely set by platform and preparation, not by Exacto.**
+Full-length long reads — Iso-Seq in particular, which is 5′-complete by
+construction via the TSO — land in A. Fragmented long reads and any short-read
+assembly land in B or C, because a 200–600 bp contig rarely reaches a start
+codon. Illumina is therefore structurally disadvantaged for frame determination
+*on top of* the minority-allele blindness in §2.1, and the two compound: it
+cannot see the subclonal allele, and when it does it cannot anchor the frame.
+
+**This benchmark almost never exercises tier D, and Exacto lives there.** Of the
+145 recovered proteoforms carrying a vaccine mutation, 142 matched an annotated
+reference transcript and only 3 did not — unsurprising, since all 37 mutations
+are in known protein-coding genes. But across the same runs Exacto made
+**969–2,029 RNA calls per sample that matched no reference transcript at all**.
+Those calls are precisely tier D, they are the majority of what the tool
+produces, and nothing in this test says how well it does there. The class of
+variant Exacto's two-chromosome breakpoint encoding exists for is the class this
+benchmark cannot score.
+
+That gap matters for the fix suggested in §4.2. "Take the frame from the
+reference CDS" is right for tiers A and B, defensible for C if the join is
+reported as inferred, and simply unavailable for D — where `longest_orf` remains
+the only option and the honest answer is to report *low confidence*, not to
+pretend otherwise.
+
+### 6.4 A composite proteoform quality score
+
+Combining the frame provenance above with the other evidence axes gives a score
+that can be attached to every proteoform, computed from data Exacto already has
+or could cheaply report. Weighted so that frame provenance dominates: a
+beautifully supported protein in an unverifiable frame is still a guess.
+
+| feature | 3 | 2 | 1 | 0 | weight |
+|---|---|---|---|---|---|
+| **Frame provenance** | A · reaches annotated start | B · anchored, truncated | C · stitched by overlap | D · de novo | ×3 |
+| **Molecule support** | ≥10 independent molecules give this exact translation | 3–9 | 2 | 1 | ×2 |
+| **Frame consistency** | agrees with variant class *and* reference CDS | agrees with variant class | untestable (tier D) | contradicts variant class | ×2 |
+| **Platform corroboration** | ≥2 platforms with different error profiles | 2 methods, one platform | single method | — | ×1 |
+| **Epitope completeness** | all published epitopes verbatim, spanning the peptide | ≥1 epitope verbatim | mutant residue correct only | codon changed, residue wrong | ×2 |
+| **Allele-fraction consistency** | proteoform support within ~1.5× of DNA VAF | within 3× | discordant | — | ×1 |
+
+Maximum 33. Suggested banding, with per-band FDR estimated empirically from the
+decoy design in §6.2 rather than asserted:
+
+| band | score | reading |
+|---|---|---|
+| **High** | ≥26 | frame externally verified, corroborated across molecules and platforms |
+| **Medium** | 17–25 | frame anchored or consistent, single line of evidence |
+| **Low** | 9–16 | frame inferred or unverifiable, thin support |
+| **Speculative** | <9 | de novo frame, single molecule — report, do not act on |
+
+The point of the banding is not the exact cut-offs, which want calibrating
+against decoys. It is that **frame provenance is a first-class feature and
+currently invisible**. Exacto knows whether a transcript model matched a
+reference transcript — it already emits `reference_transcript_ids` — and it
+knows whether that model reaches the annotated start. Emitting both per
+proteoform would let every consumer compute this table without inventing
+anything.
+
+### 6.5 Confidence tiers calibrated to protein sequence
 
 The units that matter clinically are not variant calls but **peptide sequences**
 — a neoantigen is wrong if any residue in the epitope is wrong. So tiers should
@@ -290,6 +368,7 @@ computable from data Exacto already has or could easily report:
 
 | axis | signal | why it is informative |
 |---|---|---|
+| **frame provenance** | tier A–D above | decides whether any other axis can be trusted |
 | **molecule support** | independent reads/UMIs yielding the *same* translation | errors are independent; truth recurs |
 | **frame consistency** | frame agrees with the variant class and with the annotated CDS | catches read-error frameshifts without an oracle |
 | **cross-method agreement** | same peptide from reads and from assembly | orthogonal preparation paths |
@@ -299,11 +378,16 @@ computable from data Exacto already has or could easily report:
 
 A workable tiering, with FDR estimated per tier by the decoy design:
 
-- **High** — ≥5 independent molecules agree on the exact peptide, frame
-  consistent with variant class, seen on ≥2 platforms or ≥2 methods.
-- **Medium** — ≥3 molecules agree, frame consistent, single platform.
-- **Low** — 1–2 molecules, or frame inconsistent with the variant class, or
-  disagreement between methods.
+- **High** — frame tier A or B, ≥5 independent molecules agree on the exact
+  peptide, frame consistent with variant class, seen on ≥2 platforms or methods.
+- **Medium** — frame tier A–C, ≥3 molecules agree, single platform.
+- **Low** — frame tier C or D, or 1–2 molecules, or frame inconsistent with the
+  variant class, or disagreement between methods.
+
+Note that a tier-D proteoform can never reach High under this scheme however
+many molecules support it, which is deliberate: molecule support establishes
+that the *sequence* is real, not that the *frame* is right. Those are separate
+claims and conflating them is how a confidently-wrong neoantigen gets made.
 
 The important design point: **do not filter, stratify.** This test found that
 every filter applied so far — `min-read-support 3`, `remove-unspliced-rnas` —
@@ -390,9 +474,12 @@ wrong in general; both look wrong for subclonal neoantigen discovery.
 
 Ordered by expected value per unit of effort:
 
-1. **Report per-proteoform molecule support.** Small change; turns an unranked
-   pile into a ranked one, and is the substrate for every confidence scheme in
-   §6.
+1. **Report per-proteoform molecule support, and frame provenance.** Both are
+   small changes; together they turn an unranked pile into a ranked one and make
+   §6.4's quality score computable by any consumer. Provenance needs only two
+   flags Exacto already has the information for: did the transcript model match
+   a reference transcript, and did it reach that transcript's annotated start
+   codon.
 2. **Fix deletion translation.** 6 of 37, and the largest single recoverable
    gap.
 3. **Add a reference-CDS-anchored translation strategy** alongside `longest_orf`

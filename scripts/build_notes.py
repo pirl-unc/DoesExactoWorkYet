@@ -110,6 +110,67 @@ def figures(paths: dict) -> None:
     fig.tight_layout(); fig.savefig(FIGURES / "vaf-profile.png"); plt.close(fig)
 
 
+
+def orf_provenance_figure() -> None:
+    """Schematic: how the reading frame gets established, best to worst.
+
+    Not drawn from results -- it is a taxonomy, not a measurement -- but kept
+    here so the document rebuilds in one command.
+    """
+    from matplotlib.patches import Rectangle
+
+    fig, axes = plt.subplots(4, 1, figsize=(7.2, 5.2), sharex=True)
+    line = "#cfcfcf"
+    tiers = [
+        ("A  Anchored to annotated start", OK,
+         "observed sequence reaches the annotated ATG "
+         "\u2014 frame read from the annotation", 0.0, 1.0, True),
+        ("B  Anchored, 5' truncated", "#5b8c6e",
+         "matches a reference transcript but stops short of the start codon",
+         0.22, 1.0, False),
+        ("C  Stitched", WARN,
+         "fragment joined to a reference transcript by sequence overlap "
+         "\u2014 the join is inferred", 0.46, 0.82, False),
+        ("D  De novo", BAD,
+         "no annotated transcript applies \u2014 nothing external constrains "
+         "the frame", 0.30, 0.72, False),
+    ]
+    for ax, (title, colour, note, x0, x1, reaches) in zip(axes, tiers):
+        ax.add_patch(Rectangle((0.0, 0.50), 1.0, 0.15, facecolor=line,
+                               edgecolor="none"))
+        if title.startswith("D"):
+            ax.text(0.5, 0.575, "no annotated transcript", ha="center",
+                    va="center", fontsize=7.5, color="#777", style="italic")
+        else:
+            ax.text(0.005, 0.575, "ATG", ha="left", va="center", fontsize=7.5,
+                    color="#555")
+            ax.text(0.995, 0.575, "stop", ha="right", va="center", fontsize=7.5,
+                    color="#555")
+        ax.add_patch(Rectangle((x0, 0.20), x1 - x0, 0.19, facecolor=colour,
+                               edgecolor="none", alpha=.85))
+        if title.startswith("C"):
+            ax.add_patch(Rectangle((0.0, 0.20), x0, 0.19, facecolor=colour,
+                                   edgecolor=colour, alpha=.18, hatch="///",
+                                   lw=.5))
+            ax.annotate("", xy=(x0 + 0.02, 0.44), xytext=(x0 - 0.12, 0.44),
+                        arrowprops={"arrowstyle": "<->", "color": WARN, "lw": 1})
+            ax.text(x0 - 0.05, 0.455, "overlap", ha="center", va="bottom",
+                    fontsize=7, color=WARN)
+        if reaches:
+            ax.plot([0.0, 0.0], [0.18, 0.67], color=OK, lw=1.2, ls=":")
+        ax.text(0.0, 0.94, title, fontsize=9, weight="bold", color=colour,
+                va="top")
+        ax.text(0.0, 0.02, note, fontsize=7.5, color="#444", va="bottom")
+        ax.set_xlim(-0.14, 1.06)
+        ax.set_ylim(0, 1.0)
+        ax.axis("off")
+    fig.suptitle("How the reading frame is established, best to worst",
+                 x=0.012, ha="left", fontsize=11, weight="bold", y=0.995)
+    fig.tight_layout(rect=(0, 0, 1, 0.955))
+    fig.savefig(FIGURES / "orf-provenance.png", dpi=160)
+    plt.close(fig)
+
+
 CSS = """
 @page { size: A4; margin: 20mm 18mm; }
 body { font-family: "Charter","Georgia",serif; font-size: 10.5pt; line-height: 1.5;
@@ -171,6 +232,7 @@ def main() -> None:
     if not data.exists():
         raise SystemExit("site/data.json missing — run pipeline.build_site first")
     figures(json.loads(data.read_text())["paths"])
+    orf_provenance_figure()
     print(f"figures -> {FIGURES}")
     print(f"pdf     -> {build_pdf()}")
 
