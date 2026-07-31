@@ -118,3 +118,24 @@ def test_no_peptide_when_nothing_matches():
     variant = {"vaccine_epitopes": [{"sequence": "ZZZZ"}]}
     assert vaccine_peptide(variant, {"protein": "AAAA"}) is None
     assert vaccine_peptide({"vaccine_epitopes": []}, {"protein": "AAAA"}) is None
+
+
+# --------------------------------------------------------------------------
+# The expectation check has to be defined for every consequence class
+# --------------------------------------------------------------------------
+
+def test_frameshift_expectation_is_checkable():
+    """A frameshift has no single expected residue; being frameshifted is the check.
+
+    Before this, residue_confirmed was computed only for missense, so a
+    frameshift that translated perfectly scored as unverifiable and dropped out
+    of the funnel's residue rung — indistinguishable from a failure.
+    """
+    from pipeline.evaluate import expected_change
+
+    assert expected_change({"protein_change": "p.Ser775fs",
+                            "consequence": "frameshift_variant"})["kind"] == "frameshift"
+    assert expected_change({"protein_change": "p.Ala197_Lys201del",
+                            "consequence": "inframe_deletion"})["kind"] == "inframe_deletion"
+    assert expected_change({"protein_change": "p.Ser207Cys",
+                            "consequence": "missense_variant"})["kind"] == "missense"

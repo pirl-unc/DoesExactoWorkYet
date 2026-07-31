@@ -350,6 +350,37 @@ def evaluate_arm(
         #                       a user picking blindly would get.
         # consensus_*        -- what a user gets picking deterministically, with
         #                       no knowledge of the answer. See _consensus_form.
+        # Does the proteoform do what the annotation says it should? The check
+        # differs by consequence class, and for a long time only missense had
+        # one — so a frameshift that translated correctly was scored as
+        # unverifiable and vanished from the residue rung entirely, which looks
+        # like a loss and is really a question that was never asked.
+        #
+        #   missense          the expected amino acid appears at the mutated codon
+        #   frameshift        the proteoform is actually frameshifted; there is no
+        #                     single expected residue, because everything
+        #                     downstream changes, and the portal publishes
+        #                     "p.Ser775fs" rather than the resulting peptide
+        #   inframe deletion  the proteoform is *not* frameshifted, which is what
+        #                     distinguishes it from the frameshift case
+        expectation_confirmed = None
+        if variant_proteoforms:
+            kind = expectation["kind"]
+            if kind == "missense":
+                expected_aa = expectation["alt_aa"]
+                expectation_confirmed = any(
+                    expected_aa and expected_aa in form["mutant_residues"]
+                    for form in variant_proteoforms
+                )
+            elif kind == "frameshift":
+                expectation_confirmed = any(
+                    form.get("frameshift") for form in variant_proteoforms
+                )
+            elif kind == "inframe_deletion":
+                expectation_confirmed = any(
+                    not form.get("frameshift") for form in variant_proteoforms
+                )
+
         residue_confirmed = None
         n_residue_correct = None
         consensus_residue_confirmed = None
@@ -398,6 +429,8 @@ def evaluate_arm(
             ),
             "expected": expectation,
             "residue_confirmed": residue_confirmed,
+            # Defined for every consequence class, unlike residue_confirmed.
+            "expectation_confirmed": expectation_confirmed,
             "n_residue_correct": n_residue_correct,
             "consensus_residue_confirmed": consensus_residue_confirmed,
             "consensus_peptide_id": (consensus or {}).get("peptide_id"),
