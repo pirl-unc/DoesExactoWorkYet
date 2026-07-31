@@ -530,6 +530,39 @@ function highlightedSequence(form, expected) {
   return box;
 }
 
+// One proteoform per variant per sample, chosen by the consensus rule, with the
+// whole vaccine peptide located inside it and the mutated residues marked. This
+// is the thing a caller would actually carry forward, as opposed to the pile of
+// candidates Exacto emits unranked.
+function consensusBlock(entry) {
+  for (const arm of Object.values(entry?.arms || {})) {
+    const peptide = arm.consensus_vaccine_peptide;
+    if (!peptide) continue;
+    const box = el("div", "consensus");
+    const head = el("div", "consensus-head");
+    head.append(el("span", "badge ok", "chosen proteoform"));
+    head.append(el("span", "locus",
+      `vaccine peptide at residue ${peptide.start}, `
+      + `${peptide.n_epitopes_matched}/${peptide.n_epitopes_total} epitopes`
+      + (peptide.complete ? " — all present" : "")));
+    box.append(head);
+
+    const seq = el("div", "seq");
+    const offsets = new Set(peptide.mutant_offsets || []);
+    [...peptide.sequence].forEach((residue, index) => {
+      if (offsets.has(index)) seq.append(el("span", "hit", residue));
+      else seq.append(document.createTextNode(residue));
+    });
+    box.append(seq);
+    if (arm.consensus_support) {
+      box.append(el("div", "locus",
+        `${arm.consensus_support} independent translations agree on this sequence`));
+    }
+    return box;
+  }
+  return null;
+}
+
 function detailCard(sample, variant) {
   const card = el("div", "detail-card");
   card.append(el("h4", null, sample.label));
@@ -540,6 +573,8 @@ function detailCard(sample, variant) {
     card.append(el("div", "locus", "no run recorded"));
     return card;
   }
+  const chosen = consensusBlock(recovery);
+  if (chosen) card.append(chosen);
 
   for (const arm of DATA.arms) {
     const entry = recovery.arms[arm];

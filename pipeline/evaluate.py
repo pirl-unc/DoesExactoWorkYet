@@ -385,6 +385,9 @@ def evaluate_arm(
         consensus_epitopes = (
             matched_epitopes(variant, [consensus]) if consensus else []
         )
+        # One proteoform per variant, chosen without knowing the answer, with
+        # the mutant interval and the vaccine peptide located inside it.
+        consensus_peptide = vaccine_peptide(variant, consensus)
 
         graded[variant_id] = {
             "dna_variant_call_id": call_id,
@@ -405,6 +408,16 @@ def evaluate_arm(
             "matched_epitopes": epitope_hits,
             "n_matched_epitopes": len(epitope_hits),
             "n_consensus_matched_epitopes": len(consensus_epitopes),
+            "consensus_vaccine_peptide": consensus_peptide,
+            "consensus_proteoform": (
+                {
+                    key: value
+                    for key, value in consensus.items()
+                    if key != "protein"
+                }
+                if consensus
+                else None
+            ),
             "rna_variant_calls": variant_rna,
             "alt_reads_in_calls": alt_reads,
             # Rows in the primary-structures table that name this variant's RNA
@@ -476,6 +489,54 @@ def _dedupe_proteoforms(forms: list[dict]) -> list[dict]:
 def _dedupe_peptides(peptides: list[dict]) -> list[dict]:
     unique = {peptide["sequence"]: peptide for peptide in peptides}
     return sorted(unique.values(), key=lambda item: item["sequence"])
+
+
+def vaccine_peptide(variant: dict, form: dict | None) -> dict | None:
+    """The whole vaccine peptide, as observed in this proteoform.
+
+    The portal publishes pVACtools epitopes: 9- to 17-mers tiling the mutation,
+    59 of them for some variants. Individually they are the predicted binders;
+    together they span the long peptide a construct would carry. So rather than
+    reconstructing that span from the epitope list, it is read straight out of
+    the translated protein — the region from the first matched epitope's start
+    to the last one's end. That is observed sequence, not a stitch, and it is
+    the strongest statement this test can make: not "the right residue appeared"
+    but "the entire manufactured peptide is here, verbatim, in a protein Exacto
+    translated from the patient's RNA".
+
+    The mutant interval is reported as an offset within that peptide, so a
+    reader can see where the change sits inside what was injected.
+    """
+    epitopes = variant.get("vaccine_epitopes") or []
+    protein = (form or {}).get("protein") or ""
+    if not epitopes or not protein:
+        return None
+
+    start, end, found = len(protein), 0, 0
+    for epitope in epitopes:
+        sequence = epitope.get("sequence") or ""
+        if not sequence:
+            continue
+        index = protein.find(sequence)
+        if index < 0:
+            continue
+        found += 1
+        start = min(start, index)
+        end = max(end, index + len(sequence))
+    if not found:
+        return None
+
+    indices = [i for i in form.get("mutant_residue_indices", []) if start <= i < end]
+    return {
+        "sequence": protein[start:end],
+        "start": start + 1,
+        "n_epitopes_matched": found,
+        "n_epitopes_total": len(epitopes),
+        "complete": found == len(epitopes),
+        # Where the mutation sits inside the peptide, 0-based within it.
+        "mutant_offsets": [i - start for i in indices],
+        "peptide_id": form.get("peptide_id"),
+    }
 
 
 def matched_epitopes(variant: dict, proteoforms: list[dict]) -> list[dict]:

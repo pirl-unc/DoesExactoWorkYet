@@ -64,7 +64,8 @@ jobs:
         # One entry per method in pipeline/methods.py. reads first so it is the
         # one that starts if the runner pool is tight: it is the cheap method
         # and the likeliest to finish.
-        arm: [reads, corrected, isonform, assembly, assembly-ms1, spades]
+        arm: [reads, corrected, isonform, assembly, assembly-ms1,
+              assembly-unspliced, spades]
         exclude:
           # Illumina reads are 150 bp. A read that short is not a transcript, so
           # the reads arm is meaningless for it, and isONclust/isONcorrect both
@@ -82,6 +83,8 @@ jobs:
             arm: assembly
           - sample: T2-ILMN
             arm: assembly-ms1
+          - sample: T2-ILMN
+            arm: assembly-unspliced
           # rnaSPAdes is the short-read method; it has no long-read counterpart.
           - sample: T1-ONT
             arm: spades

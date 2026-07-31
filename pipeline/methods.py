@@ -119,6 +119,22 @@ METHODS = (
              "this test is looking for. This asks what that filter is worth.",
     ),
     Method(
+        name="assembly-unspliced",
+        family="assembly",
+        label="RNA-Bloom2, keep unspliced",
+        read_types=LONG,
+        tool="RNA-Bloom2 2.0.1",
+        params={**NEXUS_FILTER_DEFAULTS, "unspliced-filter": "off"},
+        note="Identical to the canonical route but skipping "
+             "remove-unspliced-rnas, which keeps only contigs whose alignment "
+             "shows a splice junction and is the single largest loss in the "
+             "funnel — about three quarters of what survives assembly and "
+             "alignment. The filter exists to remove pre-mRNA and genomic "
+             "carryover, but it cannot distinguish those from a genuinely "
+             "single-exon gene, and mitochondrial transcripts have no introns "
+             "at all. This measures what it costs.",
+    ),
+    Method(
         name="spades",
         family="assembly",
         label="rnaSPAdes",

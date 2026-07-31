@@ -1016,3 +1016,23 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
    weaker evidence. Paler rather than a separate colour, so it still reads as a
    miss at a glance. */
 .tp-cell.thin { opacity: .45; }
+
+/* The single proteoform a caller would carry forward, with the vaccine peptide
+   spelled out and the mutated residues marked inside it. */
+.consensus {
+  margin: .6rem 0 .8rem;
+  padding: .7rem .85rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ok);
+  border-radius: 8px;
+  background: var(--card);
+  white-space: normal;
+}
+.consensus-head {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .45rem;
+}
+.consensus .seq { word-break: break-all; }

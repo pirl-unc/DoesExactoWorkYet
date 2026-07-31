@@ -609,7 +609,11 @@ def run_arm(
         align(runner, query, sample, arm, aligned_bam)
         result["counts"]["aligned"] = count_alignments(aligned_bam)
 
-        if method.family == "assembly" and query_fasta is not None:
+        if (
+            method.family == "assembly"
+            and query_fasta is not None
+            and method.params.get("unspliced-filter") != "off"
+        ):
             # Only the documented assembly pipeline filters unspliced RNAs;
             # applied to raw or corrected reads it would throw away most of the
             # data, since an individual read need not look spliced.
@@ -652,6 +656,10 @@ def run_arm(
             result["counts"]["after_unspliced_filter"] = count_alignments(filtered_bam)
         else:
             variant_calling_bam = aligned_bam
+            if method.family == "assembly":
+                # Recorded so the funnel does not silently show a stage that was
+                # never run as a stage that lost nothing.
+                result["counts"]["unspliced_filter"] = "skipped"
 
         rna_dir = out_dir / "rna_vars"
         runner.run(
