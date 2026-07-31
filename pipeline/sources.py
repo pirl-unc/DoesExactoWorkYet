@@ -271,6 +271,44 @@ def configuration() -> list[dict]:
                     ),
                 },
                 {
+                    "name": "Input BAM",
+                    "value": "UMI-deduplicated (_dedup.bam), not the pre-dedup "
+                    "tagged BAM",
+                    "status": "addition",
+                    "canonical": "Exacto prescribes no input BAM; Nexus's "
+                    "single-cell path starts from an unaligned barcode-tagged one",
+                    "why": (
+                        "Chosen so read support is directly comparable to the "
+                        "portal's own genotyping, which is the yardstick this "
+                        "test scores against. It is also the right call for "
+                        "variant confidence: five reads of one PCR-amplified "
+                        "molecule are one observation, and counting them "
+                        "independently would inflate support for exactly the "
+                        "low-VAF variants that matter most. The cost is that the "
+                        "single representative read's errors cannot be corrected "
+                        "against its siblings. Measured on one window, 69% of "
+                        "molecules are singletons and only 13% have 3+ reads, so "
+                        "a per-UMI consensus would recover little."
+                    ),
+                },
+                {
+                    "name": "Cell barcode filtering",
+                    "value": "none — every barcode's reads are used",
+                    "status": "deviation",
+                    "canonical": "nexus_find_scrna_barcode_knee then "
+                    "convert_scrna_bam2fastq --min-reads-per-barcode",
+                    "why": (
+                        "Nexus's single-cell route drops low-count barcodes at "
+                        "the knee before assembling, which removes ambient RNA "
+                        "and empty droplets. This test does not, so reads from "
+                        "poorly-covered barcodes are included. That is a real "
+                        "deviation and it cuts both ways: it keeps material a "
+                        "knee filter would discard, and it admits background a "
+                        "knee filter exists to remove. Untested here which "
+                        "matters more."
+                    ),
+                },
+                {
                     "name": "Reads-arm depth cap",
                     "value": (
                         f"{extract_reads.READS_ARM_READS_PER_VARIANT} reads per "
