@@ -71,6 +71,15 @@ payload = {
     "samtools": version_of(["samtools", "--version"]),
     "minimap2": version_of(["minimap2", "--version"]),
     "rnabloom": version_of(["rnabloom", "-v"]),
+    # Every tool a method in pipeline/methods.py can invoke. Recorded whether
+    # or not this leg uses it, so the site reports the environment the run had
+    # rather than the subset one arm happened to touch. Absent tools record as
+    # null rather than failing: a leg that does not need isONform should not
+    # die because it is missing.
+    "rnaspades": version_of(["rnaspades.py", "--version"]),
+    "isonclust": version_of(["isONclust", "--version"]),
+    "isoncorrect": version_of(["run_isoncorrect", "--version"]),
+    "isonform": version_of(["isONform_parallel", "--version"]),
 }
 
 with open(out_path, "w") as handle:

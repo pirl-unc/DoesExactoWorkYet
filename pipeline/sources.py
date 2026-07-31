@@ -8,6 +8,18 @@ provenance quietly wrong.
 from __future__ import annotations
 
 from . import config, extract_reads
+from .methods import METHODS
+
+# Where each preparation tool lives, so the site can link them rather than just
+# naming them.
+TOOL_URLS = {
+    "RNA-Bloom2 2.0.1": "https://github.com/bcgsc/RNA-Bloom",
+    "rnaSPAdes 4.0.0": "https://github.com/ablab/spades",
+    "isONclust 0.0.6.1 + isONcorrect 0.1.3.5":
+        "https://github.com/ksahlin/isONcorrect",
+    "isONclust + isONcorrect + isONform 0.3.9":
+        "https://github.com/aljpetri/isONform",
+}
 from .config import NEXUS_VERSION, RNABLOOM_FILTER
 
 
@@ -162,6 +174,30 @@ def data_sources(extraction: dict) -> list[dict]:
                     "sample. The deduplicated pbmm2-mapped BAM is used instead, for "
                     "the same reason as ONT: it is the finished alignment.",
                 },
+            ],
+        },
+        {
+            "group": "Tools that prepare the transcripts",
+            "origin": "conda-forge, bioconda and PyPI",
+            "entries": [
+                {
+                    "label": method.label,
+                    "url": TOOL_URLS.get(method.tool or "", ""),
+                    "detail": (
+                        f"{method.tool}. {method.note}"
+                        + (
+                            "  Parameters: "
+                            + ", ".join(
+                                f"{key} {value}"
+                                for key, value in method.params.items()
+                            )
+                            if method.params
+                            else ""
+                        )
+                    ),
+                }
+                for method in METHODS
+                if method.tool
             ],
         },
         {
