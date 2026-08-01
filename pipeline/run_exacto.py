@@ -56,6 +56,12 @@ from .methods import METHODS_BY_NAME
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
+# Smallest cluster isONcorrect is asked to correct. Below this there are not
+# enough reads to form a consensus, and run_isoncorrect aborts the whole run
+# rather than skipping the cluster -- so one singleton loses every other
+# cluster's correction with it.
+ISONCORRECT_MIN_CLUSTER = 3
+
 # RNA-Bloom2 names its polished assembly and the read-to-contig alignment it
 # is filtered against.
 ASSEMBLY_NAME = "rnabloom.longreads.assembly4.pol.fa"
@@ -384,6 +390,11 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
         ],
     )
     per_cluster = clusters / "fastq_files"
+    # --N is the minimum cluster size written. At 1 every singleton becomes its
+    # own cluster, and isONcorrect has nothing to correct a lone read against --
+    # run_isoncorrect then aborts the entire run when any one cluster fails,
+    # losing the clusters that would have worked. Correction needs a few reads
+    # to be meaningful anyway, so ask for them.
     runner.run(
         "isonclust_write_fastq",
         [
@@ -391,7 +402,7 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
             "--clusters", str(clusters / "final_clusters.tsv"),
             "--fastq", str(plain),
             "--outfolder", str(per_cluster),
-            "--N", "1",
+            "--N", str(ISONCORRECT_MIN_CLUSTER),
         ],
     )
     corrected_dir = out_dir / "isoncorrect"
@@ -410,7 +421,34 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     parts = sorted(corrected_dir.glob("*/corrected_reads.fastq"))
     if not parts:
         raise StepFailed(f"isONcorrect produced no corrected reads in {corrected_dir}")
-    merged.write_text("".join(part.read_text() for part in parts))
+
+    # Reads whose cluster was too small to correct are passed through
+    # uncorrected rather than dropped. Dropping them would make this arm look
+    # more sensitive than it is by quietly removing the hardest reads -- the
+    # ones with too few neighbours to agree with, which is exactly where a
+    # subclonal allele lives.
+    corrected_names = set()
+    for part in parts:
+        for index, line in enumerate(part.read_text().splitlines()):
+            if index % 4 == 0 and line.startswith("@"):
+                corrected_names.add(line[1:].split()[0])
+
+    kept = passed = 0
+    with open(merged, "w") as sink:
+        for part in parts:
+            sink.write(part.read_text())
+            kept += part.read_text().count("\n") // 4
+        with open(plain) as source:
+            while True:
+                head = source.readline()
+                if not head:
+                    break
+                record = head + source.readline() + source.readline() + source.readline()
+                if head[1:].split()[0] not in corrected_names:
+                    sink.write(record)
+                    passed += 1
+    print(f"    corrected {kept:,} reads; {passed:,} passed through uncorrected "
+          f"(cluster smaller than {ISONCORRECT_MIN_CLUSTER})")
     return merged
 
 
