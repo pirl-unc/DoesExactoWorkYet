@@ -34,5 +34,14 @@
     "n_variants": 37,
     "n_testable": 37,
     "n_recovered": 21
+  },
+  {
+    "date": "2026-09-14",
+    "timestamp": "2026-09-14T11:27:35+00:00",
+    "exacto_version": "0.4.6a1",
+    "commit": "1553ecd",
+    "n_variants": 37,
+    "n_testable": 37,
+    "n_recovered": 22
   }
 ]
