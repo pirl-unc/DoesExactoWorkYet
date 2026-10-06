@@ -262,20 +262,28 @@ def uses_transcript_cli() -> bool:
     return tuple(int(part) for part in version.split(".")[:2]) >= (0, 5)
 
 
-def write_transcript_support(query: Path, dest: Path, *, reads: bool) -> None:
+def write_transcript_support(
+    query: Path, dest: Path, *, reads: bool, nexus_reads: Path | None = None,
+) -> None:
     """Supply the original forward sequences to Exacto's 0.5 translator.
 
-    A raw/corrected read supports itself. Assemblies have no uniform support
-    format across assemblers, so leave read_names empty rather than presenting
-    contig names as evidence of read support.
+    A raw/corrected read supports itself. Nexus supplies supporting read names
+    for its contigs. Other assemblers leave read_names empty rather than
+    presenting contig names as evidence of read support.
     """
     import pysam
 
+    support: dict[str, set[str]] = {}
+    if nexus_reads is not None:
+        with nexus_reads.open() as handle:
+            for row in csv.DictReader(handle, delimiter="\t"):
+                support.setdefault(row["transcript_id"], set()).add(row["read_name"])
     with pysam.FastxFile(str(query)) as records, dest.open("w") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         writer.writerow(["assembled_transcript_name", "sequence", "read_names"])
         for record in records:
-            writer.writerow([record.name, record.sequence, record.name if reads else ""])
+            names = record.name if reads else ";".join(sorted(support.get(record.name, [])))
+            writer.writerow([record.name, record.sequence, names])
 
 
 # --------------------------------------------------------------------------
@@ -870,6 +878,8 @@ def run_arm(
             write_transcript_support(
                 query, support,
                 reads=method.family != "assembly" and method.controls.get("assemble") != "isonform",
+                nexus_reads=(out_dir / f"{prefix}.reads.tsv")
+                if method.family == "assembly" and sample.read_type == "long" else None,
             )
             primary_tsv = out_dir / f"{prefix}_exacto_proteoform_nucleotides.tsv"
             primary_fasta = out_dir / f"{prefix}_exacto_proteoforms.fasta"

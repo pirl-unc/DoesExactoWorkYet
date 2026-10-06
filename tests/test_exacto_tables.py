@@ -96,6 +96,11 @@ def test_transcript_support_preserves_sequence_without_inventing_assembly_reads(
     assert row == {"assembled_transcript_name": "read1", "sequence": "ACGTTT", "read_names": "read1"}
     write_transcript_support(fasta, dest, reads=False)
     assert next(csv.DictReader(dest.open(), delimiter="\t"))["read_names"] == ""
+    nexus = table(tmp_path / "nexus.tsv", [
+        {"transcript_id": "read1", "read_name": name} for name in ["r2", "r1", "r2"]
+    ])
+    write_transcript_support(fasta, dest, reads=False, nexus_reads=nexus)
+    assert next(csv.DictReader(dest.open(), delimiter="\t"))["read_names"] == "r1;r2"
 
 
 def test_worker_error_is_in_recorded_failure(tmp_path):

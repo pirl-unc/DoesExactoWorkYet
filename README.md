@@ -109,7 +109,7 @@ The uncapped counts are recorded alongside, and shown per variant on the site.
   RNA-Bloom2 assembles spanning + context reads, `nexus_filter_rnabloom2_transcripts`
   drops contigs without enough read support (min MAPQ 30, min 3 reads, min 0.5 fraction
   match — it halved a T1 assembly, 5,365 contigs to 2,656), minimap2 realigns them
-  (`splice:hq`), `remove-unspliced-rnas` filters, then `call-rna-vars`.
+  (`splice:hq`), `remove-unspliced-rnas` filters, then `call-rna-transcript-vars`.
 
   That filter also writes the FASTQ, not just the FASTA. Nexus's own comment explains
   why — *"so the downstream BAM consumed by call-rna-vars carries QUAL fields"* — which
@@ -121,7 +121,26 @@ The uncapped counts are recorded alongside, and shown per variant on the site.
   under test. Cheaper, and it separates an Exacto miss from an assembler miss.
 
 Both arms then feed the known vaccine mutations in as the somatic DNA callset and run
-`annotate-vars` → `integrate-vars` → `translate-structs` → `call-peptide-vars`.
+`annotate-vars` → `integrate-vars` → `translate-transcripts` → `call-peptide-vars`.
+These are the Exacto 0.5 commands; explicit 0.4 installations retain the older
+`call-rna-vars`/`translate-structs` path. The 0.5 translator also receives the
+original transcript sequences in a separate support TSV. Scoring reads its
+per-nucleotide RNA provenance, including deletion events, and requires a novel
+peptide to overlap that call's translated residue or frameshifted tail.
+Read-support counts come from the input reads or Nexus's contig-to-read table;
+they are unavailable for rnaSPAdes/isONform contigs, whose names are not counted
+as supporting reads.
+
+The corrected methods require the `spoa` executable in `environment.yml`.
+isONform receives corrected clusters and emits `transcriptome.fastq`; worker
+stderr is retained when either correction or isoform assembly fails.
+
+The **Exacto compatibility** PR check builds the current release and runs a
+small synthetic input through raw reads, a preassembled contig with splice
+filtering, corrected reads, and isONform, all the way through peptide scoring.
+It exercises the installed CLIs and table contracts without downloading patient
+reads. Run it locally in the installed environment with
+`DEWY_EXACTO_INTEGRATION=1 python -m pytest tests/test_exacto_integration.py -v`.
 
 Realignment is not optional: the portal's BAMs were produced with
 `minimap2 -ax splice --MD`, without the `--cs` tag that Exacto reads variants from.
@@ -171,7 +190,7 @@ same verified BAM produces byte-identical output.
 Preparation needs space for regional BAMs, capped FASTQs and the masked reference.
 Method jobs receive only the reference, FASTQs and receipts, plus their own Exacto
 intermediates. The masked reference is mostly N and deliberately uncompressed.
-The `jlumbroso/free-disk-space` step clears preinstalled toolchains for headroom;
+The `jlumbroso/free-disk-space` step frees disk space while preserving Clang/LLVM;
 the full expanded matrix still needs runtime and disk validation.
 
 ## Running it yourself
@@ -204,6 +223,7 @@ EXACTO_VERSION=dev bash scripts/install_exacto.sh
 | `.github/workflows/exacto-test.yml` | weekly cron, manual dispatch, pushes to `pipeline/` | the full run, commits `results/`, publishes the site |
 | `.github/workflows/site.yml` | pushes to `web/` or `results/`, manual dispatch | rebuilds and publishes the site only (~2 min) |
 | `.github/workflows/ci.yml` | every push and PR | unit tests, site build and reproducible frozen catalogue rebuild |
+| `.github/workflows/install-exacto.yml` | PR changes to pipeline/toolchain, manual dispatch | builds Exacto and runs the synthetic compatibility tests |
 
 Five preparation jobs create one verified input artifact per sample. The 29
 sample/method jobs each score their own output and upload a compact JSON;
@@ -228,8 +248,8 @@ results/           committed outputs — variant table, findings, scored run, hi
 environment.yml    conda environment (samtools, minimap2, RNA-Bloom2, Exacto's stack)
 ```
 
-The tests run without pysam or samtools installed, which is what lets the site and CI
-workflows stay lightweight.
+The fast tests run without pysam or samtools installed; installed-toolchain tests
+are skipped unless explicitly enabled in the compatibility environment.
 
 ## Audited against the author's own pipeline
 
