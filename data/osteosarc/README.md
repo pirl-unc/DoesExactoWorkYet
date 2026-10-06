@@ -33,6 +33,9 @@ and preparation code. Original regional BAM acquisition receipts are retained
 in each extraction JSON. Methods reject input changes, and the scorer rejects
 mixed catalogue/read identities. Older scores remain in history but are not
 attached to the expanded panel.
+Read identity uses the FASTQ checksums, frozen catalogue, sample, region windows
+and sampling settings. Acquisition timestamps and local paths remain in the
+receipts without preventing identical rebuilt inputs from being merged.
 Reference compression is byte-stable, so preparing another sample preserves
 existing receipts. A failed preparation does not prevent other samples with
 uploaded, verified inputs from running and publishing partial results.

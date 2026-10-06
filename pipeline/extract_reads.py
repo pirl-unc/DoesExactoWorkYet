@@ -23,6 +23,7 @@ the way back in.
 from __future__ import annotations
 
 import gzip
+import hashlib
 import io
 import json
 import random
@@ -122,6 +123,30 @@ def extraction_outputs(sample: Sample) -> list[Path]:
 
 def stats_path(sample: Sample) -> Path:
     return READS_DIR / f"{sample.name}.extraction.json"
+
+
+def reads_input_id(stats: dict) -> str:
+    """Identify read content and preparation settings across cache rebuilds."""
+    # Acquisition timestamps and local paths remain in the provenance receipt,
+    # but cannot distinguish identical inputs prepared in separate workspaces.
+    identity = {
+        key: stats[key]
+        for key in (
+            "input_id",
+            "sample",
+            "files",
+            "context_reads_per_region_cap",
+            "spanning_reads_per_variant_cap",
+            "reads_arm_reads_per_variant_cap",
+            "synthetic_base_quality",
+        )
+    }
+    identity["regions"] = [
+        {key: region[key] for key in ("chrom", "start", "end", "genes")}
+        for region in stats["regions"]
+    ]
+    encoded = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def variant_span(variant: dict) -> tuple[int, int]:

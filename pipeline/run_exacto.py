@@ -51,6 +51,7 @@ from .extract_reads import (
     assembly_inputs,
     extraction_outputs,
     reads_arm_fastq,
+    reads_input_id,
     stats_path,
 )
 from .methods import METHODS_BY_NAME
@@ -589,7 +590,7 @@ def run_arm(
         if any(stats.get("files", {}).get(path.name) != digest(path)
                for path in extraction_outputs(sample)):
             raise VariantEncodingError("prepared FASTQ checksum changed; run pipeline.extract_reads")
-        result["reads_input_id"] = digest(stats_path(sample))
+        result["reads_input_id"] = reads_input_id(stats)
 
         if method.family == "assembly" and sample.read_type == "short":
             # Short reads reach Exacto only as contigs. rnaSPAdes emits FASTA

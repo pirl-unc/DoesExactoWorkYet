@@ -17,7 +17,9 @@ from pipeline import (
     fetch_osteosarc,
     osteosarc_inputs,
     prepare_inputs,
+    run_exacto,
 )
+from pipeline.config import SAMPLES_BY_NAME
 from pipeline.run_exacto import as_graph_operation
 
 
@@ -178,6 +180,91 @@ def test_gzip_fastq_rebuilds_have_identical_bytes(tmp_path):
         with extract_reads.fastq_writer(p) as out:
             out.write("@read\nACGT\n+\nIIII\n")
     assert a.read_bytes() == b.read_bytes()
+
+
+@pytest.mark.parametrize(
+    "changed_input",
+    [
+        None,
+        "spanning_fastq",
+        "reads_arm_fastq",
+        "context_fastq",
+        "context_reads_per_region_cap",
+        "spanning_reads_per_variant_cap",
+        "reads_arm_reads_per_variant_cap",
+        "synthetic_base_quality",
+        "regions",
+    ],
+)
+def test_rebuilt_reads_merge_only_when_inputs_and_settings_match(
+    tmp_path, monkeypatch, changed_input
+):
+    sample = SAMPLES_BY_NAME["T1-ONT"]
+    monkeypatch.setattr(run_exacto, "EXACTO_DIR", tmp_path / "exacto")
+    monkeypatch.setattr(evaluate, "SCORED_DIR", tmp_path / "scored")
+    monkeypatch.setattr(evaluate, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(evaluate, "load_variants", lambda **kwargs: [])
+
+    def stop_before_tools(*args, **kwargs):
+        raise run_exacto.StepFailed("stopped after input validation")
+
+    monkeypatch.setattr(run_exacto, "align", stop_before_tools)
+    monkeypatch.setattr(run_exacto.Runner, "run", stop_before_tools)
+    stats = {
+        "sample": sample.name,
+        "input_id": osteosarc_inputs.input_id(),
+        "n_spanning_reads": 1,
+        "context_reads_per_region_cap": 5000,
+        "spanning_reads_per_variant_cap": 3000,
+        "reads_arm_reads_per_variant_cap": 600,
+        "synthetic_base_quality": 30,
+        "regions": [{"chrom": "chr1", "start": 1, "end": 100, "genes": ["TEST"]}],
+    }
+    runs = []
+    for index, arm in enumerate(("reads", "assembly")):
+        # A fresh cache/workspace changes receipts and absolute paths even when
+        # the source reads and sampling settings produce identical FASTQ bytes.
+        reads_dir = tmp_path / f"workspace-{index}" / "reads"
+        reads_dir.mkdir(parents=True)
+        monkeypatch.setattr(extract_reads, "READS_DIR", reads_dir)
+        stats["acquisition"] = {
+            "index_receipt": {"retrieved_at": f"2026-10-0{index + 1}T00:00:00Z"},
+            "path": str(reads_dir / "regional.bam"),
+        }
+        for name in ("spanning_fastq", "reads_arm_fastq", "context_fastq"):
+            path = getattr(extract_reads, name)(sample)
+            stats[name] = str(path)
+            sequence = "TGCA" if index and changed_input == name else "ACGT"
+            with extract_reads.fastq_writer(path) as out:
+                out.write(f"@read\n{sequence}\n+\nIIII\n")
+        if index and changed_input == "regions":
+            stats["regions"][0]["end"] += 1
+        elif index and changed_input and not changed_input.endswith("_fastq"):
+            stats[changed_input] += 1
+        # Dictionary order is serialization detail, not an input difference.
+        outputs = extract_reads.extraction_outputs(sample)
+        stats["files"] = {
+            path.name: osteosarc_inputs.digest(path)
+            for path in (reversed(outputs) if index else outputs)
+        }
+        extract_reads.stats_path(sample).write_text(json.dumps(stats, indent=index + 1))
+        run = run_exacto.run_arm(sample, arm, [], 1)
+        assert run["error"] == "stopped after input validation"
+        assert run["reads_input_id"]
+        runs.append(run)
+
+    # Exercise the identity that is actually saved and passed through scoring,
+    # with external bioinformatics tools stopped just after input validation.
+    scored = evaluate.score_samples([sample.name])
+    assert {run["reads_input_id"] for run in scored} == {
+        run["reads_input_id"] for run in runs
+    }
+    if changed_input is None:
+        assert runs[0]["reads_input_id"] == runs[1]["reads_input_id"]
+        assert len(evaluate.merge()["runs"]) == 2
+    else:
+        with pytest.raises(ValueError, match="Cannot merge different prepared reads"):
+            evaluate.merge()
 
 
 def test_prepared_inputs_reject_changed_files_and_recipes(tmp_path, monkeypatch):
