@@ -42,6 +42,9 @@ on:
       # the site would have shown stale results under a new method's name.
       - "pipeline/methods.py"
       - "pipeline/fetch_osteosarc.py"
+      - "pipeline/osteosarc_inputs.py"
+      - "pipeline/prepare_inputs.py"
+      - "data/osteosarc/**"
       - "pipeline/build_reference.py"
       - "pipeline/extract_reads.py"
       - "pipeline/run_exacto.py"
@@ -66,7 +69,51 @@ env:
   ARMS: ${{ github.event.inputs.arms || 'assembly reads' }}
 
 jobs:
+  prepare:
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [T1-ONT, T2-ONT, T3-ONT, T1-PacBio, T2-ILMN]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash -el {0}
+    env:
+      DEWY_WORK_DIR: ${{ github.workspace }}/work
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          swap-storage: false
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+      - name: Cache frozen prepared sample inputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            work/reference
+            work/reads
+            work/prepared
+          key: osteosarc-${{ matrix.sample }}-${{ hashFiles('data/osteosarc/**', 'environment.yml', 'pipeline/config.py', 'pipeline/fetch_osteosarc.py', 'pipeline/build_reference.py', 'pipeline/extract_reads.py', 'pipeline/osteosarc_inputs.py', 'pipeline/prepare_inputs.py') }}
+      - name: Prepare or verify ${{ matrix.sample }} inputs once
+        run: python -m pipeline.prepare_inputs --samples ${{ matrix.sample }}
+      - name: Share verified inputs with every method
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-${{ matrix.sample }}
+          retention-days: 7
+          path: |
+            work/reference
+            work/reads
+            work/prepared
+
   run:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -158,21 +205,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/install_exacto.sh
 
-      - name: Cache GENCODE and the hg38 index
-        uses: actions/cache@v4
-        with:
-          path: work/downloads
-          key: refdata-${{ hashFiles('pipeline/config.py') }}
-          restore-keys: refdata-
-
-      - name: Fetch vaccine variants from osteosarc.com
+      - name: Load frozen vaccine panel
         run: python -m pipeline.fetch_osteosarc
 
-      - name: Build masked reference
-        run: python -m pipeline.build_reference
+      - name: Download the prepared sample
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-${{ matrix.sample }}
+          path: work
 
-      - name: Extract long reads for ${{ matrix.sample }}
-        run: python -m pipeline.extract_reads --samples ${{ matrix.sample }}
+      - name: Verify shared input checksums
+        run: python -m pipeline.prepare_inputs --verify-only --samples ${{ matrix.sample }}
 
       - name: Run Exacto on ${{ matrix.sample }} (${{ matrix.arm }})
         run: |
@@ -258,6 +301,8 @@ jobs:
         with:
           python-version: "3.11"
 
+      - run: python -m pip install osteosarc==0.15.0
+
       # Belt and braces. results/scored/ is gitignored, so a clean checkout does
       # not in fact carry the last run's answers — I claimed otherwise when I
       # added this. It stays because it costs nothing and it is the one thing
@@ -274,7 +319,7 @@ jobs:
           merge-multiple: true
           path: .
 
-      - name: Refresh the variant table
+      - name: Load frozen vaccine panel
         run: python -m pipeline.fetch_osteosarc
 
       - name: Merge into a verdict

@@ -23,9 +23,11 @@ the way back in.
 from __future__ import annotations
 
 import gzip
+import io
 import json
 import random
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -33,7 +35,7 @@ if TYPE_CHECKING:  # pysam is only needed to actually read a BAM. Importing it
     import pysam  # eagerly would drag htslib into the site build and the unit
                    # tests, which have no business needing it.
 
-from .build_reference import DOWNLOAD_DIR, REGIONS_JSON, download, load_variants
+from .build_reference import REGIONS_JSON, load_variants
 from .config import (
     CONTEXT_READS_PER_REGION,
     RNABLOOM_FILTER,
@@ -43,6 +45,7 @@ from .config import (
     ensure_ca_bundle,
     samples_named,
 )
+from .osteosarc_inputs import digest, input_id, manifest, regional_reads
 
 READS_DIR = WORK_DIR / "reads"
 
@@ -74,18 +77,14 @@ REGION_FETCH_ATTEMPTS = 4
 REGION_FETCH_BACKOFF_SECONDS = 5
 
 
-def remote_size(url: str) -> int | None:
-    """Byte size of a remote file, for the report. Best effort — never fatal."""
-    import urllib.error
-    import urllib.request
-
-    request = urllib.request.Request(url, method="HEAD")
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            length = response.headers.get("Content-Length")
-            return int(length) if length else None
-    except (urllib.error.URLError, ValueError, TimeoutError):
-        return None
+@contextmanager
+def fastq_writer(path: Path):
+    # Fixed gzip metadata makes a reproducible sequence sample reproducible
+    # bytes too, so a rebuild can be compared with its pinned checksum.
+    with path.open("wb") as raw, gzip.GzipFile(
+        fileobj=raw, mode="wb", filename="", mtime=0
+    ) as packed, io.TextIOWrapper(packed, encoding="ascii", newline="\n") as text:
+        yield text
 
 
 def load_regions() -> list[dict]:
@@ -274,17 +273,18 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     bundle = ensure_ca_bundle()
     if bundle:
         print(f"  using CA bundle {bundle}")
-    import pysam
-
     out_spanning = spanning_fastq(sample)
     out_reads_arm = reads_arm_fastq(sample)
     out_context = context_fastq(sample)
     out_spanning.parent.mkdir(parents=True, exist_ok=True)
 
-    # htslib wants the index beside the file; fetching it once locally avoids a
-    # remote index read per region.
-    index_path = download(sample.bai_url, DOWNLOAD_DIR / f"{sample.name}.bam.bai")
-    bam_bytes = remote_size(sample.bam_url)
+    # Acquire once through osteosarc, then scan a verified local BAM. Its
+    # receipt pins the source, regions, genome dictionary and actual BAM bytes.
+    # A failed remote acquisition cannot masquerade as absent read coverage.
+    subset = regional_reads(sample.name, regions, WORK_DIR / "osteosarc-cache")
+    acquisition = subset.receipt
+    snapshot = manifest()
+    bam_bytes = snapshot["sources"][sample.name]["size"]
 
     variants_by_chrom: dict[str, list[dict]] = {}
     for variant in variants:
@@ -302,11 +302,9 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     n_records = 0
     n_without_quality = 0
 
-    with pysam.AlignmentFile(
-        sample.bam_url, "rb", index_filename=str(index_path)
-    ) as bam, gzip.open(out_spanning, "wt") as sink, gzip.open(
-        out_reads_arm, "wt"
-    ) as reads_arm_sink, gzip.open(out_context, "wt") as context_sink:
+    with subset.open() as bam, fastq_writer(out_spanning) as sink, fastq_writer(
+        out_reads_arm
+    ) as reads_arm_sink, fastq_writer(out_context) as context_sink:
         for region in regions:
             in_region = [
                 variant
@@ -376,9 +374,12 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
     n_reads = n_spanning + n_context
     stats = {
         "sample": sample.name,
+        "input_id": input_id(),
+        "osteosarc_snapshot": snapshot["snapshot"],
+        "acquisition": acquisition,
         "timepoint": sample.timepoint,
         "platform": sample.platform,
-        "bam_url": sample.bam_url,
+        "bam_url": snapshot["sources"][sample.name]["url"],
         "bam_bytes": bam_bytes,
         "spanning_fastq": str(out_spanning),
         "reads_arm_fastq": str(out_reads_arm),
@@ -404,6 +405,7 @@ def extract(sample: Sample, regions: list[dict], variants: list[dict]) -> dict:
         "reads_arm_reads_by_variant": reads_arm_kept,
         "spanning_reads_seen_by_variant": spanning_seen,
         "regions": per_region,
+        "files": {path.name: digest(path) for path in extraction_outputs(sample)},
     }
     stats_path(sample).write_text(json.dumps(stats, indent=2) + "\n")
     print(
@@ -433,8 +435,20 @@ def main() -> None:
     for sample in samples_named(args.samples):
         done = all(path.exists() for path in extraction_outputs(sample))
         if done and stats_path(sample).exists():
-            print(f"{sample.name}: reusing {spanning_fastq(sample).parent}")
-            continue
+            stats = json.loads(stats_path(sample).read_text())
+            files = stats.get("files", {})
+            if stats.get("input_id") == input_id() and all(
+                files.get(path.name) == digest(path) for path in extraction_outputs(sample)
+            ) and stats.get("regions") and [
+                {key: r[key] for key in ("chrom", "start", "end", "genes")}
+                for r in stats["regions"]
+            ] == regions and (
+                stats.get("context_reads_per_region_cap") == CONTEXT_READS_PER_REGION
+                and stats.get("spanning_reads_per_variant_cap") == SPANNING_READS_PER_VARIANT
+                and stats.get("reads_arm_reads_per_variant_cap") == READS_ARM_READS_PER_VARIANT
+            ):
+                print(f"{sample.name}: verified saved osteosarc inputs")
+                continue
         extract(sample, regions, variants)
 
 

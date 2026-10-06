@@ -33,6 +33,7 @@ from .config import (
     WORK_DIR,
 )
 from .fetch_osteosarc import USER_AGENT
+from .osteosarc_inputs import input_id
 
 REFERENCE_DIR = WORK_DIR / "reference"
 DOWNLOAD_DIR = WORK_DIR / "downloads"
@@ -88,9 +89,15 @@ def download(url: str, dest: Path) -> Path:
     return dest
 
 
-def load_variants() -> list[dict]:
+def load_variants(*, include_unresolved: bool = False) -> list[dict]:
     payload = json.loads((RESULTS_DIR / "vaccine_variants.json").read_text())
-    return payload["variants"]
+    if payload.get("source", {}).get("input_id") != input_id():
+        # Committed results belong to the most recent published measurement.
+        # A new branch's frozen panel is authoritative even before it publishes.
+        from .fetch_osteosarc import build_variant_records
+        payload = build_variant_records()
+    return [v for v in payload["variants"]
+            if include_unresolved or v.get("allele_status", "ready") == "ready"]
 
 
 def transcript_spans(gtf_path: Path) -> dict[str, list[tuple[int, int, str]]]:

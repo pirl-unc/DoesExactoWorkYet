@@ -12,6 +12,7 @@ import json
 
 from pipeline import evaluate
 from pipeline.build_site import migrate_name, migrate_payload
+from pipeline.osteosarc_inputs import input_id
 
 
 def test_legacy_timepoint_maps_to_the_ont_sample():
@@ -77,6 +78,7 @@ def _scored(sample, arm, outcome):
                 "sample": sample,
                 "arm": arm,
                 "status": "ok",
+                "input_id": input_id(),
                 "variants": {"GENE-chr1-1": {"outcome": outcome}},
             }
         ],
@@ -96,7 +98,7 @@ def test_merge_keeps_both_arms_of_one_sample(tmp_path, monkeypatch):
     monkeypatch.setattr(
         evaluate,
         "load_variants",
-        lambda: [
+        lambda **kwargs: [
             {
                 "variant_id": "GENE-chr1-1",
                 "gene": "GENE",

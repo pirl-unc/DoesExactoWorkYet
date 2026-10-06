@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from . import config, extract_reads
 from .methods import METHODS
+from .osteosarc_inputs import manifest
 
 # Where each preparation tool lives, so the site can link them rather than just
 # naming them.
@@ -54,8 +55,8 @@ def data_sources(extraction: dict) -> list[dict]:
         if stats:
             taken = (
                 f"{stats.get('n_spanning_reads', 0):,} variant-spanning + "
-                f"{stats.get('n_context_reads', 0):,} context reads read out over "
-                "HTTP byte ranges; the file is never downloaded."
+                f"{stats.get('n_context_reads', 0):,} context reads "
+                "from a verified osteosarc regional BAM; the source BAM stays remote."
             )
         sample_rows.append(
             {
@@ -74,10 +75,21 @@ def data_sources(extraction: dict) -> list[dict]:
             }
         )
 
+    frozen = manifest()
     return [
         {
-            "group": "Long-read RNA-seq — the data under test",
-            "origin": "osteosarc.com (Backblaze B2)",
+            "group": "Frozen osteosarc benchmark inputs",
+            "origin": f"osteosarc {frozen['osteosarc_version']} · snapshot {frozen['snapshot']['name']}",
+            "entries": [{
+                "label": "Input manifest and checksums",
+                "url": "https://github.com/pirl-unc/DoesExactoWorkYet/tree/main/data/osteosarc",
+                "detail": "51 vaccine-associated variants from the union of membership sources, "
+                          "with corrected alleles. Every method uses verified shared sample inputs.",
+            }],
+        },
+        {
+            "group": "RNA-seq — the data under test",
+            "origin": "osteosarc frozen source inventory (public S3)",
             "entries": sample_rows,
         },
         {
@@ -88,8 +100,8 @@ def data_sources(extraction: dict) -> list[dict]:
                     "label": "Vaccine neoantigen overlap",
                     "url": config.VACCINE_OVERLAP_URL,
                     "detail": "Which mutations went into which of the five personalised "
-                    "vaccines, with ELISPOT status and a VAF trend. Defines the 37 "
-                    "variants under test.",
+                    "vaccines, with ELISPOT status and a VAF trend. Pinned source; "
+                    "catalogue and source-variant assertions expand the panel to 51 variants.",
                 },
                 {
                     "label": "Somatic variants, per assay",
@@ -109,7 +121,7 @@ def data_sources(extraction: dict) -> list[dict]:
                     "detail": "The curated neoantigen prediction the vaccine designs "
                     "were picked from. Its MT Epitope Seq column is the peptide that "
                     "was manufactured — searched for verbatim inside Exacto's "
-                    "proteoforms. Covers 10 of the 37 variants.",
+                    "proteoforms. Pinned independently with its published sequence-table checksums.",
                 },
                 {
                     "label": "pVACtools epitopes, MHC class II",
@@ -240,13 +252,8 @@ def reproduction() -> list[dict]:
             "commands": [
                 "export DEWY_WORK_DIR=$PWD/work",
                 "python -m pipeline.fetch_osteosarc",
-                "python -m pipeline.build_reference",
-                "python -m pipeline.extract_reads --samples T1-ONT T2-ONT T3-ONT T1-PacBio",
-                (
-                    'python -m pipeline.run_exacto --threads "$(nproc)"'
-                    " --samples T1-ONT T2-ONT T3-ONT T1-PacBio"
-                    " --arms assembly reads"
-                ),
+                "python -m pipeline.prepare_inputs",
+                'python -m pipeline.run_exacto --threads "$(nproc)"',
                 "python -m pipeline.evaluate",
                 "python -m pipeline.build_site",
                 "python -m http.server -d site 8000",
@@ -434,7 +441,7 @@ def configuration() -> list[dict]:
                         "frameshifts. Assembly removes basecalling error by "
                         "averaging over every read at a locus, which is also how "
                         "it loses subclonal alleles — 0 of 6 deletions and 3 of "
-                        "37 mutations. isONcorrect polishes each read against "
+                        "37 mutations in the earlier panel. isONcorrect polishes each read against "
                         "others sharing its transcript structure and emits one "
                         "read per read, so a minority allele keeps its own read. "
                         "Reference-free, so a novel junction defines its own "
@@ -633,7 +640,7 @@ def configuration() -> list[dict]:
                     "canonical": "1, 2 — Exacto's default; Nexus passes nothing",
                     "why": (
                         "GENCODE annotates the mitochondrial genes at level 3, so "
-                        "the default would silently drop MT-ND5 — one of the 37 "
+                        "the default would silently drop MT-ND5 — one of the 51 "
                         "vaccine targets."
                     ),
                 },
@@ -702,5 +709,3 @@ def configuration() -> list[dict]:
             ],
         },
     ]
-
-

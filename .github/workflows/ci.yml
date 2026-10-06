@@ -24,19 +24,15 @@ jobs:
 
       # Pinned: a newer ruff enables new rules and would fail a run that
       # changed nothing.
-      - run: python -m pip install pytest ruff==0.16.0
+      - run: python -m pip install pytest ruff==0.16.0 osteosarc==0.15.0
 
       - name: Lint
         run: python -m ruff check pipeline/ tests/
 
-      - name: Smoke test — osteosarc.com is reachable and still has the tables
+      - name: Verify the frozen osteosarc catalogue
         run: python -m pipeline.fetch_osteosarc
 
       - name: Unit tests
-        # The tests deliberately import the pipeline without pysam installed —
-        # the site build has to work in this stripped-down environment too.
-        # Test the refreshed alleles too: source drift can introduce a variant
-        # representation the committed callset never exercised.
         run: python -m pytest tests/ -q
 
       - name: Site rendering tests
@@ -49,9 +45,8 @@ jobs:
           test -s site/data.json
           python -c "import json; json.load(open('site/data.json'))"
 
-      - name: Fail if the variant table drifted from what is committed
+      - name: Check that the frozen panel rebuilds exactly
         run: |
-          if ! git diff --quiet results/vaccine_variants.json; then
-            echo "::warning::osteosarc.com's variant tables have changed since the last commit"
-            git --no-pager diff --stat results/vaccine_variants.json
-          fi
+          cp results/vaccine_variants.json /tmp/exacto-frozen-panel.json
+          python -m pipeline.fetch_osteosarc
+          cmp results/vaccine_variants.json /tmp/exacto-frozen-panel.json

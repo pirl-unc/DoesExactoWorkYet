@@ -683,8 +683,10 @@ function detailRow(variant, columns) {
   facts.append(el("h4", null, "Variant"));
   const list = el("dl", "kv");
   const add = (key, value) => list.append(el("dt", null, key), el("dd", null, value));
-  add("locus", `${variant.chrom}:${variant.pos.toLocaleString()}`);
-  add("change", `${variant.ref} → ${variant.alt}`);
+  add("locus", `${variant.chrom}:${variant.pos?.toLocaleString() ?? "unresolved"}`);
+  add("change", variant.ref == null || variant.alt == null ? "unresolved" : `${variant.ref} → ${variant.alt}`);
+  if (variant.allele_status) add("allele status", variant.allele_status);
+  if (variant.corrections?.length) add("osteosarc corrections", variant.corrections.join(", "));
   add("consequence", variant.consequence || "—");
   add("impact", variant.impact || "—");
   add("vaccines", variant.vaccines.join(", "));
@@ -746,13 +748,13 @@ function renderTable() {
 
     row.append(el("td", "gene sticky-col", variant.gene));
     row.append(el("td", "change sticky-col", variant.protein_change || variant.vaccine_label || "—"));
-    row.append(el("td", "locus", `${variant.chrom}:${variant.pos.toLocaleString()}`));
+    row.append(el("td", "locus", `${variant.chrom}:${variant.pos?.toLocaleString() ?? "unresolved"}`));
 
     const change = el("td", "change");
-    const shortRef = variant.ref.length > 8 ? `${variant.ref.slice(0, 6)}…` : variant.ref;
-    const shortAlt = variant.alt.length > 8 ? `${variant.alt.slice(0, 6)}…` : variant.alt;
-    change.textContent = `${shortRef}>${shortAlt}`;
-    change.title = `${variant.ref}>${variant.alt} (${variant.variant_type})`;
+    const shortRef = variant.ref?.length > 8 ? `${variant.ref.slice(0, 6)}…` : variant.ref;
+    const shortAlt = variant.alt?.length > 8 ? `${variant.alt.slice(0, 6)}…` : variant.alt;
+    change.textContent = shortRef == null || shortAlt == null ? "unresolved" : `${shortRef}>${shortAlt}`;
+    change.title = variant.allele_status === "unresolved" ? "Allele unresolved in osteosarc" : `${variant.ref}>${variant.alt} (${variant.variant_type})`;
     row.append(change);
 
     const vaccines = el("td");
@@ -1528,6 +1530,8 @@ function renderEnvironment() {
     ["Python", env.python],
     ["Platform", env.platform],
     ["GENCODE", "v44, matching the 10x refdata-gex-GRCh38-2024-A the source BAMs used"],
+    ["osteosarc snapshot", DATA.summary.osteosarc_snapshot?.name],
+    ["Input identity", DATA.summary.input_id],
     ["Harness commit", DATA.summary.commit],
   ];
   for (const [key, value] of rows) {
