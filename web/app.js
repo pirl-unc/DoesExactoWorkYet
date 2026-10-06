@@ -182,17 +182,47 @@ function badge(outcome) {
   return el("span", `badge ${spec.tone}`, spec.label);
 }
 
+function evaluationStatus() {
+  if (!DATA.has_exacto_run) return "not_run";
+  if (DATA.summary.evaluation_status) return DATA.summary.evaluation_status;
+  if (DATA.summary.n_testable > 0) return "ok";
+  const evaluated = DATA.variants.some((variant) =>
+    Object.values(variant.recovery?.samples || {}).some(ran));
+  return evaluated ? "no_coverage" : "failed";
+}
+
 /* ------------------------------------------------------------- top matter */
 
 function renderVerdict() {
   const node = $("#verdict");
   const summary = DATA.summary;
+  const status = evaluationStatus();
+  const version = summary.exacto_version ? ` · Exacto ${summary.exacto_version}` : "";
 
-  if (!DATA.has_exacto_run) {
+  if (status === "not_run") {
     node.style.setProperty("--verdict-color", `var(--none)`);
     node.append(
       el("span", "answer", "Not yet run"),
       el("span", "detail", `${summary.n_variants} vaccine variants catalogued; no Exacto run recorded.`),
+    );
+    return;
+  }
+
+  if (status !== "ok") {
+    node.style.setProperty("--verdict-color", "var(--none)");
+    const previous = (DATA.history || []).slice().reverse()
+      .find((entry) => entry.n_testable > 0);
+    const last = previous
+      ? ` Last evaluated result: ${previous.n_recovered}/${previous.n_testable} `
+        + `on ${previous.timestamp?.slice(0, 10) || previous.date} `
+        + `(Exacto ${previous.exacto_version || "unknown"}).`
+      : "";
+    node.append(
+      el("span", "answer", status === "failed" ? "Run failed" : "No covered mutations"),
+      el("span", "detail", (status === "failed"
+        ? `No vaccine mutations could be evaluated in the latest run${version}.`
+        : `Completed runs covered none of the ${summary.n_variants} vaccine mutations${version}.`)
+        + last),
     );
     return;
   }
@@ -205,7 +235,6 @@ function renderVerdict() {
   const tone = recovered === 0 ? "bad" : recovered === testable ? "ok" : "warn";
   node.style.setProperty("--verdict-color", `var(${TONE_VAR[tone]})`);
 
-  const version = summary.exacto_version ? ` · Exacto ${summary.exacto_version}` : "";
   const residues = summary.n_residue_checkable
     ? `, ${summary.n_residue_confirmed} of ${summary.n_residue_checkable} with the right amino acid`
     : "";
@@ -221,6 +250,8 @@ function renderTiles() {
   const node = $("#tiles");
   node.innerHTML = "";
   const counts = DATA.summary.outcome_counts;
+  const status = evaluationStatus();
+  const measured = status === "ok";
 
   const total = DATA.variants.length;
   const recovered = DATA.summary.n_recovered ?? 0;
@@ -229,9 +260,11 @@ function renderTiles() {
   const tiles = [
     {
       label: "Mutant proteins recovered",
-      value: DATA.has_exacto_run ? `${recovered}/${testable}` : "—",
-      sub: DATA.has_exacto_run ? "of mutations the long-read data covers" : "no run yet",
-      bar: DATA.has_exacto_run && counts ? OUTCOME_ORDER.map((outcome) => ({
+      value: measured ? `${recovered}/${testable}` : "—",
+      sub: measured ? "of mutations the long-read data covers"
+        : status === "failed" ? "no evaluable results"
+        : status === "no_coverage" ? "no mutations covered" : "no run yet",
+      bar: status !== "failed" && DATA.has_exacto_run && counts ? OUTCOME_ORDER.map((outcome) => ({
         outcome, n: counts[outcome] || 0,
       })) : null,
     },
@@ -242,14 +275,14 @@ function renderTiles() {
     },
   ];
 
-  if (DATA.summary.n_residue_checkable) {
+  if (measured && DATA.summary.n_residue_checkable) {
     tiles.splice(1, 0, {
       label: "…with the right amino acid",
       value: `${DATA.summary.n_residue_confirmed ?? 0}/${DATA.summary.n_residue_checkable}`,
       sub: "of the recovered proteoforms, vs. the annotated change",
     });
   }
-  if (DATA.summary.n_with_vaccine_epitopes) {
+  if (measured && DATA.summary.n_with_vaccine_epitopes) {
     tiles.splice(2, 0, {
       label: "Exact vaccine peptides found",
       value: `${DATA.summary.n_epitope_confirmed ?? 0}/${DATA.summary.n_with_vaccine_epitopes}`,
@@ -261,9 +294,11 @@ function renderTiles() {
     const extraction = DATA.extraction?.[sample.name];
     const outcomes = DATA.variants.map((variant) => outcomeOf(variant, sample.name));
     const hits = outcomes.filter((outcome) => RECOVERED.has(outcome)).length;
+    const evaluated = DATA.variants.some((variant) =>
+      ran(variant.recovery?.samples?.[sample.name]));
     tiles.push({
       label: sample.label,
-      value: DATA.has_exacto_run ? String(hits) : "—",
+      value: evaluated ? String(hits) : "—",
       sub: extraction
         ? `${extraction.n_reads.toLocaleString()} reads · ${extraction.n_spanning_reads.toLocaleString()} spanning`
         : "not extracted",
@@ -333,7 +368,8 @@ function renderHistory() {
       el("span", "date", entry.date),
       el("span", "ver", entry.exacto_version || "—"),
       track,
-      el("span", "locus", `${entry.n_recovered}/${entry.n_testable}`),
+      el("span", "locus", entry.n_testable > 0
+        ? `${entry.n_recovered}/${entry.n_testable}` : "No evaluation"),
     );
     node.appendChild(row);
   }
@@ -1583,6 +1619,9 @@ function renderObservedFailures() {
     for (const step of run.steps || []) {
       if (step.returncode) failures.push({ run, step });
     }
+    if (run.status !== "ok" && run.error && !run.steps?.some((step) => step.returncode)) {
+      failures.push({ run, step: { name: "pipeline", log_tail: run.error } });
+    }
   }
   if (!failures.length) {
     node.append(el("div", "empty",
@@ -1596,7 +1635,7 @@ function renderObservedFailures() {
     const summary = el("summary");
     summary.append(
       el("span", "mono", step.name),
-      el("span", "badge bad", `exit ${step.returncode}`),
+      el("span", "badge bad", step.returncode === undefined ? "failed" : `exit ${step.returncode}`),
       el("span", "locus", `${run.label || run.sample} · ${run.arm}`),
     );
     card.append(summary);

@@ -195,6 +195,9 @@ jobs:
             --arms ${{ matrix.arm }}
 
       - name: Score ${{ matrix.sample }} (${{ matrix.arm }})
+        # Failed arms still have a run.json, and their diagnostics must reach
+        # the publisher even though the preceding step exited non-zero.
+        if: ${{ !cancelled() }}
         run: |
           python -m pipeline.evaluate \
             --samples ${{ matrix.sample }} \

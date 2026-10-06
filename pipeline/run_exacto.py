@@ -86,6 +86,10 @@ class StepFailed(RuntimeError):
     """A pipeline step exited non-zero; the arm cannot continue."""
 
 
+class VariantEncodingError(ValueError):
+    """A vaccine allele cannot be expressed as an Exacto graph operation."""
+
+
 class Runner:
     """Runs shell steps, keeping a structured record of each one."""
 
@@ -158,30 +162,34 @@ def as_graph_operation(variant: dict) -> tuple[int, int, int, str, str]:
     Exacto brackets a variant with the untouched bases either side: position_1
     is the last reference base kept before the edit ("D", downstream of it) and
     position_2 the first kept after ("U"). ``sequence`` is what goes between
-    them, so a deletion carries an empty sequence.
+    them, so a deletion carries an empty sequence. Strip shared VCF padding
+    before choosing the breakpoints. Exacto's GraphOperationView classifies a
+    replacement of unequal lengths as INS, with size equal to the inserted
+    sequence length; the breakpoints retain the entire removed reference span.
     """
     pos, ref, alt = variant["pos"], variant["ref"], variant["alt"]
 
-    if len(ref) == 1 and len(alt) == 1:
-        return pos - 1, pos + 1, 1, "SNV", alt
+    ref, alt = ref.upper(), alt.upper()
+    if not ref or not alt or set(ref + alt) - set("ACGT") or ref == alt:
+        raise VariantEncodingError(
+            f"cannot encode {variant['gene']} {variant['chrom']}:{pos} {ref}>{alt}"
+        )
 
-    if len(ref) > len(alt) and ref.startswith(alt):
-        # VCF-style deletion anchored on a shared leading base.
-        deleted = len(ref) - len(alt)
-        position_1 = pos + len(alt) - 1
-        return position_1, position_1 + deleted + 1, deleted, "DEL", ""
+    prefix = 0
+    while prefix < min(len(ref), len(alt)) and ref[prefix] == alt[prefix]:
+        prefix += 1
+    pos += prefix
+    ref, alt = ref[prefix:], alt[prefix:]
+    while ref and alt and ref[-1] == alt[-1]:
+        ref, alt = ref[:-1], alt[:-1]
 
-    if len(alt) > len(ref) and alt.startswith(ref):
-        inserted = alt[len(ref) :]
-        position_1 = pos + len(ref) - 1
-        return position_1, position_1 + 1, len(inserted), "INS", inserted
-
+    position_1, position_2 = pos - 1, pos + len(ref)
+    if not alt:
+        return position_1, position_2, len(ref), "DEL", ""
     if len(ref) == len(alt):
-        return pos - 1, pos + len(ref), len(alt), "MNV", alt
-
-    raise SystemExit(
-        f"cannot encode {variant['gene']} {variant['chrom']}:{pos} {ref}>{alt}"
-    )
+        kind = "SNV" if len(alt) == 1 else "MNV"
+        return position_1, position_2, len(alt), kind, alt
+    return position_1, position_2, len(alt), "INS", alt
 
 
 def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
@@ -569,6 +577,11 @@ def run_arm(
     query_fasta: Path | None = None
 
     try:
+        # Validate the complete callset before spending hours on assembly and
+        # variant calling. An unsupported allele still gets a failed run.json.
+        somatic_tsv = out_dir / f"{prefix}.vaccine_variants.tsv"
+        write_somatic_tsv(variants, somatic_tsv)
+
         if method.family == "assembly" and sample.read_type == "short":
             # Short reads reach Exacto only as contigs. rnaSPAdes emits FASTA
             # with no per-base quality, and call-rna-vars panics without one,
@@ -731,9 +744,6 @@ def run_arm(
         rna_calls = rna_dir / f"{prefix}_exacto_rna_variant_calls.tsv"
         structures = rna_dir / f"{prefix}_exacto_transcript_structures.tsv"
 
-        somatic_tsv = out_dir / f"{prefix}.vaccine_variants.tsv"
-        write_somatic_tsv(variants, somatic_tsv)
-
         annotated_tsv = out_dir / f"{prefix}.vaccine_variants.annotated.tsv"
         runner.run(
             "annotate_vars",
@@ -825,7 +835,7 @@ def run_arm(
         except StepFailed as error:
             result["peptide_error"] = str(error)
 
-    except StepFailed as error:
+    except (StepFailed, VariantEncodingError) as error:
         result["status"] = "failed"
         result["error"] = str(error)
         print(f"    !! {sample.name}/{arm}: {error}")
@@ -865,6 +875,8 @@ def main() -> None:
     print(f"\n{len(runs) - len(failures)}/{len(runs)} arms completed")
     for failure in failures:
         print(f"  FAILED {failure['sample']}/{failure['arm']}: {failure['error']}")
+    if failures:
+        raise SystemExit(1)
 
 
 def collect_runs(samples: list[str] | None = None) -> list[dict]:

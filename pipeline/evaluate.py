@@ -608,7 +608,9 @@ def matched_epitopes(variant: dict, proteoforms: list[dict]) -> list[dict]:
 
 
 def best_outcome(outcomes: list[str]) -> str:
-    return max(outcomes, key=OUTCOME_ORDER.index) if outcomes else "no_reads"
+    # not_run denotes the absence of a score, not evidence of absent coverage.
+    graded = [outcome for outcome in outcomes if outcome != "not_run"]
+    return max(graded, key=OUTCOME_ORDER.index) if graded else "not_run"
 
 
 SCORED_DIR = RESULTS_DIR / "scored"
@@ -742,7 +744,7 @@ def merge() -> dict:
                     ),
                     None,
                 )
-                if run and variant_id in run["variants"]:
+                if run and run["status"] == "ok" and variant_id in run["variants"]:
                     per_arm[arm] = run["variants"][variant_id]
             per_sample[sample.name] = {
                 "arms": per_arm,
@@ -799,11 +801,17 @@ def merge() -> dict:
     testable = [
         item
         for item in summary
-        if any(entry["outcome"] != "no_reads" for entry in item["samples"].values())
+        if item["outcome"] in OUTCOME_ORDER[1:]
     ]
+    evaluated = [item for item in summary if item["outcome"] in OUTCOME_ORDER]
+    evaluation_status = (
+        "failed" if not evaluated else "no_coverage" if not testable else "ok"
+    )
 
     payload = {
         "n_variants": len(summary),
+        "n_evaluated": len(evaluated),
+        "evaluation_status": evaluation_status,
         "n_testable": len(testable),
         "n_recovered": len(recovered),
         "recovered_genes": sorted(item["gene"] for item in recovered),
@@ -814,7 +822,7 @@ def merge() -> dict:
         "epitope_confirmed_genes": sorted(item["gene"] for item in epitope_confirmed),
         "outcome_counts": {
             outcome: sum(1 for item in summary if item["outcome"] == outcome)
-            for outcome in OUTCOME_ORDER
+            for outcome in [*OUTCOME_ORDER, "not_run"]
         },
         "extraction": extraction,
         "runs": graded_runs,
@@ -825,13 +833,21 @@ def merge() -> dict:
     out_path = RESULTS_DIR / "exacto_results.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n")
 
-    print(f"{len(recovered)}/{len(testable)} testable vaccine mutations recovered "
-          f"as mutant protein sequences ({len(summary)} total)")
-    print(f"{len(residue_confirmed)}/{len(residue_checkable)} of the recovered "
-          "proteoforms carry the amino acid the annotation predicts")
-    print(f"{len(epitope_confirmed)}/{len(with_epitopes)} of the mutations with a "
-          "published vaccine epitope had that exact peptide inside the proteoform")
-    for outcome in OUTCOME_ORDER:
+    if evaluation_status == "failed":
+        print("Evaluation failed: no vaccine mutations were scored")
+    elif evaluation_status == "no_coverage":
+        print("No vaccine mutations covered in the completed runs")
+    else:
+        print(f"{len(recovered)}/{len(testable)} testable vaccine mutations recovered "
+              f"as mutant protein sequences ({len(summary)} total)")
+    if evaluation_status == "ok":
+        if residue_checkable:
+            print(f"{len(residue_confirmed)}/{len(residue_checkable)} of the recovered "
+                  "proteoforms carry the amino acid the annotation predicts")
+        if with_epitopes:
+            print(f"{len(epitope_confirmed)}/{len(with_epitopes)} of the mutations with a "
+                  "published vaccine epitope had that exact peptide inside the proteoform")
+    for outcome in [*OUTCOME_ORDER, "not_run"]:
         print(f"  {outcome:12} {payload['outcome_counts'][outcome]}")
     print(f"-> {out_path}")
     return payload

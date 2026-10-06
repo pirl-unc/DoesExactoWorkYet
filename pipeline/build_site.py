@@ -121,7 +121,9 @@ def update_history(summary: dict) -> list[dict]:
         "n_testable": summary.get("n_testable"),
         "n_recovered": summary.get("n_recovered"),
     }
-    if entry["n_recovered"] is None:
+    # A failed evaluation or a completed run with no covered loci has no
+    # recovery fraction. Keep the last measured answer in the track record.
+    if entry["n_recovered"] is None or not entry["n_testable"]:
         return history
 
     def score(item: dict) -> tuple:
@@ -243,11 +245,32 @@ def build_payload() -> dict:
         "commit": git("rev-parse", "--short", "HEAD"),
     }
     if exacto_payload:
+        # Older payloads reported a failed-only merge as 0/0 with every locus
+        # labelled no_reads. Infer evaluation status from actual mutation
+        # scores so rebuilding the current site corrects that display too.
+        n_evaluated = exacto_payload.get("n_evaluated")
+        if n_evaluated is None:
+            n_evaluated = sum(
+                any(entry.get("arms") for entry in item.get("samples", {}).values())
+                for item in exacto_payload["variants"]
+            )
+        evaluation_status = exacto_payload.get("evaluation_status") or (
+            "failed" if not n_evaluated
+            else "no_coverage" if not exacto_payload["n_testable"] else "ok"
+        )
+        outcome_counts = exacto_payload["outcome_counts"]
+        if not n_evaluated:
+            outcome_counts = {
+                **dict.fromkeys(outcome_counts, 0),
+                "not_run": exacto_payload["n_variants"],
+            }
         summary.update(
             {
+                "n_evaluated": n_evaluated,
+                "evaluation_status": evaluation_status,
                 "n_testable": exacto_payload["n_testable"],
                 "n_recovered": exacto_payload["n_recovered"],
-                "outcome_counts": exacto_payload["outcome_counts"],
+                "outcome_counts": outcome_counts,
                 "recovered_genes": exacto_payload["recovered_genes"],
                 "n_residue_checkable": exacto_payload.get("n_residue_checkable"),
                 "n_residue_confirmed": exacto_payload.get("n_residue_confirmed"),
@@ -327,7 +350,12 @@ def main() -> None:
 
     print(f"site -> {SITE_DIR}")
     print(f"  variants: {payload['summary']['n_variants']}")
-    if payload["has_exacto_run"]:
+    status = payload["summary"].get("evaluation_status")
+    if status == "failed":
+        print("  evaluation failed: no vaccine mutations scored")
+    elif status == "no_coverage":
+        print("  no vaccine mutations covered in completed runs")
+    elif payload["has_exacto_run"]:
         print(
             f"  recovered: {payload['summary']['n_recovered']}"
             f"/{payload['summary']['n_testable']} testable"

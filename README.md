@@ -38,6 +38,12 @@ The verdict is graded, not binary:
 | `proteoform` | a translated primary structure carries the mutation |
 | `peptide` | ...and `call-peptide-vars` emitted novel mutant peptides from it |
 
+Failed or missing runs leave mutations **unscored**, rather than claiming no
+reads cover them. If no mutations can be evaluated, the site says **Run failed**
+and shows the last evaluated result separately. Completed runs with no covered
+mutations say **No covered mutations**. Neither produces a recovery fraction or
+replaces the last measurement in the history.
+
 Every rung is keyed on the RNA variant call Exacto made **at the mutation's exact locus
 with its exact allele**, and never on `integrate-vars` output. That distinction is not
 pedantic: `integrate-vars` links a DNA variant to any RNA variant within 10 kb of a

@@ -29,13 +29,18 @@ jobs:
       - name: Lint
         run: python -m ruff check pipeline/ tests/
 
+      - name: Smoke test — osteosarc.com is reachable and still has the tables
+        run: python -m pipeline.fetch_osteosarc
+
       - name: Unit tests
         # The tests deliberately import the pipeline without pysam installed —
         # the site build has to work in this stripped-down environment too.
+        # Test the refreshed alleles too: source drift can introduce a variant
+        # representation the committed callset never exercised.
         run: python -m pytest tests/ -q
 
-      - name: Smoke test — osteosarc.com is reachable and still has the tables
-        run: python -m pipeline.fetch_osteosarc
+      - name: Site rendering tests
+        run: node --test tests/test_web_results.js
 
       - name: Smoke test — the site builds
         run: |

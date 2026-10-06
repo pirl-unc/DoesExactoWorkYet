@@ -9,8 +9,12 @@ from __future__ import annotations
 
 import pytest
 
-from pipeline.evaluate import expected_change
-from pipeline.run_exacto import as_graph_operation
+from pipeline.evaluate import expected_change, rna_calls_by_variant
+from pipeline.run_exacto import (
+    VariantEncodingError,
+    as_graph_operation,
+    write_somatic_tsv,
+)
 
 
 def variant(**overrides):
@@ -59,9 +63,53 @@ class TestGraphOperation:
         assert (position_1, position_2, size) == (999, 1002, 2)
         assert (variant_type, sequence) == ("MNV", "GA")
 
-    def test_unencodable_variant_is_loud(self):
-        with pytest.raises(SystemExit):
-            as_graph_operation(variant(ref="CT", alt="GAC"))
+    def test_map2_complex_replacement_that_broke_the_october_run(self, tmp_path):
+        record = variant(
+            gene="MAP2", chrom="chr2", pos=209694768,
+            ref="CCTGGGCTACTGTGTGTTCAATAAGTACACAGT", alt="CAGGG",
+        )
+        # Keep the leading C, replace the next 32 reference bases with AGGG.
+        # Exacto names unequal-length replacements INS and sizes the sequence.
+        assert as_graph_operation(record) == (209694768, 209694801, 4, "INS", "AGGG")
+        path = tmp_path / "somatic.tsv"
+        write_somatic_tsv([record], path)
+        assert "chr2\t209694768\t+\tD\tchr2\t209694801\t+\tU\t4\tINS\tAGGG" in path.read_text()
+
+    def test_complex_replacement_rna_match_requires_the_exact_allele(self, tmp_path):
+        record = variant(
+            variant_id="MAP2-chr2-209694768", gene="MAP2", chrom="chr2", pos=209694768,
+            ref="CCTGGGCTACTGTGTGTTCAATAAGTACACAGT", alt="CAGGG",
+        )
+        path = tmp_path / "rna.tsv"
+        path.write_text(
+            "variant_call_id\ttranscript_model_id\tchromosome_1\tposition_1\tposition_2\tvariant_type\tsequence\n"
+            "1\t10\tchr2\t209694768\t209694801\tINS\tAGGG\n"
+            "2\t11\tchr2\t209694768\t209694801\tINS\tATGG\n"
+            "3\t12\tchr2\t209694768\t209694801\tDEL\t\n"
+        )
+        calls = rna_calls_by_variant(path, [record])
+        assert [c["rna_variant_call_id"] for c in calls[record["variant_id"]]] == ["1"]
+
+    @pytest.mark.parametrize(("ref", "alt"), [
+        ("C", "T"), ("AG", "A"), ("A", "AGGT"), ("CT", "GA"),
+        ("CT", "GAC"), ("CTGT", "AGT"), ("AAC", "AGC"), ("AC", "AAC"),
+        ("CCTGGGCTACTGTGTGTTCAATAAGTACACAGT", "CAGGG"),
+    ])
+    def test_graph_edit_reconstructs_the_exact_allele(self, ref, alt):
+        record = variant(ref=ref, alt=alt)
+        left, right, _, _, sequence = as_graph_operation(record)
+        edited = ref[:left - record["pos"] + 1] + sequence + ref[right - record["pos"]:]
+        assert edited == alt
+
+    def test_shared_padding_reduces_to_the_actual_changed_base(self):
+        assert as_graph_operation(variant(ref="AAC", alt="AGC")) == (
+            1000, 1002, 1, "SNV", "G",
+        )
+
+    @pytest.mark.parametrize(("ref", "alt"), [("C", "<DEL>"), ("C", "N"), ("C", "C"), ("", "A")])
+    def test_unencodable_variant_is_loud(self, ref, alt):
+        with pytest.raises(VariantEncodingError, match="cannot encode"):
+            as_graph_operation(variant(ref=ref, alt=alt))
 
 
 class TestExpectedChange:
