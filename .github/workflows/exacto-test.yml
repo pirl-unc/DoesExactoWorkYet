@@ -187,7 +187,9 @@ jobs:
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
+          # This cleanup removes Clang/LLVM. Exacto's abpoa-sys uses bindgen,
+          # which needs their builtin headers (including stddef.h) to build.
+          large-packages: false
           docker-images: true
           # Deliberately kept: this action deletes the runner's 4 GB swapfile to
           # reclaim disk, and these jobs die of memory, not disk. Trading swap

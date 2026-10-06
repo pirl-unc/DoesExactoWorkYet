@@ -1,0 +1,42 @@
+name: Exacto installation
+
+# Exercise the real Linux build without downloading patient reads or running
+# the benchmark. Keep the runner cleanup and environment aligned with its jobs.
+on:
+  pull_request:
+    paths:
+      - "scripts/install_exacto.sh"
+      - "environment.yml"
+      - ".github/workflows/exacto-test.yml"
+      - ".github/workflows/install-exacto.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -el {0}
+    env:
+      DEWY_WORK_DIR: ${{ github.workspace }}/work
+      EXACTO_VERSION: latest-release
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          # Preserve Clang/LLVM and their headers for abpoa-sys/bindgen.
+          large-packages: false
+          swap-storage: false
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+      - name: Install Exacto and verify its CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/install_exacto.sh

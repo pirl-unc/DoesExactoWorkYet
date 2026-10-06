@@ -19,7 +19,7 @@ class Element {
   appendChild(child) { this.append(child); }
 }
 
-function render(data, functions) {
+function renderer(data, globals = {}) {
   const nodes = {};
   const context = vm.createContext({
     document: {
@@ -27,11 +27,18 @@ function render(data, functions) {
       createElement(tag) { return new Element(tag); },
     },
     data,
+    ...globals,
   });
   const source = fs.readFileSync(path.join(__dirname, "../web/app.js"), "utf8");
   // Omit only the async page bootstrap; run the actual helpers and renderers.
   vm.runInContext(source.slice(0, source.lastIndexOf("\nmain().catch")), context);
-  vm.runInContext(`DATA = data; ${functions.map((name) => `${name}();`).join(" ")}`, context);
+  vm.runInContext("DATA = data;", context);
+  return { nodes, context };
+}
+
+function render(data, functions) {
+  const { nodes, context } = renderer(data);
+  vm.runInContext(functions.map((name) => `${name}();`).join(" "), context);
   return nodes;
 }
 
@@ -96,4 +103,83 @@ test("input errors are visible even when no external step ran", () => {
   const nodes = render(data, ["renderObservedFailures"]);
   assert.match(nodes["#observed-list"].textContent, /pipelinefailed/);
   assert.match(nodes["#observed-list"].textContent, /cannot encode MAP2/);
+});
+
+async function liveRun(jobs, { failPage, status = "completed", total = jobs.length } = {}) {
+  const requests = [];
+  const timers = [];
+  const run = {
+    id: 49, run_number: 49, status, conclusion: "success",
+    html_url: "https://github.com/example/benchmark/actions/runs/49",
+    run_started_at: new Date(Date.now() - 7 * 60000).toISOString(),
+    updated_at: new Date(Date.now() - 60000).toISOString(),
+    head_branch: "main", head_sha: "811778362708e65e01716f954b26124b0ff3b0e5",
+  };
+  const { nodes, context } = renderer({ repo: "example/benchmark", workflow_file: "exacto-test.yml" }, {
+    fetch: async (url) => {
+      requests.push(url);
+      const { pathname, searchParams } = new URL(url);
+      if (pathname.endsWith("/runs")) {
+        return { ok: true, json: async () => ({ workflow_runs: [run] }) };
+      }
+      assert.match(pathname, /\/runs\/49\/jobs$/);
+      const page = Number(searchParams.get("page") || 1);
+      const size = Number(searchParams.get("per_page"));
+      if (page === failPage) return { ok: false, status: 503 };
+      return { ok: true, json: async () => ({
+        total_count: total, jobs: jobs.slice((page - 1) * size, page * size),
+      }) };
+    },
+    setTimeout: (callback, delay) => timers.push({ callback, delay }),
+  });
+  await vm.runInContext("renderLiveRun()", context);
+  return { node: nodes["#live-run"], requests, timers };
+}
+
+function workflowJobs(count) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: `job-${index + 1}`, status: "completed", conclusion: "success", steps: [],
+    html_url: `https://github.com/example/benchmark/actions/runs/49/job/${index + 1}`,
+  }));
+}
+
+test("live status includes all 36 preparation, method and publishing jobs", async () => {
+  const jobs = workflowJobs(36);
+  const { node, requests } = await liveRun(jobs);
+  const cards = node.children.find((child) => child.className === "live-jobs").children;
+  assert.equal(cards.length, 36);
+  assert.equal(cards.at(-1).children[0].textContent, "job-36");
+  assert.equal(requests.length, 2); // One workflow request and one jobs request.
+});
+
+test("live status follows every jobs page for a larger matrix", async () => {
+  const { node, requests } = await liveRun(workflowJobs(205));
+  const cards = node.children.find((child) => child.className === "live-jobs").children;
+  assert.equal(cards.length, 205);
+  assert.equal(new Set(cards.map((card) => card.children[0].textContent)).size, 205);
+  assert.equal(cards.at(-1).children[0].textContent, "job-205");
+  assert.equal(requests.length, 4);
+});
+
+test("preparation explains the waiting methods and uses the run start time", async () => {
+  const jobs = workflowJobs(5).map((job, index) => ({ ...job,
+    name: `prepare (sample-${index})`, status: "in_progress", conclusion: null,
+  }));
+  const { node, timers } = await liveRun(jobs, { status: "in_progress" });
+  assert.match(node.textContent, /Method jobs start after the preparation phase finishes/);
+  assert.match(node.textContent, /started 7 min ago/);
+  assert.equal(timers.length, 1);
+});
+
+test("a failed later page shows an error instead of an incomplete job list", async () => {
+  const { node, timers } = await liveRun(workflowJobs(101), { failPage: 2, status: "in_progress" });
+  assert.match(node.textContent, /Could not load job progress/);
+  assert.ok(!node.children.some((child) => child.className === "live-jobs"));
+  assert.equal(timers.length, 1);
+});
+
+test("an empty later page stops polling that jobs snapshot", async () => {
+  const { node, requests } = await liveRun(workflowJobs(100), { total: 101 });
+  assert.equal(node.children.find((child) => child.className === "live-jobs").children.length, 100);
+  assert.equal(requests.length, 3);
 });

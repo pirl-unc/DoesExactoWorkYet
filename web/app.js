@@ -1328,6 +1328,16 @@ async function github(path) {
   return response.json();
 }
 
+async function workflowJobs(runId) {
+  const jobs = [];
+  for (let page = 1; ; page += 1) {
+    const payload = await github(`actions/runs/${runId}/jobs?per_page=100&page=${page}`);
+    const batch = payload.jobs || [];
+    jobs.push(...batch);
+    if (!batch.length || jobs.length >= payload.total_count) return jobs;
+  }
+}
+
 function since(iso) {
   const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (seconds < 90) return `${Math.round(seconds)}s`;
@@ -1377,8 +1387,9 @@ async function renderLiveRun() {
   link.target = "_blank";
   link.rel = "noreferrer";
   head.append(link);
+  const timestamp = live ? (run.run_started_at || run.created_at) : run.updated_at;
   head.append(el("span", "locus",
-    `${live ? "started" : "finished"} ${since(run.updated_at)} ago · ${run.head_branch} · ${run.head_sha.slice(0, 7)}`));
+    `${active ? "started" : live ? "queued" : "finished"} ${since(timestamp)} ago · ${run.head_branch} · ${run.head_sha.slice(0, 7)}`));
   if (waiting.length && active) {
     head.append(el("span", "locus",
       `· ${waiting.length} more queued behind it`));
@@ -1387,13 +1398,18 @@ async function renderLiveRun() {
 
   // Per-job progress, so "where in the process" is answerable at a glance.
   try {
-    const { jobs } = await github(`actions/runs/${run.id}/jobs?per_page=30`);
+    const jobs = await workflowJobs(run.id);
     if (!jobs?.length) {
       node.append(el("div", "live-note",
         "Waiting for a runner — the workflow runs one at a time so results "
         + "cannot be published out of order."));
       if (live) setTimeout(renderLiveRun, 20000);
       return;
+    }
+    if (live && jobs.every((job) => job.name.startsWith("prepare ("))) {
+      node.append(el("div", "live-note",
+        "Preparing shared inputs for all samples. Method jobs start after "
+        + "the preparation phase finishes."));
     }
     const grid = el("div", "live-jobs");
     for (const job of jobs) {
@@ -1425,7 +1441,8 @@ async function renderLiveRun() {
     }
     node.append(grid);
   } catch {
-    // Jobs endpoint is a second request; skip it rather than lose the header.
+    node.append(el("div", "live-note",
+      "Could not load job progress. Open the run on GitHub for all jobs."));
   }
 
   if (live) setTimeout(renderLiveRun, 20000);
