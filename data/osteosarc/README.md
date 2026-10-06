@@ -10,6 +10,9 @@ corrections, catalogue entries, and independent vaccine membership assertions
 are preserved. `pipeline.fetch_osteosarc` calls osteosarc's membership join to
 select the union of all three sources: **51 variants**, all with resolved alleles
 in this snapshot. The earlier overlap-only panel contained 37 mutations.
+Unresolved overlap assertions are retained when their published catalogue locus
+identifies one entry, without claiming a literal allele join. These records are
+excluded from Exacto inputs; unknown or ambiguous joins still fail.
 
 `epitopes.json` freezes the two pVACtools sequence tables fetched with
 `Dataset.download` from the same source inventory. The manifest records both
@@ -30,6 +33,9 @@ and preparation code. Original regional BAM acquisition receipts are retained
 in each extraction JSON. Methods reject input changes, and the scorer rejects
 mixed catalogue/read identities. Older scores remain in history but are not
 attached to the expanded panel.
+Reference compression is byte-stable, so preparing another sample preserves
+existing receipts. A failed preparation does not prevent other samples with
+uploaded, verified inputs from running and publishing partial results.
 
 Updating this input set is a reviewed change: export a new corrected upstream
 catalogue and source inventory, acquire and freeze the matching epitope tables,

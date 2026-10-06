@@ -114,6 +114,9 @@ jobs:
 
   run:
     needs: prepare
+    # A failed preparation must not discard other samples' uploaded inputs.
+    # Legs without a prepared artifact fail at download; the rest still score.
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:

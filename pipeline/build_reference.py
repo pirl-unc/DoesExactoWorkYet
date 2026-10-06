@@ -17,6 +17,7 @@ N runs when it collects minimizers, so the masked genome indexes in seconds.
 from __future__ import annotations
 
 import gzip
+import io
 import json
 import subprocess
 import time
@@ -395,7 +396,11 @@ def write_subset_gtf(regions: list[Region], gtf_path: Path, out_path: Path) -> N
         by_chrom.setdefault(region.chrom, []).append((region.start, region.end))
 
     kept = 0
-    with gzip.open(gtf_path, "rt") as source, gzip.open(out_path, "wt") as sink:
+    # Preparing another sample rewrites this shared file. Fixed gzip metadata
+    # preserves earlier receipts when the reference content is unchanged.
+    with gzip.open(gtf_path, "rt") as source, out_path.open("wb") as raw, gzip.GzipFile(
+        fileobj=raw, mode="wb", filename="", mtime=0
+    ) as packed, io.TextIOWrapper(packed, encoding="utf-8", newline="\n") as sink:
         for line in source:
             if line.startswith("#"):
                 sink.write(line)

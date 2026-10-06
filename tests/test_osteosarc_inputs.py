@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from pipeline import (
+    build_reference,
     build_site,
     evaluate,
     extract_reads,
@@ -48,6 +49,70 @@ def test_unresolved_membership_stays_visible():
     assert payload["n_variants"] == 51 and payload["n_ready"] == 50
     extra = next(v for v in payload["variants"] if v["gene"] == "ATRX")
     assert extra["allele_status"] == "unresolved" and extra["ref"] is None
+
+
+@pytest.mark.parametrize("gene", ["MAP2", "TECPR1"])
+def test_unresolved_overlap_members_keep_assertions_and_skip_exacto(
+    gene, tmp_path, monkeypatch
+):
+    inputs = copy.deepcopy(osteosarc_inputs.frozen_inputs())
+    baseline = fetch_osteosarc.build_variant_records(inputs)
+    original = next(v for v in baseline["variants"] if v["gene"] == gene)
+    variant = next(v for v in inputs["variants"] if v["gene"] == gene)
+    variant["status"] = "unresolved"
+    variant["alleles"] = []
+    payload = fetch_osteosarc.build_variant_records(inputs)
+    assert payload["n_variants"] == 51 and payload["n_ready"] == 50
+    assert payload["n_peptide_entries"] == baseline["n_peptide_entries"] == 38
+    unresolved = next(v for v in payload["variants"] if v["gene"] == gene)
+    assert unresolved["ref"] is None and unresolved["alt"] is None
+    assert unresolved["vaccines"] == original["vaccines"]
+    assert unresolved["elispot"] == original["elispot"]
+    assert unresolved["peptide_classes"] == original["peptide_classes"]
+    assert unresolved["vaccine_membership"] == {
+        **original["vaccine_membership"],
+        "overlap_join_status": "unresolved_allele",
+    }
+    # Removing rows from the strict join must not shift other members' indices.
+    assert [v for v in payload["variants"] if v["gene"] != gene] == [
+        v for v in baseline["variants"] if v["gene"] != gene
+    ]
+    (tmp_path / "vaccine_variants.json").write_text(json.dumps(payload))
+    monkeypatch.setattr(build_reference, "RESULTS_DIR", tmp_path)
+    assert len(build_reference.load_variants()) == 50
+    assert all(v["gene"] != gene for v in build_reference.load_variants())
+    assert len(build_reference.load_variants(include_unresolved=True)) == 51
+
+
+def test_overlap_assertions_alone_include_an_unresolved_member():
+    inputs = copy.deepcopy(osteosarc_inputs.frozen_inputs())
+    variant = next(v for v in inputs["variants"] if v["gene"] == "MAP2")
+    variant.update(status="unresolved", alleles=[], vaccines=[], vaccine_count=0)
+    variant["annotations"]["source_vaccines"] = []
+    payload = fetch_osteosarc.build_variant_records(inputs)
+    member = next(v for v in payload["variants"] if v["gene"] == "MAP2")
+    assert payload["n_variants"] == 51 and payload["n_ready"] == 50
+    assert member["vaccine_membership"]["included"]
+    assert member["vaccines"] == ["JLF V1", "JLF V2", "JLF V3", "mRNA"]
+
+
+@pytest.mark.parametrize(
+    "problem", ["unknown", "ambiguous_ready", "ambiguous_unresolved"]
+)
+def test_overlap_join_still_rejects_unknown_or_ambiguous_loci(problem):
+    from osteosarc.errors import IntegrityError
+
+    inputs = copy.deepcopy(osteosarc_inputs.frozen_inputs())
+    variant = next(v for v in inputs["variants"] if v["gene"] == "MAP2")
+    if problem == "unknown":
+        row = next(r for r in inputs["vaccine_rows"] if r["gene"] == "MAP2")
+        row["pos"] = "1"
+    else:
+        if problem == "ambiguous_unresolved":
+            variant.update(status="unresolved", alleles=[])
+        inputs["variants"].append({**copy.deepcopy(variant), "id": "other-MAP2"})
+    with pytest.raises(IntegrityError, match="joins"):
+        fetch_osteosarc.build_variant_records(inputs)
 
 
 def test_modified_frozen_catalogue_is_rejected(tmp_path, monkeypatch):
@@ -135,6 +200,62 @@ def test_prepared_inputs_reject_changed_files_and_recipes(tmp_path, monkeypatch)
     assert not prepare_inputs.verified("T1-ONT")
     with pytest.raises(ValueError, match="prepared inputs"):
         prepare_inputs.prepare(["T1-ONT"], verify_only=True)
+
+
+def test_incremental_preparation_preserves_earlier_sample_receipts(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(prepare_inputs, "WORK_DIR", tmp_path)
+    monkeypatch.setattr(fetch_osteosarc, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(build_reference, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(extract_reads, "READS_DIR", tmp_path / "reads")
+    reference = tmp_path / "reference"
+    reference.mkdir()
+    for name, filename in (
+        ("MASKED_FASTA", "genome.fa"),
+        ("SUBSET_GTF", "genes.gtf.gz"),
+        ("GENE_PROTEINS", "proteins.fa"),
+        ("REGIONS_JSON", "regions.json"),
+    ):
+        monkeypatch.setattr(build_reference, name, reference / filename)
+    monkeypatch.setattr(extract_reads, "REGIONS_JSON", build_reference.REGIONS_JSON)
+    gtf = tmp_path / "source.gtf.gz"
+    content = '# header\nchr1\ttest\tgene\t10\t20\t.\t+\t.\tgene_id "TEST";\n'
+    gtf.write_bytes(gzip.compress(content.encode()))
+    clock = {"time": 1000}
+    monkeypatch.setattr(gzip.time, "time", lambda: clock["time"])
+
+    def build():
+        build_reference.MASKED_FASTA.write_text(">chr1\nACGT\n")
+        build_reference.MASKED_FASTA.with_suffix(".fa.fai").write_text(
+            "chr1\t4\t6\t4\t5\n"
+        )
+        build_reference.GENE_PROTEINS.write_text(">TEST\nM\n")
+        build_reference.REGIONS_JSON.write_text("[]")
+        build_reference.write_subset_gtf(
+            [build_reference.Region("chr1", 1, 100, ("TEST",))],
+            gtf,
+            build_reference.SUBSET_GTF,
+        )
+
+    def extract(sample, regions, variants):
+        for path in extract_reads.extraction_outputs(sample):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with extract_reads.fastq_writer(path) as out:
+                out.write("@read\nACGT\n+\nIIII\n")
+        extract_reads.stats_path(sample).write_text("{}")
+
+    monkeypatch.setattr(build_reference, "main", build)
+    monkeypatch.setattr(extract_reads, "extract", extract)
+    prepare_inputs.prepare(["T1-ONT"])
+    earlier_receipt = prepare_inputs.receipt_path("T1-ONT").read_bytes()
+    reference_bytes = build_reference.SUBSET_GTF.read_bytes()
+    clock["time"] = 2000
+    prepare_inputs.prepare(["T2-ONT"])
+    assert build_reference.SUBSET_GTF.read_bytes() == reference_bytes
+    assert gzip.decompress(reference_bytes).decode() == content
+    assert prepare_inputs.receipt_path("T1-ONT").read_bytes() == earlier_receipt
+    prepare_inputs.prepare(["T1-ONT", "T2-ONT"], verify_only=True)
 
 
 def test_mixed_catalogues_cannot_be_merged(tmp_path, monkeypatch):

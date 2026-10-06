@@ -76,14 +76,90 @@ def _ont_expectation(support: list[dict]) -> dict:
     return {timepoint: rows.get(timepoint) for timepoint in TIMEPOINT_ORDER}
 
 
+def _locus(chrom, pos) -> tuple[str, int]:
+    return str(chrom).removeprefix("chr").replace("MT", "M"), int(pos)
+
+
+def _vaccine_membership(variants: list[dict], vaccine_rows: list[dict]):
+    """Keep unresolved assertions without claiming a resolved allele join."""
+    from osteosarc.corpus import vaccine_membership
+    from osteosarc.errors import IntegrityError
+
+    ready_loci = {
+        _locus(*variant["alleles"][0][:2])
+        for variant in variants
+        if variant["status"] == "ready"
+    }
+    unresolved_loci = defaultdict(list)
+    for variant in variants:
+        if variant["status"] == "ready":
+            continue
+        annotation = variant["annotations"]
+        location = annotation.get("index", {}).get("location", "")
+        chrom, separator, pos = location.partition(":")
+        if not separator:
+            source = annotation.get("source_record", {})
+            chrom, pos = source.get("chr"), source.get("pos")
+        if chrom and pos:
+            unresolved_loci[_locus(chrom, pos)].append(variant["id"])
+
+    ready_numbers, unresolved_rows = [], []
+    for number, row in enumerate(vaccine_rows):
+        locus = _locus(row["chrom"], row["pos"])
+        candidates = unresolved_loci.get(locus, [])
+        if locus not in ready_loci and candidates:
+            if len(candidates) != 1:
+                raise IntegrityError(
+                    f"Vaccine row {number} ({row['gene']}) joins "
+                    f"{len(candidates)} unresolved catalogue entries"
+                )
+            unresolved_rows.append((number, candidates[0]))
+        else:
+            # Unknown loci and ambiguous ready alleles still fail the strict join.
+            ready_numbers.append(number)
+
+    memberships, joined = vaccine_membership(
+        variants, [vaccine_rows[number] for number in ready_numbers]
+    )
+    overlap = {
+        ready_numbers[row["row"]]: dict(row, row=ready_numbers[row["row"]])
+        for row in joined
+    }
+    for entry in memberships.values():
+        entry["overlap_rows"] = [
+            ready_numbers[number] for number in entry["overlap_rows"]
+        ]
+    for number, variant_id in unresolved_rows:
+        entry = memberships[variant_id]
+        entry["overlap_rows"].append(number)
+        entry["overlap_join_status"] = "unresolved_allele"
+        overlap[number] = dict(vaccine_rows[number], variant_id=variant_id, row=number)
+    for variant_id in {variant_id for _, variant_id in unresolved_rows}:
+        entry = memberships[variant_id]
+        entry["overlap_rows"].sort()
+        names = {
+            name
+            for number in entry["overlap_rows"]
+            for name, used in vaccine_rows[number]["vaccines"].items()
+            if used
+        }
+        entry["overlap_union"] = sorted(names)
+        entry["vaccines_union"] = sorted(
+            names | set(entry["source_variants"]) | set(entry["parsed_overlap"])
+        )
+        entry["included"] = bool(
+            entry["vaccines_union"] or (entry["index_count"] or 0) > 0
+        )
+        entry["membership_disagreement"] = set(entry["source_variants"]) != names
+    return memberships, [overlap[number] for number in range(len(vaccine_rows))]
+
+
 def build_variant_records(inputs: dict | None = None) -> dict[str, Any]:
     # Use osteosarc's allele-aware membership join, including assertions that
     # exist only in the catalogue/index and preserving duplicate TECPR1 rows.
-    from osteosarc.corpus import vaccine_membership
-
     require_version()
     inputs = frozen_inputs() if inputs is None else inputs
-    memberships, overlap = vaccine_membership(
+    memberships, overlap = _vaccine_membership(
         inputs["variants"], inputs["vaccine_rows"]
     )
     epitopes = load_vaccine_epitopes()
