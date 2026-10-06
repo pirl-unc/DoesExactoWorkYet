@@ -10,6 +10,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .osteosarc_inputs import manifest
+
 # --------------------------------------------------------------------------
 # Repository layout
 # --------------------------------------------------------------------------
@@ -146,11 +148,7 @@ def _ont_bam(timepoint: str) -> str:
     These are the same BAMs the portal's own variant table is genotyped from,
     so read support numbers are directly comparable.
     """
-    stem = f"IPISRC044_{timepoint}_sclrs_ONT"
-    return (
-        f"{B2}/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/"
-        f"{stem}/{stem}/{stem}_dedup/{stem}_dedup.bam"
-    )
+    return manifest()["sources"][f"{timepoint}-ONT"]["url"]
 
 
 _ONT_PROVENANCE = (
@@ -178,7 +176,7 @@ SAMPLES = (
         portal_genotyped=True, provenance=_ONT_PROVENANCE,
     ),
     # The portal's variant table has no PacBio rows, so there is no published
-    # VAF for these 37 mutations on this platform. That is a reason to run
+    # VAF for the vaccine mutations on this platform. That is a reason to run
     # Exacto on it, not a reason to leave it out: the BAM is right there, it is
     # the same T1 biopsy, and Exacto's own RNA caller can supply the numbers the
     # portal never published. It is also the more favourable input on paper —
@@ -189,7 +187,7 @@ SAMPLES = (
         read_type="long",
         label="T1 · PacBio Iso-Seq", biopsy_date="2024-06",
         biosample="IPISRC044_T1_sclrs_live",
-        bam_url=f"{B2}/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+        bam_url=manifest()["sources"]["T1-PacBio"]["url"],
         library="single-cell, long read",
         portal_genotyped=False,
         provenance=(
@@ -217,9 +215,7 @@ SAMPLES = SAMPLES + (
         read_type="short",
         label="T2 · Illumina bulk", biopsy_date="2025-01",
         biosample="sj.rna.2025.01.resection.ucla",
-        bam_url=f"{B2}/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna."
-                "ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection."
-                "tcga.d32.protocolAligned.sorted.bam",
+        bam_url=manifest()["sources"]["T2-ILMN"]["url"],
         library="bulk, short read",
         portal_genotyped=True,
         provenance=(

@@ -4,10 +4,11 @@ An automated, end-to-end test of [Exacto](https://github.com/pirl-unc/exacto) on
 data: **can it recover the mutant proteins that went into Sid Sijbrandij's personalised
 cancer vaccines, from the long-read RNA-seq of his own tumour?**
 
-Everything comes from the open data portal at [osteosarc.com](https://osteosarc.com) —
-the vaccine neoantigen list, the somatic variant calls, and the ONT single-cell long-read
-RNA-seq from three recurrence biopsies (T1, T2, T3). Nothing is vendored; each run fetches
-the current data.
+The benchmark uses [osteosarc](https://github.com/iskandr/osteosarc) **0.15.0** and
+its frozen **2026-09-28** corrected catalogue. The inputs and their checksums live
+in `data/osteosarc/`; weekly runs and site rebuilds never refresh the variant panel.
+Reads are acquired through osteosarc into verified, cached regional BAMs. Each
+sample's prepared FASTQs and reference are shared by all its methods.
 
 **Results: <https://pirl-unc.github.io/DoesExactoWorkYet/>** — a summary page, plus
 [data sources &amp; method](https://pirl-unc.github.io/DoesExactoWorkYet/sources.html)
@@ -19,14 +20,16 @@ commands and their output, ready to file upstream.
 
 ## The question
 
-Sid's five personalised vaccines (an mRNA vaccine, three JLF peptide versions, and a
-CeGaT vaccine) between them encode 38 neoantigen peptides drawn from 37 somatic mutations.
-Each of those is a mutant protein that somebody committed to manufacturing — and 14 of
-them have a positive ELISPOT, so we know his T cells saw them.
+The panel contains **51 vaccine-associated variants**, using the union of the
+catalogue's vaccine-count assertions, source-variant vaccine flags, and vaccine-overlap
+memberships. The overlap table alone contains 38 peptide entries for 37 mutations;
+the additional 14 variants are retained with their source assertions. Unknown vaccine
+names or protein effects are not inferred. Unresolved alleles remain visible but are
+excluded from Exacto inputs and the measured recovery denominator.
 
-That makes them an unusually good benchmark. Exacto's job is to go from long reads to
-mutant proteoforms. So: point it at the tumour RNA and see how many of those 37 known
-mutant proteins it puts back together.
+The earlier 37-mutation scores remain in history. They are not measurements of this
+expanded input set; results carry a catalogue identity, and the site refuses to attach
+an older evaluation to the new panel.
 
 The verdict is graded, not binary:
 
@@ -71,11 +74,10 @@ Two further checks run on top of the ladder:
 fetch_osteosarc  →  build_reference  →  extract_reads  →  run_exacto  →  evaluate  →  build_site
 ```
 
-**`pipeline/fetch_osteosarc.py`** pulls `vaccine_overlap.json` and
-`variant_vafs_long.tsv` from osteosarc.com and merges them on locus, giving each vaccine
-mutation its ref/alt alleles, consequence, ELISPOT status, VAF trend, and — usefully — the
-portal's own genotyping of the same ONT BAMs, which is the yardstick for what is even
-recoverable.
+**`pipeline/fetch_osteosarc.py`** verifies the frozen catalogue and epitope checksums
+and uses osteosarc's allele-aware membership join. It builds all 51 variant records
+from the corrected alleles, preserving correction IDs, original membership assertions,
+ELISPOT annotations and per-assay support. It makes no network requests.
 
 **`pipeline/build_reference.py`** builds a reference that is small but still in hg38
 coordinates. Each mutation's GENCODE v44 gene body (±10 kb) is fetched from hg38 over HTTP
@@ -85,8 +87,8 @@ seconds. The windows are then grown until every transcript that overlaps one lie
 on real sequence, because Exacto drops any read whose candidate transcript touches an N,
 and the build fails loudly if one still escapes. The GTF is subset to the same windows.
 
-**`pipeline/extract_reads.py`** range-reads the three dedup ONT BAMs — 37, 67 and 53 GB,
-which stay on Backblaze — for reads over those windows. Coverage is wildly uneven: the
+**`pipeline/extract_reads.py`** asks osteosarc for verified whole-gene regional BAMs
+from the pinned ONT, PacBio and Illumina source files, then samples locally. Coverage is wildly uneven: the
 mitochondrial window alone holds ~1.3M reads, 88% of everything in scope, while VPS13B's
 variant has 20. So reads land in two files:
 
@@ -95,7 +97,9 @@ variant has 20. So reads land in two files:
 - **context** — anything else in the gene. Interchangeable filler that helps RNA-Bloom2
   extend transcripts, capped per region.
 
-Both are sampled by seeded reservoir, so re-running an extraction reproduces it exactly.
+Both are sampled by seeded reservoir; gzip timestamps are fixed, so rebuilding produces identical FASTQ bytes.
+`pipeline.prepare_inputs` pins checksums for those files and the reference, and each method
+verifies them before running. Changed preparation code or input checksums invalidate the cache.
 The uncapped counts are recorded alongside, and shown per variant on the site.
 
 **`pipeline/run_exacto.py`** runs each timepoint through two arms:
@@ -134,27 +138,25 @@ Anything Exacto did that looked like a bug rather than a result is written up by
 
 ## Data volume
 
-Nothing is vendored — every run pulls the data fresh — and nothing large is downloaded
-whole. Per CI job (one timepoint):
+The corrected catalogue, source inventory and epitope tables are vendored with
+checksums. Large alignments stay remote. Preparation runs once per sample, and
+every method downloads the same verified reference and capped FASTQs:
 
 | Source | Transferred | |
 |---|---|---|
-| GENCODE v44 GTF + protein translations | 58 MB | `actions/cache`d across runs |
-| hg38 `.fai` | 160 KB | cached |
-| hg38 sequence for 37 gene bodies | ~6 MB | HTTP byte ranges, not the 3 GB FASTA |
+| GENCODE v44 GTF + protein translations | 58 MB | fetched during preparation |
+| hg38 `.fai` | 160 KB | fetched during preparation |
+| hg38 sequence for the vaccine gene bodies | a few MB | HTTP byte ranges, not the 3 GB FASTA |
 | Exacto release tarball | 67 MB | |
 | ONT BAM index | 12–17 MB | tells htslib which blocks to ask for |
-| ONT BAM reads over the vaccine loci | **~4.6 GB** | measured on T2; 7% of that 67 GB file |
+| ONT BAM reads over the gene windows | several GB | acquired once per sample; full 51-locus volume pending measurement |
 
-The three ONT BAMs total 157 GB and are never downloaded whole. Backblaze serves them
-with `accept-ranges: bytes`, so htslib fetches only the BGZF blocks covering the gene
-windows. That still comes to ~4.6 GB per timepoint (measured: 396 s wall for T2) because
-htslib has to *read* every record in those windows even though the caps mean only a
-fraction is kept — the mitochondrial window alone holds over a million reads. The
-reference is built the same way: `samtools faidx <url> chr9:70248978-70364873` pulls one
-gene, not one genome, for about 6 MB in total.
-
-Since each timepoint is its own CI job, that is ~4.7 GB per job rather than 14 GB in one.
+The three ONT BAMs total 157 GB and are never downloaded whole. Osteosarc acquires
+indexed gene windows from the official public S3 URLs and retains a verified local
+BAM and source receipt. The earlier 37-locus T2 extraction transferred about 4.6 GB;
+the expanded panel has not yet been measured. Whole-gene context can include many
+records even when only a capped fraction is retained. Prepared references and FASTQs
+are cached by sample, frozen data, environment and preparation code.
 
 Runtime is dominated by `call-rna-vars`, which rebuilds each candidate reference
 transcript's sequence one base at a time for every read and caches nothing (see
@@ -162,15 +164,15 @@ transcript's sequence one base at a time for every read and caches nothing (see
 timepoint on a four-vCPU runner; the job timeout is set accordingly. That cost is exactly
 why the read caps exist.
 
-Long HTTPS reads against the bucket occasionally die with an HTTP/2 framing error — seen
-twice in testing — so both the reference build and the read extraction retry with backoff,
-and the extraction restarts a region from scratch rather than resuming half-populated
-state. Re-running an extraction produces byte-identical output.
+Long HTTPS reads can fail. An unsuccessful osteosarc acquisition stops preparation;
+it cannot become a result reporting absent read coverage. Rebuilding FASTQs from the
+same verified BAM produces byte-identical output.
 
-Working set on disk stays well inside a GitHub runner: ~150 MB of extracted FASTQ, a 1.7 GB
-reference (mostly N, deliberately uncompressed — see the runtime note above) and the Exacto
-intermediates. The `jlumbroso/free-disk-space` step at the top of the workflow clears the
-runner's preinstalled toolchains for headroom.
+Preparation needs space for regional BAMs, capped FASTQs and the masked reference.
+Method jobs receive only the reference, FASTQs and receipts, plus their own Exacto
+intermediates. The masked reference is mostly N and deliberately uncompressed.
+The `jlumbroso/free-disk-space` step clears preinstalled toolchains for headroom;
+the full expanded matrix still needs runtime and disk validation.
 
 ## Running it yourself
 
@@ -180,16 +182,14 @@ micromamba activate does-exacto-work-yet
 bash scripts/install_exacto.sh               # EXACTO_VERSION=latest-release by default
 
 export DEWY_WORK_DIR=$PWD/work               # big intermediates live here
-python -m pipeline.fetch_osteosarc
-python -m pipeline.build_reference
-python -m pipeline.extract_reads
+python -m pipeline.prepare_inputs
 python -m pipeline.run_exacto --threads "$(nproc)"
 python -m pipeline.evaluate
 python -m pipeline.build_site
 python -m http.server -d site 8000
 ```
 
-`run_exacto` takes `--timepoints T1` and `--arms reads` if you want a quick single pass.
+`run_exacto` takes `--samples T1-ONT` and `--arms reads` if you want a quick single pass.
 
 To test an unreleased Exacto, set `EXACTO_VERSION` to any git ref:
 
@@ -203,11 +203,11 @@ EXACTO_VERSION=dev bash scripts/install_exacto.sh
 |---|---|---|
 | `.github/workflows/exacto-test.yml` | weekly cron, manual dispatch, pushes to `pipeline/` | the full run, commits `results/`, publishes the site |
 | `.github/workflows/site.yml` | pushes to `web/` or `results/`, manual dispatch | rebuilds and publishes the site only (~2 min) |
-| `.github/workflows/ci.yml` | every push and PR | unit tests plus a smoke test that osteosarc.com still serves the tables |
+| `.github/workflows/ci.yml` | every push and PR | unit tests, site build and reproducible frozen catalogue rebuild |
 
-The timepoints run as a three-way matrix; one job doing all three would eat most of
-GitHub's six-hour ceiling. Each job scores its own timepoint and uploads a compact JSON,
-and a final job merges, publishes and commits. Both publishing workflows call
+Five preparation jobs create one verified input artifact per sample. The 29
+sample/method jobs each score their own output and upload a compact JSON;
+a final job merges, publishes and commits. Both publishing workflows call
 `actions/configure-pages` with `enablement: true`, so the first run turns Pages on without
 anyone touching repo settings.
 
@@ -218,6 +218,7 @@ one-click job.
 
 ```
 pipeline/          the six steps, each runnable on its own
+data/osteosarc/    frozen corrected catalogue, epitopes and source manifest
 web/               three pages — summary, data sources & method, bug reports;
                    build_site.py copies these to site/ alongside data.json
 scripts/           Exacto installer, records the exact build under test

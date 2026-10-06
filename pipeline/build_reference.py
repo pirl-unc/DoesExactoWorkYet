@@ -17,6 +17,7 @@ N runs when it collects minimizers, so the masked genome indexes in seconds.
 from __future__ import annotations
 
 import gzip
+import io
 import json
 import subprocess
 import time
@@ -33,6 +34,7 @@ from .config import (
     WORK_DIR,
 )
 from .fetch_osteosarc import USER_AGENT
+from .osteosarc_inputs import input_id
 
 REFERENCE_DIR = WORK_DIR / "reference"
 DOWNLOAD_DIR = WORK_DIR / "downloads"
@@ -88,9 +90,15 @@ def download(url: str, dest: Path) -> Path:
     return dest
 
 
-def load_variants() -> list[dict]:
+def load_variants(*, include_unresolved: bool = False) -> list[dict]:
     payload = json.loads((RESULTS_DIR / "vaccine_variants.json").read_text())
-    return payload["variants"]
+    if payload.get("source", {}).get("input_id") != input_id():
+        # Committed results belong to the most recent published measurement.
+        # A new branch's frozen panel is authoritative even before it publishes.
+        from .fetch_osteosarc import build_variant_records
+        payload = build_variant_records()
+    return [v for v in payload["variants"]
+            if include_unresolved or v.get("allele_status", "ready") == "ready"]
 
 
 def transcript_spans(gtf_path: Path) -> dict[str, list[tuple[int, int, str]]]:
@@ -388,7 +396,11 @@ def write_subset_gtf(regions: list[Region], gtf_path: Path, out_path: Path) -> N
         by_chrom.setdefault(region.chrom, []).append((region.start, region.end))
 
     kept = 0
-    with gzip.open(gtf_path, "rt") as source, gzip.open(out_path, "wt") as sink:
+    # Preparing another sample rewrites this shared file. Fixed gzip metadata
+    # preserves earlier receipts when the reference content is unchanged.
+    with gzip.open(gtf_path, "rt") as source, out_path.open("wb") as raw, gzip.GzipFile(
+        fileobj=raw, mode="wb", filename="", mtime=0
+    ) as packed, io.TextIOWrapper(packed, encoding="utf-8", newline="\n") as sink:
         for line in source:
             if line.startswith("#"):
                 sink.write(line)

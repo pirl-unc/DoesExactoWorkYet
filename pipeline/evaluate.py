@@ -38,6 +38,7 @@ from pathlib import Path
 from .build_reference import load_variants
 from .config import ARMS, RESULTS_DIR, SAMPLES, SAMPLES_BY_NAME, samples_named
 from .extract_reads import stats_path
+from .osteosarc_inputs import input_id, manifest
 from .run_exacto import EXACTO_DIR, as_graph_operation, collect_runs
 
 csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
@@ -632,6 +633,8 @@ def score_samples(samples: list[str]) -> list[dict]:
 
     graded_runs = []
     for run in runs:
+        if run.get("input_id") != input_id():
+            raise ValueError("Exacto output belongs to another osteosarc input set")
         stats_file = stats_path(SAMPLES_BY_NAME[run["sample"]])
         stats = json.loads(stats_file.read_text()) if stats_file.exists() else {}
         graded = (
@@ -646,6 +649,8 @@ def score_samples(samples: list[str]) -> list[dict]:
         )
         graded_runs.append(
             {
+                "input_id": run["input_id"],
+                "reads_input_id": run.get("reads_input_id"),
                 "sample": run["sample"],
                 "timepoint": run.get("timepoint"),
                 "platform": run.get("platform"),
@@ -705,6 +710,7 @@ def score_samples(samples: list[str]) -> list[dict]:
                         )
                         if key in stats
                     },
+                    "input_id": input_id(),
                     "runs": [run],
                 },
                 indent=2,
@@ -717,7 +723,7 @@ def score_samples(samples: list[str]) -> list[dict]:
 
 def merge() -> dict:
     """Combine every cached per-sample score into the final verdict."""
-    variants = load_variants()
+    variants = load_variants(include_unresolved=True)
     graded_runs: list[dict] = []
     extraction: dict[str, dict] = {}
     for path in sorted(SCORED_DIR.glob("*.json")):
@@ -727,6 +733,13 @@ def merge() -> dict:
             extraction[scored["sample"]] = scored["extraction"]
     if not graded_runs:
         raise SystemExit(f"no scored samples in {SCORED_DIR}")
+    if any(run.get("input_id") != input_id() for run in graded_runs):
+        raise ValueError("Cannot merge scores from different osteosarc input sets")
+    for sample in SAMPLES:
+        identities = {run["reads_input_id"] for run in graded_runs
+                      if run["sample"] == sample.name and run.get("reads_input_id")}
+        if len(identities) > 1:
+            raise ValueError(f"Cannot merge different prepared reads for {sample.name}")
 
     # Roll up to one verdict per variant across every sample and arm.
     summary = []
@@ -809,6 +822,8 @@ def merge() -> dict:
     )
 
     payload = {
+        "input_id": input_id(),
+        "osteosarc_snapshot": manifest()["snapshot"],
         "n_variants": len(summary),
         "n_evaluated": len(evaluated),
         "evaluation_status": evaluation_status,

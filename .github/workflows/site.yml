@@ -18,6 +18,8 @@ on:
       - "pipeline/paths.py"
       - "pipeline/inventory.py"
       - "pipeline/fetch_osteosarc.py"
+      - "pipeline/osteosarc_inputs.py"
+      - "data/osteosarc/**"
       - ".github/workflows/site.yml"
 
 permissions:
@@ -42,7 +44,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Refresh the variant table from osteosarc.com
+      - run: python -m pip install osteosarc==0.15.0
+
+      - name: Load frozen vaccine panel
         run: python -m pipeline.fetch_osteosarc
 
       - name: Build site

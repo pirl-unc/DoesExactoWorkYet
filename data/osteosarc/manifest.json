@@ -1,0 +1,561 @@
+{
+  "epitope_sources": [
+    {
+      "sha256": "68364875cc205c29b02e4f5c9b8a915149ab6ff3cc954052acebabee5a2bb863",
+      "size": 10786604,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/neoantigen_prediction/pvactools/2025.04.25.sg.curated.neoantigen.predictions/MHC_Class_I/SG.WGS_SG.WGS.UCLA.2025.01.tumor.all_epitopes.tsv"
+    },
+    {
+      "sha256": "9dd3c6ce74208bf8dbdb2b7339a848a6f24301340861351e4ae5cf87fc68a57e",
+      "size": 3515988,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/neoantigen_prediction/pvactools/2025.04.25.sg.curated.neoantigen.predictions/MHC_Class_II/SG.WGS_SG.WGS.UCLA.2025.01.tumor.all_epitopes.tsv"
+    }
+  ],
+  "epitopes_sha256": "46c411b10318ea2f34b24d1c06dd35013d06f44381bbb63a8d6b52a2d50daee7",
+  "inputs_sha256": "e5f23d61a1c515dbd1b35e4ccd5cde94b58b116ab0375cf045d464a99fe9b946",
+  "osteosarc_version": "0.15.0",
+  "panel_policy": "union of index vaccine_count, source_variants flags, and vaccine-overlap membership",
+  "schema_version": 1,
+  "snapshot": {
+    "id": "efb65d4b683bda162879c86c0ea889afcc64704b5228224c061109f306503b91",
+    "name": "2026-09-28"
+  },
+  "sources": {
+    "T1-ONT": {
+      "claims": [
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2024-06",
+          "label": "T1 UCSF Tumor ONT 2024-06",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bams",
+          "timepoint": "T1",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2024-06",
+          "label": "T1 UCSF Tumor ONT 2024-06",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bam_metadata",
+          "timepoint": "T1",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": null,
+          "label": "Single Cell RNA-seq (Tumor) / Oxford Nanopore (ONT) Long-Read RNA-seq / Jun 2024 (T1) | BAMs",
+          "library": null,
+          "platform": "ont",
+          "provider": null,
+          "source": "data_page",
+          "timepoint": "T1",
+          "tissue": null
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2024-06",
+          "label": "T1 UCSF Tumor ONT 2024-06",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "vafs",
+          "timepoint": "T1",
+          "tissue": "tumor"
+        },
+        {
+          "assay": null,
+          "basis": "inferred",
+          "date": null,
+          "label": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+          "library": null,
+          "platform": null,
+          "provider": null,
+          "source": "bucket_path",
+          "timepoint": "T1",
+          "tissue": null
+        }
+      ],
+      "format": "bam",
+      "id": "7f7c2129809be56ca8fbdefec6cd423ebd7901c7b16636d34b336400c1b9c8a5",
+      "index_urls": [
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam.bai"
+      ],
+      "key": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+      "kind": "alignment",
+      "metadata": {
+        "catalog": {
+          "aligner": "minimap2 (splice)",
+          "aligner_version": "minimap2 2.24",
+          "annotation": "GRCh38 (hg38 no-alt primary, 194 contigs) \u2014 minimap2 2.24 splice (ONT long-read RNA)",
+          "genome": "GRCh38",
+          "genome_ucsc": "hg38",
+          "name": "T1 UCSF Tumor ONT 2024-06",
+          "reference": "GRCh38 no-alt primary assembly",
+          "size": "34.76 GiB",
+          "tissue": "tumor",
+          "url": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam"
+        },
+        "catalog_genome_assertion": "hg38",
+        "category": "scRNA ONT",
+        "metadata_rows": [
+          {
+            "analyst": "UCSF",
+            "assay": "scRNA_ONT",
+            "b2_path": "",
+            "b2_size_bytes": "",
+            "b2_size_human": "",
+            "display_name": "T1 UCSF Tumor ONT 2024-06",
+            "is_primary": "",
+            "is_superseded_by": "",
+            "md5sum": "b5c1df71cf8056d9ab4f10ee6b1df325",
+            "notes": "Deduplicated",
+            "provider": "UCSF",
+            "s3_path": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+            "s3_size_bytes": "37325269101",
+            "s3_size_human": "34.76 GiB",
+            "sample_date": "2024-06",
+            "timepoint": "T1",
+            "tissue": "Tumor"
+          }
+        ],
+        "samples": [
+          "T1_tumor"
+        ]
+      },
+      "modified": 1780719699,
+      "size": 37325269101,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam"
+    },
+    "T1-PacBio": {
+      "claims": [
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2024-06",
+          "label": "T1 UCSF Tumor PacBio 2024-06",
+          "library": null,
+          "platform": "pacbio",
+          "provider": "UCSF",
+          "source": "bams",
+          "timepoint": "T1",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2024-06",
+          "label": "T1 UCSF Tumor PacBio 2024-06",
+          "library": null,
+          "platform": "pacbio",
+          "provider": "UCSF",
+          "source": "bam_metadata",
+          "timepoint": "T1",
+          "tissue": "tumor"
+        },
+        {
+          "assay": null,
+          "basis": "inferred",
+          "date": null,
+          "label": "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+          "library": null,
+          "platform": null,
+          "provider": null,
+          "source": "bucket_path",
+          "timepoint": "T1",
+          "tissue": null
+        }
+      ],
+      "format": "bam",
+      "id": "8275c5f211640cb978ef5f54e7cf22e71dd96efc8a8f84fb14039c097182989b",
+      "index_urls": [
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam.bai"
+      ],
+      "key": "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+      "kind": "alignment",
+      "metadata": {
+        "catalog": {
+          "aligner": "pbmm2 (Iso-Seq)",
+          "aligner_version": "pbmm2 1.14.99",
+          "annotation": "GRCh38 (10x refdata-gex-GRCh38-2020-A) \u2014 pbmm2 1.14.99 (PacBio Iso-Seq RNA)",
+          "genome": "GRCh38",
+          "genome_ucsc": "hg38",
+          "name": "T1 UCSF Tumor PacBio 2024-06",
+          "reference": "10x refdata-gex-GRCh38-2020-A",
+          "size": "1.68 GiB",
+          "tissue": "tumor",
+          "url": "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam"
+        },
+        "catalog_genome_assertion": "hg38",
+        "category": "PacBio",
+        "metadata_rows": [
+          {
+            "analyst": "UCSF",
+            "assay": "PacBio",
+            "b2_path": "",
+            "b2_size_bytes": "",
+            "b2_size_human": "",
+            "display_name": "T1 UCSF Tumor PacBio 2024-06",
+            "is_primary": "",
+            "is_superseded_by": "",
+            "md5sum": "c2006984d576077d37a4e362f1e9c664",
+            "notes": "",
+            "provider": "UCSF",
+            "s3_path": "pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+            "s3_size_bytes": "1803834150",
+            "s3_size_human": "1.68 GiB",
+            "sample_date": "2024-06",
+            "timepoint": "T1",
+            "tissue": "Tumor"
+          }
+        ],
+        "samples": [
+          "T1_tumor"
+        ]
+      },
+      "modified": 1780437785,
+      "size": 1803834150,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam"
+    },
+    "T2-ILMN": {
+      "claims": [
+        {
+          "assay": "rna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCLA Tumor RNA 2025-01",
+          "library": null,
+          "platform": null,
+          "provider": "UCLA",
+          "source": "bams",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "rna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCLA Tumor RNA 2025-01 (protocol-aligned)",
+          "library": null,
+          "platform": null,
+          "provider": "UCLA",
+          "source": "bam_metadata",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "rna-seq",
+          "basis": "published",
+          "date": null,
+          "label": "Bulk RNA Sequencing / Jan 2025 (T2) | UCLA | STAR alignments",
+          "library": null,
+          "platform": null,
+          "provider": "UCLA",
+          "source": "data_page",
+          "timepoint": "T2",
+          "tissue": null
+        },
+        {
+          "assay": "rna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCLA Tumor RNA 2025-01 (protocol-aligned)",
+          "library": null,
+          "platform": null,
+          "provider": "UCLA",
+          "source": "vafs",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        }
+      ],
+      "format": "bam",
+      "id": "a78ef27222c0785f5bd1f2ea8455abb24a5a21456398fc2eadb004c65c8de119",
+      "index_urls": [
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam.bai"
+      ],
+      "key": "genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+      "kind": "alignment",
+      "metadata": {
+        "catalog": {
+          "aligner": "STAR",
+          "aligner_version": "STAR 2.7.11b",
+          "annotation": "GRCh38 (GDC GRCh38.d1.vd1, GENCODE v36) \u2014 STAR 2.7.11b [correct build]",
+          "genome": "GRCh38",
+          "genome_ucsc": "hg38",
+          "name": "T2 UCLA Tumor RNA 2025-01",
+          "reference": "GRCh38.d1.vd1 (GDC/TCGA)",
+          "size": "7.81 GiB",
+          "tissue": "tumor",
+          "url": "genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam"
+        },
+        "catalog_genome_assertion": "hg38",
+        "category": "RNA",
+        "metadata_rows": [
+          {
+            "analyst": "",
+            "assay": "RNA",
+            "b2_path": "",
+            "b2_size_bytes": "",
+            "b2_size_human": "",
+            "display_name": "T2 UCLA Tumor RNA 2025-01 (protocol-aligned)",
+            "is_primary": "",
+            "is_superseded_by": "",
+            "md5sum": "a7fa4bb28f9d487ed5795e0d3f0afda5",
+            "notes": "",
+            "provider": "UCLA",
+            "s3_path": "genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+            "s3_size_bytes": "8384185478",
+            "s3_size_human": "7.81 GiB",
+            "sample_date": "2025-01",
+            "timepoint": "T2",
+            "tissue": "Tumor"
+          }
+        ],
+        "samples": [
+          "T2_tumor"
+        ]
+      },
+      "modified": 1780700180,
+      "size": 8384185478,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam"
+    },
+    "T2-ONT": {
+      "claims": [
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCSF Tumor ONT 2025-01",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bams",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCSF Tumor ONT 2025-01",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bam_metadata",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": null,
+          "label": "Single Cell RNA-seq (Tumor) / Oxford Nanopore (ONT) Long-Read RNA-seq / Jan 2025 (T2) | BAMs",
+          "library": null,
+          "platform": "ont",
+          "provider": null,
+          "source": "data_page",
+          "timepoint": "T2",
+          "tissue": null
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-01",
+          "label": "T2 UCSF Tumor ONT 2025-01",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "vafs",
+          "timepoint": "T2",
+          "tissue": "tumor"
+        },
+        {
+          "assay": null,
+          "basis": "inferred",
+          "date": null,
+          "label": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+          "library": null,
+          "platform": null,
+          "provider": null,
+          "source": "bucket_path",
+          "timepoint": "T2",
+          "tissue": null
+        }
+      ],
+      "format": "bam",
+      "id": "52898746cc0434d837649f3d64c84a1ce3c9c0f56b019b9de521364fc331530f",
+      "index_urls": [
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam.bai"
+      ],
+      "key": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+      "kind": "alignment",
+      "metadata": {
+        "catalog": {
+          "aligner": "minimap2 (splice)",
+          "aligner_version": "minimap2 2.24",
+          "annotation": "GRCh38 (hg38 no-alt primary, 194 contigs) \u2014 minimap2 2.24 splice (ONT long-read RNA)",
+          "genome": "GRCh38",
+          "genome_ucsc": "hg38",
+          "name": "T2 UCSF Tumor ONT 2025-01",
+          "reference": "GRCh38 no-alt primary assembly",
+          "size": "62.46 GiB",
+          "tissue": "tumor",
+          "url": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam"
+        },
+        "catalog_genome_assertion": "hg38",
+        "category": "scRNA ONT",
+        "metadata_rows": [
+          {
+            "analyst": "UCSF",
+            "assay": "scRNA_ONT",
+            "b2_path": "",
+            "b2_size_bytes": "",
+            "b2_size_human": "",
+            "display_name": "T2 UCSF Tumor ONT 2025-01",
+            "is_primary": "",
+            "is_superseded_by": "",
+            "md5sum": "4a97a763d81420293a9008f976e14210",
+            "notes": "Deduplicated",
+            "provider": "UCSF",
+            "s3_path": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+            "s3_size_bytes": "67064056978",
+            "s3_size_human": "62.46 GiB",
+            "sample_date": "2025-01",
+            "timepoint": "T2",
+            "tissue": "Tumor"
+          }
+        ],
+        "samples": [
+          "T2_tumor"
+        ]
+      },
+      "modified": 1780741635,
+      "size": 67064056978,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam"
+    },
+    "T3-ONT": {
+      "claims": [
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-04",
+          "label": "T3 UCSF Tumor ONT 2025-04",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bams",
+          "timepoint": "T3",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-04",
+          "label": "T3 UCSF Tumor ONT 2025-04",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "bam_metadata",
+          "timepoint": "T3",
+          "tissue": "tumor"
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": null,
+          "label": "Single Cell RNA-seq (Tumor) / Oxford Nanopore (ONT) Long-Read RNA-seq / Apr 2025 (T3) | BAMs",
+          "library": null,
+          "platform": "ont",
+          "provider": null,
+          "source": "data_page",
+          "timepoint": "T3",
+          "tissue": null
+        },
+        {
+          "assay": "scrna-seq",
+          "basis": "published",
+          "date": "2025-04",
+          "label": "T3 UCSF Tumor ONT 2025-04",
+          "library": null,
+          "platform": "ont",
+          "provider": "UCSF",
+          "source": "vafs",
+          "timepoint": "T3",
+          "tissue": "tumor"
+        },
+        {
+          "assay": null,
+          "basis": "inferred",
+          "date": null,
+          "label": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam",
+          "library": null,
+          "platform": null,
+          "provider": null,
+          "source": "bucket_path",
+          "timepoint": "T3",
+          "tissue": null
+        }
+      ],
+      "format": "bam",
+      "id": "64b788f99bd038c4dfd981f018573cf7c7c451874aeb730f3825d9b4c4d5a88e",
+      "index_urls": [
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam.bai"
+      ],
+      "key": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam",
+      "kind": "alignment",
+      "metadata": {
+        "catalog": {
+          "aligner": "minimap2 (splice)",
+          "aligner_version": "minimap2 2.24",
+          "annotation": "GRCh38 (hg38 no-alt primary, 194 contigs) \u2014 minimap2 2.24 splice (ONT long-read RNA)",
+          "genome": "GRCh38",
+          "genome_ucsc": "hg38",
+          "name": "T3 UCSF Tumor ONT 2025-04",
+          "reference": "GRCh38 no-alt primary assembly",
+          "size": "49.10 GiB",
+          "tissue": "tumor",
+          "url": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam"
+        },
+        "catalog_genome_assertion": "hg38",
+        "category": "scRNA ONT",
+        "metadata_rows": [
+          {
+            "analyst": "UCSF",
+            "assay": "scRNA_ONT",
+            "b2_path": "",
+            "b2_size_bytes": "",
+            "b2_size_human": "",
+            "display_name": "T3 UCSF Tumor ONT 2025-04",
+            "is_primary": "",
+            "is_superseded_by": "",
+            "md5sum": "dae34d5218a9be1087ee8a08e74570bd",
+            "notes": "Deduplicated",
+            "provider": "UCSF",
+            "s3_path": "ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam",
+            "s3_size_bytes": "52718779920",
+            "s3_size_human": "49.10 GiB",
+            "sample_date": "2025-04",
+            "timepoint": "T3",
+            "tissue": "Tumor"
+          }
+        ],
+        "samples": [
+          "T3_tumor"
+        ]
+      },
+      "modified": 1780761071,
+      "size": 52718779920,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam"
+    }
+  },
+  "upstream_commit": "60a25a47dd0886865648cb4a1eb22287f5667c83",
+  "upstream_path": "tests/data/comprehensive/inputs.json.gz"
+}

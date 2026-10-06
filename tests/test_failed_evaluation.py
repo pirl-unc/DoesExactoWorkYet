@@ -9,6 +9,7 @@ import pytest
 
 from pipeline import build_site, evaluate, run_exacto
 from pipeline.config import SAMPLES_BY_NAME
+from pipeline.osteosarc_inputs import input_id
 
 VARIANTS = [
     {"variant_id": "A", "gene": "GENEA", "protein_change": "p.Ala1Thr"},
@@ -20,11 +21,12 @@ VARIANTS = [
 def scores(tmp_path, monkeypatch):
     monkeypatch.setattr(evaluate, "SCORED_DIR", tmp_path / "scored")
     monkeypatch.setattr(evaluate, "RESULTS_DIR", tmp_path)
-    monkeypatch.setattr(evaluate, "load_variants", lambda: VARIANTS)
+    monkeypatch.setattr(evaluate, "load_variants", lambda **kwargs: VARIANTS)
     evaluate.SCORED_DIR.mkdir()
 
     def write(arm, variants, status="ok"):
-        run = {"sample": "T1-ONT", "arm": arm, "status": status, "variants": variants}
+        run = {"sample": "T1-ONT", "arm": arm, "status": status, "variants": variants,
+               "input_id": input_id()}
         (evaluate.SCORED_DIR / f"T1-ONT.{arm}.json").write_text(json.dumps({
             "sample": "T1-ONT", "runs": [run],
         }))

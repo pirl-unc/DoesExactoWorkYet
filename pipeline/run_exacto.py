@@ -49,10 +49,13 @@ from .config import (
 from .extract_reads import (
     SYNTHETIC_BASE_QUALITY,
     assembly_inputs,
+    extraction_outputs,
     reads_arm_fastq,
+    reads_input_id,
     stats_path,
 )
 from .methods import METHODS_BY_NAME
+from .osteosarc_inputs import digest, input_id
 
 EXACTO_DIR = WORK_DIR / "exacto"
 
@@ -554,6 +557,7 @@ def run_arm(
     prefix = f"{sample.name}_{arm}"
 
     result: dict = {
+        "input_id": input_id(),
         "sample": sample.name,
         "timepoint": sample.timepoint,
         "platform": sample.platform,
@@ -581,6 +585,12 @@ def run_arm(
         # variant calling. An unsupported allele still gets a failed run.json.
         somatic_tsv = out_dir / f"{prefix}.vaccine_variants.tsv"
         write_somatic_tsv(variants, somatic_tsv)
+        if stats.get("input_id") != result["input_id"]:
+            raise VariantEncodingError("read inputs belong to another catalogue; run pipeline.extract_reads")
+        if any(stats.get("files", {}).get(path.name) != digest(path)
+               for path in extraction_outputs(sample)):
+            raise VariantEncodingError("prepared FASTQ checksum changed; run pipeline.extract_reads")
+        result["reads_input_id"] = reads_input_id(stats)
 
         if method.family == "assembly" and sample.read_type == "short":
             # Short reads reach Exacto only as contigs. rnaSPAdes emits FASTA

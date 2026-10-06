@@ -117,6 +117,7 @@ def update_history(summary: dict) -> list[dict]:
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "exacto_version": summary.get("exacto_version"),
         "commit": summary.get("commit"),
+        "input_id": summary.get("input_id"),
         "n_variants": summary.get("n_variants"),
         "n_testable": summary.get("n_testable"),
         "n_recovered": summary.get("n_recovered"),
@@ -129,6 +130,7 @@ def update_history(summary: dict) -> list[dict]:
     def score(item: dict) -> tuple:
         return (
             item.get("exacto_version"),
+            item.get("input_id"),
             item.get("n_testable"),
             item.get("n_recovered"),
         )
@@ -210,7 +212,15 @@ def build_payload() -> dict:
             "results/vaccine_variants.json missing — run pipeline.fetch_osteosarc"
         )
     exacto_payload = migrate_payload(load(RESULTS_DIR / "exacto_results.json"))
-    environment = load(RESULTS_DIR / "environment.json") or {}
+    source = variants_payload.get("source", {})
+    mismatched_result = bool(source.get("input_id") and exacto_payload and (
+        exacto_payload.get("input_id") != source["input_id"]
+    ))
+    if mismatched_result:
+        # A previous 37-locus evaluation is history, not a score for the new
+        # 51-locus corrected panel. Never attach it by a coincidentally equal ID.
+        exacto_payload = None
+    environment = {} if mismatched_result else (load(RESULTS_DIR / "environment.json") or {})
 
     by_variant_id = {}
     if exacto_payload:
@@ -239,6 +249,8 @@ def build_payload() -> dict:
         )
 
     summary = {
+        "input_id": source.get("input_id"),
+        "osteosarc_snapshot": source.get("snapshot"),
         "n_variants": variants_payload["n_variants"],
         "n_peptide_entries": variants_payload["n_peptide_entries"],
         "exacto_version": environment.get("exacto_version"),
