@@ -1,6 +1,6 @@
 {
-  "exacto_version": "0.4.6a1",
-  "exacto_ref": "v0.4.6a1",
+  "exacto_version": "0.5.0a1",
+  "exacto_ref": "v0.5.0a1",
   "exacto_source": "release",
   "python": "3.10.21",
   "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
