@@ -52,5 +52,15 @@
     "n_variants": 37,
     "n_testable": 0,
     "n_recovered": 0
+  },
+  {
+    "date": "2026-10-06",
+    "timestamp": "2026-10-06T22:58:21+00:00",
+    "exacto_version": "0.5.0a1",
+    "commit": "e3c6659",
+    "input_id": "af299e74992360e7892c7effbe163bcec7d61d044981807b2dc100bca55d845d",
+    "n_variants": 51,
+    "n_testable": 51,
+    "n_recovered": 32
   }
 ]
