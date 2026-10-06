@@ -87,10 +87,13 @@ def read_tsv(path: Path):
 def split_ids(value: str | None) -> set[str]:
     if not value:
         return set()
-    return {item for item in value.strip('"').split(",") if item}
+    # 0.4 used commas; 0.5 uses semicolons for lists of IDs/read names.
+    return {item for item in re.split(r"[,;]", value.strip('"')) if item}
 
 
-def rna_calls_by_variant(path: Path, variants: list[dict]) -> dict[str, list[dict]]:
+def rna_calls_by_variant(
+    path: Path, variants: list[dict], support_path: Path | None = None,
+) -> dict[str, list[dict]]:
     """Match Exacto's de-novo RNA calls back to the vaccine mutations."""
     wanted: dict[tuple[str, int, int, str], dict] = {}
     for variant in variants:
@@ -101,6 +104,10 @@ def rna_calls_by_variant(path: Path, variants: list[dict]) -> dict[str, list[dic
     hits: dict[str, list[dict]] = {}
     if not path.exists():
         return hits
+    support = {
+        row["assembled_transcript_name"]: len(split_ids(row["read_names"]))
+        for row in read_tsv(support_path)
+    } if support_path and support_path.exists() else {}
 
     for row in read_tsv(path):
         key = (
@@ -117,18 +124,18 @@ def rna_calls_by_variant(path: Path, variants: list[dict]) -> dict[str, list[dic
             continue
         hits.setdefault(target["variant"]["variant_id"], []).append(
             {
-                "rna_variant_call_id": row["variant_call_id"],
-                "transcript_model_id": row["transcript_model_id"],
+                "rna_variant_call_id": row.get("variant_call_id", row.get("variant_id")),
+                "transcript_model_id": row.get("transcript_model_id", row.get("assembled_transcript_name")),
                 "reference_transcript_ids": (
-                    row.get("reference_transcript_ids") or ""
+                    row.get("reference_transcript_ids") or row.get("reference_transcript_id") or ""
                 ).strip('"'),
                 # Exacto names the reads behind each call. Counting them gives
                 # allele support derived from this run rather than read off the
                 # portal — the only way to get a number for PacBio, which the
                 # portal's variant table never genotyped.
-                "n_supporting_reads": len(
+                "n_supporting_reads": support.get(row.get("assembled_transcript_name"), len(
                     split_ids(row.get("consensus_read_names"))
-                ),
+                )),
             }
         )
     return hits
@@ -140,14 +147,57 @@ def integrated_pairs(path: Path) -> dict[str, set[str]]:
     if not path.exists():
         return pairs
     for row in read_tsv(path):
-        pairs.setdefault(row["dna_variant_call_id"], set()).add(
-            row["rna_variant_call_id"]
+        pairs.setdefault(row.get("dna_variant_call_id", row.get("dna_variant_id")), set()).add(
+            row.get("rna_variant_call_id", row.get("rna_variant_id"))
         )
     return pairs
 
 
+def nucleotide_rows(path: Path, summary: Path | None, rna: Path | None):
+    """Normalize 0.5 nucleotide provenance for the grouped streaming reader.
+
+    Only a nucleotide's RNA call or immediately preceding RNA event supplies
+    evidence. Proteoform-wide IDs and integrated DNA IDs are not codon evidence.
+    The frame flag comes from the called allele's net length change, never the
+    expected HGVS annotation.
+    """
+    transcript_ids = {
+        row["proteoform_id"]: row["reference_transcript_id"]
+        for row in read_tsv(summary)
+    } if summary and summary.exists() else {}
+    frameshifts = {}
+    if rna and rna.exists():
+        for row in read_tsv(rna):
+            if "variant_id" not in row:
+                continue
+            frameshifts[row["variant_id"]] = (
+                row["variant_type"] in {"INS", "DEL"}
+                and (len(row.get("sequence") or "")
+                     - (int(row["position_2"]) - int(row["position_1"]) - 1)) % 3 != 0
+            )
+    for row in read_tsv(path):
+        if "proteoform_id" not in row:
+            yield row
+            continue
+        linked = split_ids(row.get("assembled_transcript_variant_id")) | split_ids(
+            row.get("preceding_event_assembled_transcript_variant_id")
+        )
+        yield {
+            **row,
+            "type": "base",
+            "peptide_id": row["proteoform_id"],
+            "transcript_model_id": row["assembled_transcript_name"],
+            "reference_transcript_ids": transcript_ids.get(row["proteoform_id"], ""),
+            "codon_rna_variant_call_ids": "",
+            "rna_variant_call_ids": ";".join(sorted(linked)),
+            "amino_acid_change": "mutant" if row["is_amino_acid_variant"].lower() == "true" else "reference",
+            "frameshift_state": "frameshift" if any(frameshifts.get(i) for i in linked) else "inframe",
+        }
+
+
 def proteoforms_by_rna_call(
-    path: Path, call_ids: set[str], references: dict[str, dict] | None = None
+    path: Path, call_ids: set[str], references: dict[str, dict] | None = None,
+    *, summary: Path | None = None, rna: Path | None = None,
 ) -> dict[str, list[dict]]:
     """Pull the translated protein around each mutation.
 
@@ -202,7 +252,7 @@ def proteoforms_by_rna_call(
     hits: dict[str, dict] = {}
     completed: set[int] = set()
 
-    for row in read_tsv(path):
+    for row in nucleotide_rows(path, summary, rna):
         if row["type"] != "base":
             continue
         peptide_id = int(row["peptide_id"])
@@ -250,13 +300,30 @@ def proteoforms_by_rna_call(
     return by_call
 
 
-def peptides_by_rna_call(path: Path, call_ids: set[str]) -> dict[str, list[dict]]:
+def peptides_by_rna_call(
+    path: Path, call_ids: set[str], proteoforms: dict[str, list[dict]] | None = None,
+) -> dict[str, list[dict]]:
     """Novel mutant peptides, keyed on the RNA call that produced them."""
     if not path.exists():
         return {}
     found: dict[str, list[dict]] = {}
+    forms_by_id: dict[int, list[tuple[str, dict]]] = {}
+    for call_id, forms in (proteoforms or {}).items():
+        for form in forms:
+            forms_by_id.setdefault(form["peptide_id"], []).append((call_id, form))
     for row in read_tsv(path):
-        matched = split_ids(row.get("rna_variant_call_ids")) & call_ids
+        if "proteoform_id" in row:
+            # 0.5 repeats all proteoform IDs on every peptide (and can omit
+            # event-only IDs). Join by proteoform and require this window to
+            # overlap the call's translated residue or frameshifted tail.
+            start, end = int(row["amino_acid_index_start"]), int(row["amino_acid_index_end"])
+            matched = {
+                call_id for call_id, form in forms_by_id.get(int(row["proteoform_id"]), [])
+                if any(start <= i <= end for i in form["mutant_residue_indices"])
+                or (form["frameshift"] and end >= min(form["mutant_residue_indices"]))
+            } & call_ids
+        else:
+            matched = split_ids(row.get("rna_variant_call_ids")) & call_ids
         for call_id in matched:
             found.setdefault(call_id, []).append(
                 {
@@ -281,7 +348,8 @@ def evaluate_arm(
     outputs = run.get("outputs", {})
 
     rna_hits = rna_calls_by_variant(
-        Path(outputs.get("rna_variant_calls", "/nonexistent")), variants
+        Path(outputs.get("rna_variant_calls", "/nonexistent")), variants,
+        Path(outputs.get("transcript_support", "/nonexistent")),
     )
     integrated = integrated_pairs(
         Path(outputs.get("integrated_variants", "/nonexistent"))
@@ -301,9 +369,11 @@ def evaluate_arm(
         Path(outputs.get("primary_structures_tsv", "/nonexistent")),
         all_rna_ids,
         references,
+        summary=Path(outputs.get("proteoforms_tsv", "/nonexistent")),
+        rna=Path(outputs.get("rna_variant_calls", "/nonexistent")),
     )
     peptides_by_rna = peptides_by_rna_call(
-        Path(outputs.get("peptide_variants", "/nonexistent")), all_rna_ids
+        Path(outputs.get("peptide_variants", "/nonexistent")), all_rna_ids, proteoforms_by_rna
     )
 
     graded: dict[str, dict] = {}
