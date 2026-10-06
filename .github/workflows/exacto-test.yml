@@ -275,6 +275,11 @@ jobs:
             work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/*.fasta
             work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/logs/*.log
             work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/rna_vars/*rna_variant_calls.tsv
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/rna_vars/*assembled_transcript_variants.tsv
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/isoncorrect/**/stderr.txt
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/isoncorrect/**/stdout.txt
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/isonform/**/stderr.txt
+            work/exacto/${{ matrix.sample }}/${{ matrix.arm }}/isonform/**/stdout*.txt
 
   publish:
     needs: run

@@ -20,7 +20,9 @@ so a failure shows up on the site as a failure rather than as a silent zero.
 
 from __future__ import annotations
 
+import csv
 import gzip
+import importlib.metadata
 import json
 import shutil
 import subprocess
@@ -107,6 +109,7 @@ class Runner:
         name: str,
         command: list[str],
         stdout_path: Path | None = None,
+        worker_log_dir: Path | None = None,
     ) -> dict:
         log_path = self.log_dir / f"{len(self.steps):02d}_{name}.log"
         print(f"    [{name}] {' '.join(command[:6])} ...")
@@ -122,6 +125,16 @@ class Runner:
                     command, stdout=log, stderr=subprocess.STDOUT, check=False
                 )
         elapsed = round(time.monotonic() - started, 1)
+
+        if completed.returncode and worker_log_dir is not None:
+            # Multiprocessing wrappers often report only CalledProcessError;
+            # the useful traceback is in the worker's private stderr file.
+            with log_path.open("a") as log:
+                for path in sorted(worker_log_dir.rglob("stderr.txt"))[:3]:
+                    with path.open("rb") as worker:
+                        worker.seek(max(0, path.stat().st_size - 3000))
+                        tail = worker.read().decode(errors="replace")
+                    log.write(f"\nWorker {path.relative_to(worker_log_dir)}:\n{tail}")
 
         step = {
             "name": name,
@@ -195,7 +208,9 @@ def as_graph_operation(variant: dict) -> tuple[int, int, int, str, str]:
     return position_1, position_2, len(alt), "INS", alt
 
 
-def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
+def write_somatic_tsv(
+    variants: list[dict], out_path: Path, *, transcript_cli: bool = False
+) -> dict[int, dict]:
     """Write the vaccine mutations as Exacto's somatic-DNA-variant TSV.
 
     Exacto normally gets this from ``call-somatic-dna-vars`` on tumour/normal
@@ -207,7 +222,11 @@ def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
     by_call_id: dict[int, dict] = {}
 
     with open(out_path, "w") as sink:
-        sink.write("\t".join(SOMATIC_TSV_COLUMNS) + "\n")
+        columns = SOMATIC_TSV_COLUMNS.copy()
+        if transcript_cli:
+            columns[0] = "variant_id"
+            columns.append("origin")
+        sink.write("\t".join(columns) + "\n")
         for index, variant in enumerate(variants, start=1):
             position_1, position_2, size, variant_type, sequence = as_graph_operation(
                 variant
@@ -227,6 +246,7 @@ def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
                         str(size),
                         variant_type,
                         sequence,
+                        *(["somatic"] if transcript_cli else []),
                     ]
                 )
                 + "\n"
@@ -234,6 +254,36 @@ def write_somatic_tsv(variants: list[dict], out_path: Path) -> dict[int, dict]:
             by_call_id[index] = variant
 
     return by_call_id
+
+
+def uses_transcript_cli() -> bool:
+    """Select the 0.5 CLI/table contract, retaining support for older runs."""
+    version = importlib.metadata.version("exacto")
+    return tuple(int(part) for part in version.split(".")[:2]) >= (0, 5)
+
+
+def write_transcript_support(
+    query: Path, dest: Path, *, reads: bool, nexus_reads: Path | None = None,
+) -> None:
+    """Supply the original forward sequences to Exacto's 0.5 translator.
+
+    A raw/corrected read supports itself. Nexus supplies supporting read names
+    for its contigs. Other assemblers leave read_names empty rather than
+    presenting contig names as evidence of read support.
+    """
+    import pysam
+
+    support: dict[str, set[str]] = {}
+    if nexus_reads is not None:
+        with nexus_reads.open() as handle:
+            for row in csv.DictReader(handle, delimiter="\t"):
+                support.setdefault(row["transcript_id"], set()).add(row["read_name"])
+    with pysam.FastxFile(str(query)) as records, dest.open("w") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["assembled_transcript_name", "sequence", "read_names"])
+        for record in records:
+            names = record.name if reads else ";".join(sorted(support.get(record.name, [])))
+            writer.writerow([record.name, record.sequence, names])
 
 
 # --------------------------------------------------------------------------
@@ -374,6 +424,8 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     annotated transcript: a novel junction defines its own cluster instead of
     being measured against a reference that does not contain it.
     """
+    if shutil.which("spoa") is None:
+        raise StepFailed("isONcorrect requires the spoa executable; install environment.yml")
     clusters = out_dir / "isonclust"
     if clusters.exists():
         shutil.rmtree(clusters)
@@ -419,6 +471,10 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     corrected_dir = out_dir / "isoncorrect"
     if corrected_dir.exists():
         shutil.rmtree(corrected_dir)
+    if not any(per_cluster.glob("*.fastq")):
+        # Every read belongs to a cluster too small to correct. This is a
+        # legitimate pass-through, not a crashed correction process.
+        return plain
     runner.run(
         "isoncorrect",
         [
@@ -427,6 +483,7 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
             "--outfolder", str(corrected_dir),
             "--t", str(threads),
         ],
+        worker_log_dir=corrected_dir,
     )
     merged = out_dir / f"{sample.name}_corrected.fastq"
     parts = sorted(corrected_dir.glob("*/corrected_reads.fastq"))
@@ -463,8 +520,7 @@ def run_isoncorrect(runner: Runner, sample, out_dir: Path, threads: int) -> Path
     return merged
 
 
-def run_isonform(runner: Runner, sample, out_dir: Path, threads: int,
-                 corrected: Path) -> Path:
+def run_isonform(runner: Runner, sample, out_dir: Path, threads: int) -> Path:
     """Assemble each corrected cluster into isoforms.
 
     The distinction from RNA-Bloom2 is where the collapsing happens. A global
@@ -473,7 +529,14 @@ def run_isonform(runner: Runner, sample, out_dir: Path, threads: int,
     cluster that isONclust already separated by transcript structure, so the
     averaging is over reads that agree, not over reads that differ.
     """
-    per_cluster = out_dir / "isonclust" / "fastq_files"
+    # isONform 0.3.9 restructures its input directory in place. Give it copies
+    # of the corrected clusters so the correction outputs/logs remain intact.
+    per_cluster = out_dir / "isonform_inputs"
+    if per_cluster.exists():
+        shutil.rmtree(per_cluster)
+    per_cluster.mkdir()
+    for part in sorted((out_dir / "isoncorrect").glob("*/corrected_reads.fastq")):
+        shutil.copyfile(part, per_cluster / f"{part.parent.name}.fastq")
     forms = out_dir / "isonform"
     if forms.exists():
         shutil.rmtree(forms)
@@ -486,13 +549,13 @@ def run_isonform(runner: Runner, sample, out_dir: Path, threads: int,
             "--t", str(threads),
             "--exact_instance_limit", "50",
             "--split_wrt_batches",
+            "--write_fastq",
         ],
+        worker_log_dir=forms,
     )
-    merged = out_dir / f"{sample.name}_isonform.fastq"
-    parts = sorted(forms.rglob("transcripts.fastq"))
-    if not parts:
+    merged = forms / "transcriptome.fastq"
+    if not merged.exists():
         raise StepFailed(f"isONform produced no transcripts in {forms}")
-    merged.write_text("".join(part.read_text() for part in parts))
     return merged
 
 
@@ -613,7 +676,7 @@ def run_arm(
                 # reads as they are. The cluster is already allele-separated, so
                 # this should not average away the minority allele the way a
                 # global assembler does — which is the whole hypothesis.
-                query = run_isonform(runner, sample, out_dir, threads, query)
+                query = run_isonform(runner, sample, out_dir, threads)
             with open(query) as handle:
                 result["counts"]["query_sequences"] = sum(
                     1 for index, _ in enumerate(handle) if index % 4 == 0
@@ -684,6 +747,10 @@ def run_arm(
         aligned_bam = out_dir / f"{prefix}.aligned.bam"
         align(runner, query, sample, arm, aligned_bam)
         result["counts"]["aligned"] = count_alignments(aligned_bam)
+        transcript_cli = uses_transcript_cli()
+        result["exacto_table_schema"] = "0.5" if transcript_cli else "0.4"
+        if transcript_cli:
+            write_somatic_tsv(variants, somatic_tsv, transcript_cli=True)
 
         if (
             method.family == "assembly"
@@ -701,12 +768,14 @@ def run_arm(
                         "exacto", "remove-unspliced-rnas",
                         "--bam-file", str(aligned_bam),
                         "--bam-bai-file", str(aligned_bam) + ".bai",
-                        "--fasta-file", str(query_fasta),  # the contigs, not the genome
+                        *([] if transcript_cli else ["--fasta-file", str(query_fasta)]),
                         *ANNOTATION_ARGS,
                         *LEVEL_ARGS,
                         "--output-bam-file", str(filtered_bam),
                         "--output-bam-bai-file", str(filtered_bam) + ".bai",
-                        "--output-fasta-file", str(out_dir / f"{prefix}.filtered.fa"),
+                        *([] if transcript_cli else [
+                            "--output-fasta-file", str(out_dir / f"{prefix}.filtered.fa"),
+                        ]),
                         "--num-threads", str(threads),
                     ],
                 )
@@ -715,7 +784,7 @@ def run_arm(
                 # stamping SO:coordinate on the header, so its own indexing step
                 # rejects the file it just wrote. The filtering itself finished —
                 # sort what it produced and carry on.
-                if not filtered_bam.exists() or not count_alignments(filtered_bam):
+                if transcript_cli or not filtered_bam.exists() or not count_alignments(filtered_bam):
                     raise
                 result["workarounds"] = result.get("workarounds", [])
                 result["workarounds"].append("sorted the unspliced-filter output")
@@ -739,11 +808,11 @@ def run_arm(
 
         rna_dir = out_dir / "rna_vars"
         runner.run(
-            "call_rna_vars",
+            "call_rna_transcript_vars" if transcript_cli else "call_rna_vars",
             [
-                "exacto", "call-rna-vars",
+                "exacto", "call-rna-transcript-vars" if transcript_cli else "call-rna-vars",
                 "--bam-file", str(variant_calling_bam),
-                "--bam-bai-file", str(variant_calling_bam) + ".bai",
+                *([] if transcript_cli else ["--bam-bai-file", str(variant_calling_bam) + ".bai"]),
                 "--reference-genome-fasta-file", str(MASKED_FASTA),
                 *ANNOTATION_ARGS,
                 "--output-dir", str(rna_dir),
@@ -751,8 +820,10 @@ def run_arm(
                 "--num-threads", str(threads),
             ],
         )
-        rna_calls = rna_dir / f"{prefix}_exacto_rna_variant_calls.tsv"
-        structures = rna_dir / f"{prefix}_exacto_transcript_structures.tsv"
+        calls_suffix = "assembled_transcript_variants" if transcript_cli else "rna_variant_calls"
+        structures_suffix = "assembled_transcript_model_alignments" if transcript_cli else "transcript_structures"
+        rna_calls = rna_dir / f"{prefix}_exacto_{calls_suffix}.tsv"
+        structures = rna_dir / f"{prefix}_exacto_{structures_suffix}.tsv"
 
         annotated_tsv = out_dir / f"{prefix}.vaccine_variants.annotated.tsv"
         runner.run(
@@ -767,8 +838,11 @@ def run_arm(
             ],
         )
 
-        integrable_calls = out_dir / f"{prefix}.rna_variant_calls.integrable.tsv"
-        dropped = drop_transcriptless_rna_calls(rna_calls, integrable_calls)
+        integrable_calls = rna_calls
+        dropped = 0
+        if not transcript_cli:
+            integrable_calls = out_dir / f"{prefix}.rna_variant_calls.integrable.tsv"
+            dropped = drop_transcriptless_rna_calls(rna_calls, integrable_calls)
         if dropped:
             result["counts"]["rna_calls_without_reference_transcript"] = dropped
             result.setdefault("workarounds", []).append(
@@ -781,8 +855,11 @@ def run_arm(
             "integrate_vars",
             [
                 "exacto", "integrate-vars",
-                "--annotated-dna-vars-tsv-file", str(annotated_tsv),
-                "--rna-vars-tsv-file", str(integrable_calls),
+                *(["--dna-variants-tsv-file", str(somatic_tsv),
+                   "--rna-variants-tsv-file", str(rna_calls)] if transcript_cli else [
+                    "--annotated-dna-vars-tsv-file", str(annotated_tsv),
+                    "--rna-vars-tsv-file", str(integrable_calls),
+                ]),
                 *ANNOTATION_ARGS,
                 # Exacto's defaults, matching Andy's Nexus subworkflow, which
                 # passes no extra arguments here. They are permissive — a DNA
@@ -796,18 +873,41 @@ def run_arm(
             ],
         )
 
-        primary_tsv = out_dir / f"{prefix}.primary_structures.tsv"
-        primary_fasta = out_dir / f"{prefix}.primary_structures.fasta"
-        runner.run(
-            "translate_structs",
-            [
-                "exacto", "translate-structs",
+        if transcript_cli:
+            support = out_dir / f"{prefix}.transcript_support.tsv"
+            write_transcript_support(
+                query, support,
+                reads=method.family != "assembly" and method.controls.get("assemble") != "isonform",
+                nexus_reads=(out_dir / f"{prefix}.reads.tsv")
+                if method.family == "assembly" and sample.read_type == "long" else None,
+            )
+            primary_tsv = out_dir / f"{prefix}_exacto_proteoform_nucleotides.tsv"
+            primary_fasta = out_dir / f"{prefix}_exacto_proteoforms.fasta"
+            proteoforms_tsv = out_dir / f"{prefix}_exacto_proteoforms.tsv"
+            translate_args = [
+                "translate-transcripts",
+                "--assembled-transcript-model-alignments-tsv-file", str(structures),
+                "--assembled-transcript-variants-tsv-file", str(rna_calls),
+                "--assembled-transcripts-support-tsv-file", str(support),
+                "--dna-variants-tsv-file", str(somatic_tsv),
+                "--output-dir", str(out_dir), "--output-prefix", prefix,
+            ]
+        else:
+            primary_tsv = out_dir / f"{prefix}.primary_structures.tsv"
+            primary_fasta = out_dir / f"{prefix}.primary_structures.fasta"
+            translate_args = [
+                "translate-structs",
                 "--transcript-structures-tsv-file", str(structures),
                 "--rna-variant-calls-tsv-file", str(rna_calls),
-                "--integrated-variants-tsv-file", str(integrated_tsv),
-                "--strategy", "longest_orf",
                 "--output-tsv-file", str(primary_tsv),
                 "--output-fasta-file", str(primary_fasta),
+            ]
+        runner.run(
+            "translate_transcripts" if transcript_cli else "translate_structs",
+            [
+                "exacto", *translate_args,
+                "--integrated-variants-tsv-file", str(integrated_tsv),
+                "--strategy", "longest_orf",
                 "--num-threads", str(threads),
             ],
         )
@@ -821,6 +921,10 @@ def run_arm(
             "primary_structures_tsv": str(primary_tsv),
             "primary_structures_fasta": str(primary_fasta),
         }
+        if transcript_cli:
+            result["outputs"].update(
+                proteoforms_tsv=str(proteoforms_tsv), transcript_support=str(support),
+            )
 
         # Neoantigen candidates. Downstream of the question this repo asks, so a
         # failure here is recorded but does not sink the arm.
@@ -831,7 +935,9 @@ def run_arm(
                 "call_peptide_vars",
                 [
                     "exacto", "call-peptide-vars",
-                    "--primary-structures-tsv-file", str(primary_tsv),
+                    *(["--proteoforms-tsv-file", str(proteoforms_tsv)] if transcript_cli else [
+                        "--primary-structures-tsv-file", str(primary_tsv),
+                    ]),
                     "--reference-fasta-file", str(GENE_PROTEINS),
                     "--output-tsv-file", str(peptides_tsv),
                     "--output-fasta-file", str(peptides_fasta),

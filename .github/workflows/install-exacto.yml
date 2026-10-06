@@ -1,4 +1,4 @@
-name: Exacto installation
+name: Exacto compatibility
 
 # Exercise the real Linux build without downloading patient reads or running
 # the benchmark. Keep the runner cleanup and environment aligned with its jobs.
@@ -7,6 +7,8 @@ on:
     paths:
       - "scripts/install_exacto.sh"
       - "environment.yml"
+      - "pipeline/**"
+      - "tests/test_exacto*.py"
       - ".github/workflows/exacto-test.yml"
       - ".github/workflows/install-exacto.yml"
   workflow_dispatch:
@@ -40,3 +42,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/install_exacto.sh
+      - name: Exercise correction, isoforms, and Exacto through peptide scoring
+        env:
+          DEWY_EXACTO_INTEGRATION: "1"
+        run: |
+          python -m pip install pytest
+          python -m pytest tests/test_exacto_integration.py -v --basetemp=work/compatibility
+      - name: Upload compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exacto-compatibility
+          path: work/compatibility
+          retention-days: 7

@@ -101,6 +101,7 @@ payload = {
     "isonclust": version_of(["isONclust", "--version"]),
     "isoncorrect": version_of(["run_isoncorrect", "--version"]),
     "isonform": version_of(["isONform_parallel", "--version"]),
+    "spoa": version_of(["spoa", "--version"]),
 }
 
 with open(out_path, "w") as handle:
