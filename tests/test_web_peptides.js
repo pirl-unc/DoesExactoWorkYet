@@ -291,7 +291,11 @@ test("sample and method filters also exclude non-matching reconstructed proteins
   const data = { ...report, variants: [variant] };
   for (const filters of [{ sample: "T3-ONT" }, { method: "corrected" }, { sample: "T2-ONT" }]) {
     const groups = sequenceComparison(data, sequenceRows(data, filters), filters);
-    assert.ok(groups.every((group) => group.reconstructions.length === 0));
+    const selected = (hit) => (!filters.sample || hit.sample === filters.sample) && (!filters.method || hit.arm === filters.method);
+    const displayed = groups.flatMap((group) => group.reconstructions.flatMap((protein) => [...protein.observations.values()]));
+    const expected = [...variant.reconstructed_candidates, ...variant.published_vaccine_peptides.flatMap((peptide) => peptide.matches)].filter(selected);
+    assert.ok(displayed.every(selected));
+    assert.deepEqual(new Set(displayed.map((hit) => hit.reconstruction_id)), new Set(expected.map((hit) => hit.reconstruction_id)));
   }
 });
 
