@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vaccine sequences — Does Exacto Work Yet?</title>
+<meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="sequence-page">
+<header class="masthead compact">
+  <div class="wrap">
+    <p><a href="index.html">Does Exacto work yet?</a></p>
+    <h1>Vaccine peptide recovery</h1>
+    <p class="lede">Does the vaccine sequence appear inside a reconstructed protein?
+      The reconstruction can extend on either side. Every amino acid of the vaccine
+      peptide must be present, in order, without gaps.</p>
+    <p id="sequence-summary" class="sequence-summary" aria-live="polite">Loading the sequence analysis…</p>
+    <p id="sequence-provenance" class="section-note"></p>
+  </div>
+</header>
+<nav class="tabs wrap" aria-label="Pages">
+  <a href="index.html">Summary</a>
+  <a href="peptides.html" aria-current="page">Vaccine sequences</a>
+  <a href="sources.html">Data &amp; method</a>
+  <a href="bugs.html">Bug reports</a>
+</nav>
+<main class="wrap sequence-report">
+  <div id="sequence-availability" class="sequence-availability" hidden></div>
+  <section aria-labelledby="sequence-list-title">
+    <h2 id="sequence-list-title">Per-sequence report</h2>
+    <p class="section-note">Each row is a recorded vaccine peptide or mRNA minimal epitope.
+      Open a contained sequence to inspect the reconstructed protein and its supporting RNA call.
+      “Not found” refers to the available outputs, and does not establish absence from the tumour.</p>
+    <div class="sequence-controls" id="sequence-controls" hidden>
+      <label class="sequence-search">Search targets or sequences
+        <input type="search" id="sequence-search" placeholder="Gene, mutation, or amino-acid sequence">
+      </label>
+      <label>Recovery <select id="sequence-status"><option value="all">All sequences</option><option value="contained">Contained</option><option value="not_found">Not found</option><option value="not_evaluated">Not evaluated</option></select></label>
+      <label>Sample <select id="sequence-sample"><option value="">All available samples</option></select></label>
+      <label>Method <select id="sequence-method"><option value="">All available methods</option></select></label>
+      <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
+    </div>
+    <p id="sequence-count" class="section-note" aria-live="polite"></p>
+    <div id="sequence-targets"></div>
+  </section>
+  <section aria-labelledby="sequence-download-title">
+    <h2 id="sequence-download-title">References and evidence</h2>
+    <p class="section-note">References are recorded sequences explicitly linked to a vaccine.
+      Longer vaccine peptides and mRNA minimal epitopes retain separate entries.
+      Matching uses the full exported protein sequences and requires the target RNA
+      allele at the peptide’s translated position, or its frameshifted tail.</p>
+    <p><a href="vaccine_peptide_subset.fasta" download>Reference peptides (FASTA)</a> ·
+      <a href="vaccine_peptide_subset.json" download>Reference annotations (JSON)</a> ·
+      <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
+  </section>
+</main>
+<script src="peptides.js"></script>
+</body>
+</html>

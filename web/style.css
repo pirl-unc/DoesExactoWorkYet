@@ -72,6 +72,77 @@ body {
 a { color: var(--accent); text-underline-offset: 2px; }
 a:hover { text-decoration-thickness: 2px; }
 
+/* Recorded vaccine sequences: keep the amino acids central and evidence close. */
+.sequence-callout {
+  margin-top: 1.25rem;
+  padding: 1.15rem 1.4rem;
+  border-left: 4px solid var(--ok);
+  background: var(--bg-raised);
+}
+.sequence-callout p { margin: .35rem 0; color: var(--ink-soft); }
+.sequence-summary { max-width: 70ch; font-size: 1.2rem; font-weight: 600; }
+.sequence-page .wrap { max-width: 1040px; }
+.sequence-page .masthead { padding: 1.75rem 0 1.25rem; }
+.sequence-report { max-width: 1040px; }
+.sequence-availability {
+  margin-top: 1.5rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--rule-strong);
+  border-left: 4px solid var(--warn);
+  color: var(--ink-soft);
+}
+.sequence-controls { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 1rem; }
+.sequence-controls label, .sequence-evidence label { display: flex; flex-direction: column; gap: .35rem; color: var(--ink-soft); font-size: .85rem; }
+.sequence-search { flex: 1 1 100%; }
+.sequence-controls input, .sequence-controls select, .sequence-evidence select {
+  padding: .6rem .75rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--ink);
+  font: inherit;
+  max-width: 100%;
+  min-height: 44px;
+}
+.sequence-controls[hidden] { display: none; }
+.sequence-target { border-top: 2px solid var(--rule-strong); margin: 2rem 0; }
+.sequence-target-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem 1rem; margin: 1rem 0 .25rem; font-size: 1.2rem; }
+.sequence-target-title .mono { color: var(--ink-soft); font-size: .82em; font-weight: 400; }
+.sequence-row { padding: 1rem 0 1.2rem; border-bottom: 1px solid var(--rule); }
+.sequence-row-top { display: flex; gap: .6rem 1rem; flex-wrap: wrap; align-items: center; }
+.sequence-status { font-size: .8rem; font-weight: 650; padding: .15rem .5rem; border-radius: 3px; }
+.sequence-status.contained { color: var(--ok); background: var(--ok-soft); }
+.sequence-status.not_found { color: var(--warn); background: var(--warn-soft); }
+.sequence-status.not_evaluated { color: var(--none); background: var(--none-soft); }
+.sequence-meta { color: var(--ink-soft); font-size: .85rem; }
+.vaccine-sequence, .sequence-context {
+  display: block;
+  margin: .65rem 0;
+  font-size: .96rem;
+  line-height: 1.8;
+  letter-spacing: .025em;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.sequence-methods { color: var(--ink-soft); font-size: .85rem; max-width: 90ch; margin: .5rem 0; }
+.sequence-evidence { margin-top: .8rem; }
+.sequence-evidence summary { cursor: pointer; padding: .35rem 0; color: var(--accent); }
+.sequence-evidence > label { margin: .8rem 0; max-width: 34rem; }
+.sequence-reconstruction { padding: 1rem 1.25rem; background: var(--bg-sunken); border-radius: 4px; }
+.sequence-reconstruction .section-note { margin-bottom: .5rem; }
+.sequence-context mark { color: var(--ok); background: var(--ok-soft); font-weight: 700; padding-block: .1rem; }
+.sequence-flank { color: var(--ink-soft); }
+.sequence-full { margin-top: .8rem; }
+.sequence-full .sequence-context { max-height: 22rem; overflow-y: auto; padding-right: .4rem; }
+.sequence-identifiers { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .78rem; color: var(--ink-soft); margin: 1rem 0 0; }
+.sequence-report :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .sequence-controls > label { flex: 1 1 45%; min-width: 0; }
+  .sequence-controls > .sequence-search { flex-basis: 100%; }
+  .sequence-controls input, .sequence-controls select { width: 100%; }
+  .sequence-reconstruction { padding: .8rem; }
+}
+
 code, .mono { font-family: var(--mono); font-size: 0.9em; }
 
 /* ---------- masthead ---------- */

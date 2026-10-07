@@ -246,6 +246,19 @@ function renderVerdict() {
   );
 }
 
+function renderVaccineSequenceSummary() {
+  const node = $("#vaccine-sequence-summary");
+  const report = DATA.vaccine_sequence_report;
+  node.hidden = !report;
+  node.innerHTML = "";
+  if (!report) return;
+  const summary = report.summary;
+  const link = el("a", "", "Inspect every vaccine sequence");
+  link.href = "peptides.html";
+  node.append(el("strong", "", `${summary.n_variants_any_peptide_matched}/${summary.n_variants} targets have a recorded vaccine sequence contained in a reconstruction.`),
+    el("p", "", `${summary.n_peptide_entries_matched}/${summary.n_peptide_entries} peptide entries recovered. The reconstructed protein can be longer on either side.`), link);
+}
+
 function renderTiles() {
   const node = $("#tiles");
   node.innerHTML = "";
@@ -284,9 +297,9 @@ function renderTiles() {
   }
   if (measured && DATA.summary.n_with_vaccine_epitopes) {
     tiles.splice(2, 0, {
-      label: "Exact vaccine peptides found",
+      label: "Predicted epitopes contained",
       value: `${DATA.summary.n_epitope_confirmed ?? 0}/${DATA.summary.n_with_vaccine_epitopes}`,
-      sub: "proteoform literally contains the manufactured epitope",
+      sub: "targets with a pVACtools epitope inside a reconstruction",
     });
   }
 
@@ -1716,6 +1729,7 @@ async function main() {
     $("#variant-count").textContent = String(DATA.summary.n_variants);
     renderVerdict();
     renderTiles();
+    renderVaccineSequenceSummary();
     renderLegend();
     renderHistory();
     renderHead();

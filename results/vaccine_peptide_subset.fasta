@@ -1,0 +1,157 @@
+>ZNF436-chr1-23362762.peptide-1 gene=ZNF436 protein_change=p.Ser207Cys vaccines=["mRNA"] is_mrna_minimal_epitope=false
+RTHTGERPYDCNECGKSFGRSCHLIQHQTIH
+>ZNF436-chr1-23362762.peptide-2 gene=ZNF436 protein_change=p.Ser207Cys vaccines=["mRNA"] is_mrna_minimal_epitope=true
+KSFGRSCHL
+>ZNF436-chr1-23362762.peptide-3 gene=ZNF436 protein_change=p.Ser207Cys vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+GKSFGRSCHLIQHQTI
+>VPS72-chr1-151185547.peptide-1 gene=VPS72 protein_change=p.Lys115Arg vaccines=["mRNA"] is_mrna_minimal_epitope=false
+KSLRPRKVNTPAGSSQKAREERALLPLELQD
+>VPS72-chr1-151185547.peptide-2 gene=VPS72 protein_change=p.Lys115Arg vaccines=["mRNA"] is_mrna_minimal_epitope=true
+ERALLPLEL
+>VPS72-chr1-151185547.peptide-3 gene=VPS72 protein_change=p.Lys115Arg vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+GSSQKAREERALLPLELQDDGSDSRKS
+>PIP5K1A-chr1-151242178.peptide-1 gene=PIP5K1A protein_change=p.Gly474fs vaccines=["mRNA"] is_mrna_minimal_epitope=false
+FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK
+>PIP5K1A-chr1-151242178.peptide-2 gene=PIP5K1A protein_change=p.Gly474fs vaccines=["mRNA"] is_mrna_minimal_epitope=true
+AAPVATPAL
+>PIP5K1A-chr1-151242178.peptide-3 gene=PIP5K1A protein_change=p.Gly474fs vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+SSFSRRAAPVATPALLTSHR
+>PRRC2C-chr1-171540477.peptide-1 gene=PRRC2C protein_change=p.Arg1004Met vaccines=["mRNA"] is_mrna_minimal_epitope=false
+YKSKSETRWGPRPSSNRMEEVNDRPVRR
+>PRRC2C-chr1-171540477.peptide-2 gene=PRRC2C protein_change=p.Arg1004Met vaccines=["mRNA"] is_mrna_minimal_epitope=true
+NRMEEVNDR
+>CENPL-chr1-173811223.peptide-1 gene=CENPL protein_change=p.Pro26His vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+SSRPEDYFIGATHLQKRLESVRK
+>ASPM-chr1-197102716.peptide-1 gene=ASPM protein_change=p.Gly2179Arg vaccines=["mRNA"] is_mrna_minimal_epitope=false
+REKYLTILKAVKVLQASFRRVRVRRTLRKMQ
+>ASPM-chr1-197102716.peptide-2 gene=ASPM protein_change=p.Gly2179Arg vaccines=["mRNA"] is_mrna_minimal_epitope=true
+RRVRVRRTLR
+>DYNC1H1-chr14-101980529.peptide-1 gene=DYNC1H1 protein_change=p.Val314Ile vaccines=["mRNA"] is_mrna_minimal_epitope=false
+VLLTLDILKHGKRFHATISFDTDTGLKQAL
+>DYNC1H1-chr14-101980529.peptide-2 gene=DYNC1H1 protein_change=p.Val314Ile vaccines=["mRNA"] is_mrna_minimal_epitope=true
+KRFHATISF
+>DYNC1H1-chr14-101980529.peptide-3 gene=DYNC1H1 protein_change=p.Val314Ile vaccines=["JLF V3", "JLF V2"] is_mrna_minimal_epitope=false
+GKRFHATISFDTDTGLKQALETKK
+>DYNC1H1-chr14-101980529.peptide-4 gene=DYNC1H1 protein_change=p.Val314Ile vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+KHGKRFHATISFDTDTGL
+>SPG11-chr15-44660435.peptide-1 gene=SPG11 protein_change=p.Ile147Val vaccines=["mRNA"] is_mrna_minimal_epitope=false
+ATILYSCSREALQKLIDDQDVSISLLSLRIL
+>SPG11-chr15-44660435.peptide-2 gene=SPG11 protein_change=p.Ile147Val vaccines=["mRNA"] is_mrna_minimal_epitope=true
+KLIDDQDVSI
+>MYO9A-chr15-71994488.peptide-1 gene=MYO9A protein_change=p.Asp523Val vaccines=["JLF V2"] is_mrna_minimal_epitope=false
+KKFDWIVFRINHALLNSKVLEHNTK
+>NR2F2-chr15-96332299.peptide-1 gene=NR2F2 protein_change=p.Gly65Val vaccines=["JLF V2"] is_mrna_minimal_epitope=false
+AQTAAGGQGGPGVPGSDKQQQQQHIE
+>NR2F2-chr15-96332299.peptide-2 gene=NR2F2 protein_change=p.Gly65Val vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+AGGQGGPGVPGSDKQQQ
+>KIF1C-chr17-5007293.peptide-1 gene=KIF1C protein_change=p.Glu456Lys vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+TEKIIAELNKTWEEKLRKTEA
+>NME1-chr17-51154443.peptide-1 gene=NME1 protein_change=p.Gly24Arg vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+PPISSCDTRTMAN
+>MYO15B-chr17-75589953.peptide-1 gene=MYO15B protein_change=fs vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+AGRRAQAPTRVLGLAPP
+>EPG5-chr18-45925851.peptide-1 gene=EPG5 protein_change=p.Ala869Thr vaccines=["JLF V2"] is_mrna_minimal_epitope=false
+KELPLYLWQPSTSEIAVIRDWKK
+>EPG5-chr18-45925851.peptide-2 gene=EPG5 protein_change=p.Ala869Thr vaccines=["JLF V1"] is_mrna_minimal_epitope=false
+KELPLYLWQPSTSEIAVIRD
+>EPG5-chr18-45925851.peptide-3 gene=EPG5 protein_change=p.Ala869Thr vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+KKSVIRTLSTIDDVEDRENEKGR
+>SLC25A12-chr2-171813470.peptide-1 gene=SLC25A12 protein_change=p.Ile347Thr vaccines=["mRNA"] is_mrna_minimal_epitope=false
+AYRFTLGSVAGAVGATAVYPTDLVKTRMQNQ
+>SLC25A12-chr2-171813470.peptide-2 gene=SLC25A12 protein_change=p.Ile347Thr vaccines=["mRNA"] is_mrna_minimal_epitope=true
+ATAVYPTDL
+>SLC25A12-chr2-171813470.peptide-3 gene=SLC25A12 protein_change=p.Ile347Thr vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+GSVAGAVGATAVYPTDLVKTRMQNQR
+>SLC25A12-chr2-171813470.peptide-4 gene=SLC25A12 protein_change=p.Ile347Thr vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+VGATAVYPTDLVKTRMQ
+>MAP2-chr2-209694768.peptide-1 gene=MAP2 protein_change=p.Leu867fs vaccines=["mRNA"] is_mrna_minimal_epitope=false
+DSQLEDRAHCHHLFKTVRIYQGRVVPFTKALMIKFEEIWPQTFH
+>MAP2-chr2-209694768.peptide-2 gene=MAP2 protein_change=p.Leu867fs vaccines=["mRNA"] is_mrna_minimal_epitope=true
+RVVPFTKAL
+>MAP2-chr2-209694768.peptide-3 gene=MAP2 protein_change=p.Leu867fs vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+KTVRIYQGRVVPFTKALMIKFEE
+>MAP2-chr2-209694768.peptide-4 gene=MAP2 protein_change=p.Leu867fs vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+KTVRIYQGRVVPFTKALMIKFEEI
+>BTD-chr3-15645183.peptide-1 gene=BTD protein_change=p.Phe445Val vaccines=["mRNA"] is_mrna_minimal_epitope=false
+YLLYERPTLSKELYALGVVDGLHTVHGTYYI
+>BTD-chr3-15645183.peptide-2 gene=BTD protein_change=p.Phe445Val vaccines=["mRNA"] is_mrna_minimal_epitope=true
+GVVDGLHTV
+>BTD-chr3-15645183.peptide-3 gene=BTD protein_change=p.Phe445Val vaccines=["JLF V3", "JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+RPTLSKELYALGVVDGLHTVHGT
+>PTH1R-chr3-46898732.peptide-1 gene=PTH1R protein_change=p.Ile237Phe vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+SFMLRAVSFFVKDAVLYSGAKKK
+>ABI3BP-chr3-100850671.peptide-1 gene=ABI3BP protein_change=p.Arg472Met vaccines=["mRNA"] is_mrna_minimal_epitope=false
+TATSDRILDSIPPKTSRTLEQPMATLAPSET
+>ABI3BP-chr3-100850671.peptide-2 gene=ABI3BP protein_change=p.Arg472Met vaccines=["mRNA"] is_mrna_minimal_epitope=true
+TLEQPMATL
+>ANKRD17-chr4-73097139.peptide-1 gene=ANKRD17 protein_change=p.Gly1719Arg vaccines=["mRNA"] is_mrna_minimal_epitope=false
+PNGKLTVASPKRGQKREERWKEVVRRSKKV
+>ANKRD17-chr4-73097139.peptide-2 gene=ANKRD17 protein_change=p.Gly1719Arg vaccines=["mRNA"] is_mrna_minimal_epitope=true
+ERWKEVVRR
+>KDM3B-chr5-138391529.peptide-1 gene=KDM3B protein_change=p.Pro633Ser vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+HENLFLQPPKLSREESSNPFLAFVEK
+>KDM3B-chr5-138391529.peptide-2 gene=KDM3B protein_change=p.Pro633Ser vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+PPKLSREESSNPFLAFV
+>WWC1-chr5-168399513.peptide-1 gene=WWC1 protein_change=p.Val179Gly vaccines=["mRNA"] is_mrna_minimal_epitope=false
+AEIATAKSRVNKLKREMGHLQHELQFKERGF
+>WWC1-chr5-168399513.peptide-2 gene=WWC1 protein_change=p.Val179Gly vaccines=["mRNA"] is_mrna_minimal_epitope=true
+GHLQHELQF
+>WWC1-chr5-168399513.peptide-3 gene=WWC1 protein_change=p.Val179Gly vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+NKLKREMGHLQHELQFKERG
+>H1_2-chr6-26055824.peptide-1 gene=H1-2 protein_change=p.Ala197_Lys201del vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+AAKAVKPKVVKPKKAA
+>CUL9-chr6-43186384.peptide-1 gene=CUL9 protein_change=p.Asp403Tyr vaccines=["JLF V2"] is_mrna_minimal_epitope=false
+RMLDYYEEISAGDEGEFRQSKKK
+>ADGRF5-chr6-46856758.peptide-1 gene=ADGRF5 protein_change=p.Asn1279Ser vaccines=["JLF V2"] is_mrna_minimal_epitope=false
+VQEALLSKFSLSRWSSQHSKST
+>CD109-chr6-73818405.peptide-1 gene=CD109 protein_change=p.Arg1310Met vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+SFSGPGMSGMALMEVNLLSGKKK
+>CDC40-chr6-110228838.peptide-1 gene=CDC40 protein_change=p.Trp475Ser vaccines=["mRNA"] is_mrna_minimal_epitope=false
+EPSMHSMPAVTLSPNGKSLACQSMDNQILIF
+>CDC40-chr6-110228838.peptide-2 gene=CDC40 protein_change=p.Trp475Ser vaccines=["mRNA"] is_mrna_minimal_epitope=true
+TLSPNGKSL
+>CDC40-chr6-110228838.peptide-3 gene=CDC40 protein_change=p.Trp475Ser vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+HSMPAVTLSPNGKSLACQSMDNQKK
+>TECPR1-chr7-98241127.peptide-1 gene=TECPR1 protein_change=p.Thr259fs vaccines=["mRNA"] is_mrna_minimal_epitope=false
+VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGRCGSEEASTLTIPAA
+PVGLRWLVR
+>TECPR1-chr7-98241127.peptide-2 gene=TECPR1 protein_change=p.Thr259fs vaccines=["mRNA"] is_mrna_minimal_epitope=true
+TIPAAPVGL
+>TECPR1-chr7-98241127.peptide-3 gene=TECPR1 protein_change=p.Thr259fs vaccines=["JLF V3", "JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+GSEEASTLTIPAAPVGLRWLVR
+>TECPR1-chr7-98241127.peptide-4 gene=TECPR1 protein_change=p.Thr259fs vaccines=["JLF V2", "JLF V1"] is_mrna_minimal_epitope=false
+TSRWESAWSGLSPRTGR
+>TECPR1-chr7-98241127.peptide-5 gene=TECPR1 protein_change=p.Thr259fs vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+LWAHSGRDRPWSGKES
+>EXOC4-chr7-133274996.peptide-1 gene=EXOC4 protein_change=p.Ser34Ile vaccines=["JLF V3", "JLF V2"] is_mrna_minimal_epitope=false
+KKSVIRTLSTIDDVEDRENEKGR
+>EXOC4-chr7-133274996.peptide-2 gene=EXOC4 protein_change=p.Ser34Ile vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+SVIRTLSTIDDVEDREN
+>BMP1-chr8-22192067.peptide-1 gene=BMP1 protein_change=p.Ser366Thr vaccines=["mRNA"] is_mrna_minimal_epitope=false
+YSAHMHCVWRISVTPGEKIILNFTTLDLYRSRL
+>BMP1-chr8-22192067.peptide-2 gene=BMP1 protein_change=p.Ser366Thr vaccines=["mRNA"] is_mrna_minimal_epitope=true
+KIILNFTTL
+>BMP1-chr8-22192067.peptide-3 gene=BMP1 protein_change=p.Ser366Thr vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+RISVTPGEKIILNFTTLDLYRSR
+>VPS13B-chr8-99861923.peptide-1 gene=VPS13B protein_change=p.Ser3756Phe vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+RQLPESLGEGLRQGLFRLGIS
+>VPS13B-chr8-99861923.peptide-2 gene=VPS13B protein_change=p.Ser3756Phe vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+GEGLRQGLFRLGISLLGAIA
+>GLIS3-chr9-3856149.peptide-1 gene=GLIS3 protein_change=p.Ser775fs vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+QPPESSSSFFNTAKNTASLYPAAIRFTPEVLSARNKLFFSTKWYPCPWILWAAAEVLSPTLPRFPENCAACQLLQCGAFV
+>SMC5-chr9-70298024.peptide-1 gene=SMC5 protein_change=p.Arg371Lys vaccines=["mRNA"] is_mrna_minimal_epitope=false
+EELQQALIVKQNEELDRQKRIGNTRKMIEDL
+>SMC5-chr9-70298024.peptide-2 gene=SMC5 protein_change=p.Arg371Lys vaccines=["mRNA"] is_mrna_minimal_epitope=true
+RQKRIGNTR
+>SMC5-chr9-70298024.peptide-3 gene=SMC5 protein_change=p.Arg371Lys vaccines=["JLF V3"] is_mrna_minimal_epitope=false
+DRQKRIGNTRKMIEDLQNELK
+>EXD3-chr9-137373504.peptide-1 gene=EXD3 protein_change=p.Glu72Asp vaccines=["mRNA"] is_mrna_minimal_epitope=false
+LAGLLDMLESCRGQRGDGPSLAAWISHQLQ
+>EXD3-chr9-137373504.peptide-2 gene=EXD3 protein_change=p.Glu72Asp vaccines=["mRNA"] is_mrna_minimal_epitope=true
+GQRGDGPSL
+>MT_ND5-chrM-12994.peptide-1 gene=MT-ND5 protein_change=p.Ala220Thr vaccines=["CeGaT"] is_mrna_minimal_epitope=false
+PLLGLLLATAGKSAQLG
+>PPP1R3F-chrX-49270761.peptide-1 gene=PPP1R3F protein_change=p.Gly298Arg vaccines=["mRNA"] is_mrna_minimal_epitope=false
+RNYTVLLRIAPAPTPTDAERLPQQQQLPQLE
+>PPP1R3F-chrX-49270761.peptide-2 gene=PPP1R3F protein_change=p.Gly298Arg vaccines=["mRNA"] is_mrna_minimal_epitope=true
+ERLPQQQQL

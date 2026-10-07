@@ -89,6 +89,18 @@ test("partial recovery keeps its measured fraction", () => {
   assert.match(nodes["#verdict"].textContent, /^Partly22 of 37 covered/);
 });
 
+test("recorded vaccine sequence report is distinct from predicted epitopes", () => {
+  const data = result(51, 32);
+  data.vaccine_sequence_report = { summary: {
+    n_variants_any_peptide_matched: 15, n_variants: 36,
+    n_peptide_entries_matched: 37, n_peptide_entries: 78,
+  } };
+  const nodes = render(data, ["renderVaccineSequenceSummary"]);
+  assert.match(nodes["#vaccine-sequence-summary"].textContent, /15\/36 targets/);
+  assert.match(nodes["#vaccine-sequence-summary"].textContent, /37\/78 peptide entries/);
+  assert.equal(nodes["#vaccine-sequence-summary"].hidden, false);
+});
+
 test("a pipeline that has never run stays pending", () => {
   const data = result(0, 0);
   data.has_exacto_run = false;
