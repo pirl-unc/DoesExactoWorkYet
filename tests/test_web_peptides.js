@@ -208,7 +208,8 @@ test("VPS72 distinguishes the one-residue difference and identifies which peptid
   const comparisons = windowDifferences(windows, group.start, group.end);
   assert.deepEqual(comparisons.get(second).substitutions, [{ position: 17, reference: "S", residue: "G" }]);
   const pair = windowDifferences([first, second], group.start, group.end);
-  for (const window of [first, second]) assert.equal(pair.get(window).positions.size, 1);
+  assert.equal(pair.get(first).positions.size, 0);
+  assert.deepEqual([...pair.get(second).positions.keys()], [group.start + 16]);
 });
 
 test("window differences distinguish missing coverage from substitutions and preserve window coordinates", () => {
@@ -223,7 +224,7 @@ test("window differences distinguish missing coverage from substitutions and pre
   assert.equal(comparisons.get(windows[1]).additional, 0);
   assert.deepEqual(comparisons.get(windows[2]).substitutions, [{ position: 9, reference: "*", residue: "Q" }]);
   assert.equal(comparisons.get(windows[2]).additional, 1);
-  assert.deepEqual([...comparisons.get(windows[0]).positions.keys()], [1, 5]);
+  assert.deepEqual([...comparisons.get(windows[0]).positions.keys()], []);
   assert.deepEqual([...comparisons.get(windows[1]).positions.keys()], [1]);
   assert.equal(windowDifferences([], 0, 45).size, 0);
 });

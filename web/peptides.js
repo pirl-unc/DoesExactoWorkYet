@@ -212,19 +212,13 @@ function windowDifferences(windows, start, end) {
   }]));
   for (let column = start; column < end; column++) {
     const residues = windows.map((window) => window.sequence[column - window.offset] || null);
-    const distinct = new Set(residues.filter((residue) => residue !== null));
     const position = column - start + 1;
-    if (distinct.size > 1) {
-      const description = `Window position ${position}: ` + [...distinct].map((residue) =>
-        `${residue} in ${windows.filter((_, i) => residues[i] === residue).map((w) => `W${w.number}`).join(", ")}`).join("; ");
-      windows.forEach((window, i) => {
-        if (residues[i] !== null) comparisons.get(window).positions.set(column, description);
-      });
-    }
     windows.forEach((window, i) => {
       const comparison = comparisons.get(window), reference = residues[0], residue = residues[i];
-      if (reference !== null && residue !== null && reference !== residue)
+      if (reference !== null && residue !== null && reference !== residue) {
         comparison.substitutions.push({ position, reference, residue });
+        comparison.positions.set(column, `Window position ${position}: W${comparison.reference} ${reference} → W${window.number} ${residue}`);
+      }
       if (reference !== null && residue === null) comparison.missing++;
       if (reference === null && residue !== null) comparison.additional++;
     });
