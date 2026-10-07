@@ -53,6 +53,35 @@ def current_peptide_report(catalogue: dict, results: dict | None) -> dict | None
     return report
 
 
+def peptide_report_with_rna_evidence(report: dict, catalogue: dict, results: dict | None = None) -> dict:
+    """Attach source counts without pooling libraries or inferring missing counts.
+
+    These are allele counts at the locus, not vaccine peptide observations.
+    Match benchmark samples by the actual BAM basename, not timepoint alone.
+    """
+    by_id = {variant["variant_id"]: variant for variant in catalogue["variants"]}
+    samples = {sample.bam_url.rsplit("/", 1)[-1]: sample.name for sample in SAMPLES}
+    report = json.loads(json.dumps(report))
+    scored = {variant["variant_id"]: variant for variant in (results or {}).get("variants", [])}
+    for variant in report["variants"]:
+        if "exacto_runs" not in variant:
+            # Older analyses contain matching proteins only. Retain their run
+            # outcomes without mislabelling an unarchived mismatch as no protein.
+            variant["exacto_runs"] = [
+                {"sample": sample, "arm": arm, "n_proteoforms": entry.get("n_proteoforms", 0),
+                 "n_variant_rnas": len({call["transcript_model_id"] for call in entry.get("rna_variant_calls", [])})}
+                for sample, values in scored.get(variant["variant_id"], {}).get("samples", {}).items()
+                for arm, entry in values.get("arms", {}).items()
+            ]
+        variant["source_rna_support"] = [
+            {**entry, "benchmark_sample": samples.get((entry.get("bam_file") or "").rsplit("/", 1)[-1])}
+            for entry in by_id[variant["variant_id"]].get("assay_support", [])
+            if entry.get("tissue") == "tumor"
+            and assays.ASSAY_META.get(entry.get("assay_type"), {}).get("kind") == "rna"
+        ]
+    return report
+
+
 # Runs are keyed on the sequencing sample now, not the biopsy — but a run that
 # was already in flight when that changed wrote "T1" where it would now write
 # "T1-ONT". Those results are still perfectly good; only their labels are stale.
@@ -377,7 +406,12 @@ def main() -> None:
     shutil.copytree(WEB_DIR, SITE_DIR)
     (SITE_DIR / "data.json").write_text(json.dumps(payload, indent=2) + "\n")
     if payload["vaccine_sequence_report"]:
-        shutil.copyfile(RESULTS_DIR / "vaccine_peptide_analysis.json", SITE_DIR / "vaccine_peptide_analysis.json")
+        report = peptide_report_with_rna_evidence(
+            load(RESULTS_DIR / "vaccine_peptide_analysis.json"),
+            load(RESULTS_DIR / "vaccine_variants.json"),
+            load(RESULTS_DIR / "exacto_results.json"),
+        )
+        (SITE_DIR / "vaccine_peptide_analysis.json").write_text(json.dumps(report, indent=2) + "\n")
     else:
         (SITE_DIR / "vaccine_peptide_analysis.json").write_text(json.dumps({
             "status": "unavailable",

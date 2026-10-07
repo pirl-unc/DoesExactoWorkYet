@@ -112,3 +112,37 @@ def test_site_hides_sequence_report_from_a_different_run_or_catalogue(tmp_path, 
     assert build_site.current_peptide_report(catalogue, {"runs": []}) is None
     assert build_site.current_peptide_report({"source": {"input_id": "other"}}, results) is None
     assert build_site.current_peptide_report(catalogue, None) is None
+
+
+def test_unmatched_proteins_and_rna_without_translation_remain_reported(tmp_path):
+    subset, previous = archive(tmp_path)
+    subset["variants"][0]["published_vaccine_peptides"][0]["sequence"] = "DIFFERENT"
+    result = analyze(subset, previous, tmp_path, run_url="run", version="0.5.0a1")
+    variant = result["variants"][0]
+    assert not variant["published_vaccine_peptides"][0]["matches"]
+    candidate = variant["reconstructed_candidates"][0]
+    assert result["reconstructions"][candidate["reconstruction_id"]] == "MAKQTT"
+    assert candidate["variant_amino_acid_start"] == 3
+    assert variant["exacto_runs"][0]["n_variant_rnas"] == 1
+    (tmp_path / "proteins.fasta").write_text("")
+    result = analyze(subset, previous, tmp_path, run_url="run", version="0.5.0a1")
+    assert result["variants"][0]["reconstructed_candidates"] == []
+    assert result["variants"][0]["exacto_runs"][0]["n_variant_rnas"] == 1
+
+
+def test_source_rna_counts_match_the_actual_bam_and_do_not_pool_libraries():
+    report = {"variants": [{"variant_id": "TEST"}]}
+    rows = [
+        {"tissue": "tumor", "assay_type": "scRNA_ONT", "bam_file": "IPISRC044_T2_sclrs_ONT_dedup.bam", "alt_reads": 4, "total_reads": 20},
+        {"tissue": "tumor", "assay_type": "RNA", "bam_file": "other-T2.bam", "alt_reads": 10, "total_reads": 40},
+        {"tissue": "blood", "assay_type": "RNA", "bam_file": "normal.bam", "alt_reads": 1, "total_reads": 10},
+        {"tissue": "tumor", "assay_type": "WGS", "bam_file": "dna.bam", "alt_reads": 30, "total_reads": 60},
+    ]
+    catalogue = {"variants": [{"variant_id": "TEST", "assay_support": rows}]}
+    enriched = build_site.peptide_report_with_rna_evidence(report, catalogue)
+    evidence = enriched["variants"][0]["source_rna_support"]
+    assert len(evidence) == 2
+    assert evidence[0]["benchmark_sample"] == "T2-ONT"
+    assert evidence[0]["alt_reads"] == 4
+    assert evidence[1]["benchmark_sample"] is None
+    assert "source_rna_support" not in report["variants"][0]
