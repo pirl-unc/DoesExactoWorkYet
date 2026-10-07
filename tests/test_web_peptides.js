@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
-  sequenceComparison, alignmentSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
+  sequenceComparison, alignmentSlice, reconstructionWindows, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -108,6 +108,37 @@ test("trimmed regions retain shared columns, highlights, and full-protein coordi
   assert.equal(short.left, "  ");
   assert.equal(short.right, "  ");
   assert.equal(alignmentSlice("FGHI", 20, 0, 10), null);
+});
+
+test("identical visible regions explain hidden full-protein differences without combining support", () => {
+  const proteins = [
+    { sequence: "MPEPTIDEKK*", offset: -1, ranges: [[1, 8]] },
+    { sequence: "MQQPEPTIDEK*", offset: -3, ranges: [] },
+    { sequence: "MPEPTVDEKK*", offset: -1, ranges: [] },
+  ];
+  const windows = reconstructionWindows({ reconstructions: proteins }, 0, 7, 4);
+  assert.equal(windows.length, 3);
+  assert.equal(windows[0].protein, proteins[0]);
+  assert.equal(windows[1].protein, proteins[1]);
+  assert.equal(windows[0].sameRegionNote,
+    "Same displayed region in 2 reconstructions. Full proteins differ outside this window.");
+  assert.equal(windows[1].sameRegionNote,
+    "Same displayed region as R4. Full sequence differs outside this window.");
+  assert.equal(windows[2].sameRegionNote, undefined);
+  assert.deepEqual(windows.map((w) => [w.hiddenBefore, w.hiddenAfter]), [[1, 2], [3, 1], [1, 2]],
+    "a terminal stop is not counted as a hidden amino acid");
+});
+
+test("visible missing ends, different placement, and stops are not labeled identical", () => {
+  const proteins = [
+    { sequence: "PEPTIDE", offset: 0, ranges: [] },
+    { sequence: "PEPTIDE*", offset: 0, ranges: [] },
+    { sequence: "PEPTIDE", offset: 1, ranges: [] },
+    { sequence: "PEPTID", offset: 0, ranges: [] },
+  ];
+  const windows = reconstructionWindows({ reconstructions: proteins }, 0, 8);
+  assert.ok(windows.every((w) => !w.sameRegionNote));
+  assert.ok(windows.every((w) => w.hiddenBefore === 0 && w.hiddenAfter === 0));
 });
 
 test("all supporting sequences and anchored occurrences survive inline grouping", { skip: !report }, () => {
