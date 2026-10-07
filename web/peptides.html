@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261007-windows">
+<link rel="stylesheet" href="style.css?v=20261007-equivalence">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -29,17 +29,19 @@
   <div id="sequence-availability" class="sequence-availability" hidden></div>
   <section aria-labelledby="sequence-list-title">
     <h2 id="sequence-list-title">Per-sequence report</h2>
-    <p class="section-note">Vaccine peptides for the same variant line up above every supporting
-      reconstruction. Long proteins are trimmed to the vaccine region with up to eight flanking residues;
-      ellipses indicate omitted sequence. Green highlights mark confirmed containment.
+    <p class="section-note">Vaccine peptides for the same variant line up above reconstructed
+      sequences in a 45-amino-acid window centered on the aligned vaccine region. The window expands
+      when needed to include all aligned vaccine peptides. Green highlights mark confirmed containment.
       “Sequence disagreement” means a protein was produced but the full vaccine sequence is absent or incomplete. “No reconstructed sequence” means Exacto produced no target-linked protein in the selected runs.</p>
     <p class="section-note">Rows are positioned by shared sequence, without inserting alignment gaps.
       References without an unambiguous shared stretch appear separately. Long regions continue
-      in additional blocks. Identical full proteins share a row; differences outside the displayed
-      window still produce separate rows. Identical displayed regions are labeled explicitly;
-      each row gives the number of amino acids hidden before and after the window.</p>
-    <p class="section-note">RNA support counts distinct input RNA sequences whose translated protein
-      contains the peptide, or produces that full reconstruction. Raw reads, corrected RNAs, and
+      in additional blocks. Proteins with identical sequence and coverage within the whole comparison
+      window share one row, even if they differ outside it. Missing ends and stop markers remain distinct.
+      Full-protein counts and lengths preserve provenance; ellipses mean at least one member continues
+      beyond the displayed region. Screen size changes line wrapping, not sequence grouping.</p>
+    <p class="section-note">Window RNA support combines distinct input RNAs producing the same window
+      sequence, counted once per sample and method. The per-peptide support below retains the full
+      vaccine-containment checks. Raw reads, corrected RNAs, and
       assembled RNAs are counted separately by sample and method; they can reuse the same reads,
       so the counts must not be added together. These are sequence-support counts, not total
       RNA coverage at the mutation. Full proteins and supporting RNA call IDs are in the analysis download.</p>
@@ -67,6 +69,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261007-windows"></script>
+<script src="peptides.js?v=20261007-equivalence"></script>
 </body>
 </html>

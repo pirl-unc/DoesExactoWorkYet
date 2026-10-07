@@ -96,7 +96,7 @@ function referenceGroups(rows) {
   return groups;
 }
 
-function sequenceComparison(report, rows, filters = {}, flank = 8) {
+function sequenceComparison(report, rows, filters = {}, windowSize = 45) {
   const groups = referenceGroups(rows).map((references) => {
     const proteins = new Map();
     for (const { row, offset } of references) {
@@ -125,7 +125,8 @@ function sequenceComparison(report, rows, filters = {}, flank = 8) {
   });
   const shown = new Set(groups.flatMap((group) => group.reconstructions.flatMap((protein) =>
     [...protein.observations.values()].map((hit) => hit.reconstruction_id))));
-  const unaligned = { references: [], reconstructions: [], start: -16, end: 17, unaligned: true };
+  const unaligned = { references: [], reconstructions: [],
+    start: -Math.floor(windowSize / 2), end: Math.ceil(windowSize / 2), unaligned: true };
   const placements = new Map();
   for (const candidate of rows[0].variant?.reconstructed_candidates || []) {
     if (!selectedRun(candidate, filters) || shown.has(candidate.reconstruction_id)) continue;
@@ -149,7 +150,13 @@ function sequenceComparison(report, rows, filters = {}, flank = 8) {
     }
     protein.observations.set(JSON.stringify([candidate.reconstruction_id, candidate.rna_call_id]), candidate);
   }
-  for (const group of groups) if (group.reconstructions.length) { group.start -= flank; group.end += flank; }
+  for (const group of groups) {
+    // The comparison window is independent of screen width. Expand rather than
+    // truncate when the aligned vaccine references span more than 45 residues.
+    const padding = Math.max(0, windowSize - (group.end - group.start));
+    group.start -= Math.floor(padding / 2);
+    group.end += Math.ceil(padding / 2);
+  }
   if (unaligned.reconstructions.length) groups.push(unaligned);
   return groups;
 }
@@ -173,36 +180,36 @@ function alignmentSlice(sequence, offset, start, end, ranges = []) {
 }
 
 function reconstructionWindows(group, start, end, firstNumber = 1) {
-  const windows = group.reconstructions.flatMap((protein, index) => {
-    const slice = alignmentSlice(protein.sequence, protein.offset, start, end, protein.ranges);
-    if (!slice) return [];
-    const length = protein.sequence.replace(/\*$/, "").length;
-    return [{ protein, slice, number: firstNumber + index,
-      hiddenBefore: Math.min(slice.from, length), hiddenAfter: Math.max(0, length - slice.to) }];
-  });
   const identical = new Map();
-  for (const window of windows) {
+  for (const protein of group.reconstructions) {
+    const slice = alignmentSlice(protein.sequence, protein.offset, start, end, protein.ranges);
+    if (!slice) continue;
     // Compare the complete displayed fragment and its columns, including stops
     // and missing ends. Highlighting is evidence, not a sequence difference.
-    const { slice } = window;
-    const key = JSON.stringify([slice.left, slice.pieces.map((piece) => piece.text).join(""), slice.right]);
-    if (!identical.has(key)) identical.set(key, []);
-    identical.get(key).push(window);
-  }
-  for (const shared of identical.values()) {
-    if (shared.length < 2) continue;
-    const first = shared[0];
-    first.sameRegionNote = new Set(shared.map((window) => window.protein.sequence)).size > 1
-      ? `Same displayed region in ${shared.length} reconstructions. Full proteins differ outside this window.`
-      : "Same full protein shown at multiple placements.";
-    for (const window of shared.slice(1)) {
-      window.sameRegionNote = `Same displayed region as R${first.number}. ` +
-        (window.protein.sequence === first.protein.sequence
-          ? "Same full protein, different placement."
-          : "Full sequence differs outside this window.");
+    const sequence = slice.pieces.map((piece) => piece.text).join("");
+    const key = JSON.stringify([slice.left, sequence, slice.right]);
+    if (!identical.has(key)) identical.set(key, {
+      sequence, offset: start + slice.left.length, number: firstNumber + identical.size,
+      members: [], observations: new Map(), ranges: [],
+    });
+    const window = identical.get(key);
+    window.members.push({ protein, slice });
+    for (const [key, hit] of protein.observations || []) window.observations.set(key, hit);
+    for (const [a, b] of protein.ranges) {
+      const from = Math.max(a, slice.from), to = Math.min(b, slice.to);
+      if (to > from) window.ranges.push([from - slice.from, to - slice.from]);
     }
   }
-  return windows;
+  return [...identical.values()];
+}
+
+function windowSlice(window, start, end) {
+  const slice = alignmentSlice(window.sequence, window.offset, start, end, window.ranges);
+  if (slice) {
+    slice.clippedLeft ||= window.members.some((member) => member.slice.clippedLeft);
+    slice.clippedRight ||= window.members.some((member) => member.slice.clippedRight);
+  }
+  return slice;
 }
 
 const statusText = { contained: "Contained", sequence_disagreement: "Sequence disagreement",
@@ -314,30 +321,39 @@ function referenceRow(entry, slice, number) {
   return item;
 }
 
-function reconstructionRow(report, window, filters) {
-  const { protein, slice, number, hiddenBefore, hiddenAfter, sameRegionNote } = window;
+function reconstructionRow(report, window, slice, filters) {
+  const { members, observations, number } = window;
+  const fullSequences = new Set(members.map(({ protein }) => protein.sequence));
+  const lengths = [...new Set([...fullSequences].map((seq) => seq.replace(/\*$/, "").length))].sort((a, b) => a - b);
+  const outputs = new Set([...observations.values()].map((hit) => hit.reconstruction_id)).size;
   const item = node("div", "alignment-row alignment-reconstruction");
   const label = node("div", "alignment-label");
-  label.append(node("strong", "", `Reconstruction R${number}`), node("span", "sequence-meta", `${new Set([...protein.observations.values()].map((hit) => hit.reconstruction_id)).size} protein output${protein.observations.size === 1 ? "" : "s"}`));
-  label.append(node("span", `sequence-status ${protein.ranges.length ? "contained" : "sequence_disagreement"}`,
-    protein.ranges.length ? "Contains vaccine sequence" : "No contained vaccine sequence"));
+  label.append(node("strong", "", `Window sequence W${number}`), node("span", "sequence-meta", `${outputs} protein output${outputs === 1 ? "" : "s"}`));
+  label.append(node("span", `sequence-status ${window.ranges.length ? "contained" : "sequence_disagreement"}`,
+    window.ranges.length ? "Contains vaccine sequence" : "No contained vaccine sequence"));
   const content = node("div", "alignment-content");
-  if (sameRegionNote) content.append(node("p", "sequence-window-note", sameRegionNote));
-  content.append(sequenceStrip(slice), node("p", "sequence-coordinates",
-    `Residues ${slice.from + 1}–${Math.min(slice.to, protein.sequence.replace(/\*$/, "").length)} of ${protein.sequence.replace(/\*$/, "").length} aa${slice.to === protein.sequence.length && protein.sequence.endsWith("*") ? " · stop (*)" : ""}`));
-  if (hiddenBefore || hiddenAfter) content.append(node("p", "sequence-hidden-residues",
-    `Outside this window: ${hiddenBefore} aa before · ${hiddenAfter} aa after`));
-  content.append(supportGrid(report, [...protein.observations.values()], filters));
+  content.append(sequenceStrip(slice));
+  const lengthText = lengths.length <= 6 ? lengths.join(", ") : `${lengths[0]}–${lengths[lengths.length - 1]} (${lengths.length} lengths)`;
+  content.append(node("p", "sequence-coordinates",
+    `${fullSequences.size} full protein sequence${fullSequences.size === 1 ? "" : "s"} · Full length${lengths.length === 1 ? "" : "s"}: ${lengthText} aa`));
+  if (fullSequences.size > 1) content.append(node("p", "sequence-window-note",
+    "Identical within this window; differences outside it are grouped together."));
+  content.append(supportGrid(report, [...observations.values()], filters));
   item.append(label, content);
   return item;
 }
 
 function targetComparison(report, rows, filters, columns) {
   const fragment = document.createDocumentFragment();
-  const groups = sequenceComparison(report, rows, filters, columns <= 44 ? 4 : 8);
+  const groups = sequenceComparison(report, rows, filters);
+  let nextWindow = 1;
+  for (const group of groups) {
+    group.windows = reconstructionWindows(group, group.start, group.end, nextWindow);
+    nextWindow += group.windows.length;
+  }
   const reconstructionIds = new Set(groups.flatMap((group) => group.reconstructions.flatMap((p) => [...p.observations.values()].map((hit) => hit.reconstruction_id))));
   const sequences = new Set(groups.flatMap((group) => group.reconstructions.map((p) => p.sequence)));
-  fragment.append(node("p", "sequence-methods", `${rows.length} recorded peptide entr${rows.length === 1 ? "y" : "ies"} · ${reconstructionIds.size} target-linked protein outputs · ${sequences.size} distinct full sequence${sequences.size === 1 ? "" : "s"}, all shown below.`));
+  fragment.append(node("p", "sequence-methods", `${rows.length} recorded peptide entr${rows.length === 1 ? "y" : "ies"} · ${reconstructionIds.size} target-linked protein outputs · ${sequences.size} distinct full sequence${sequences.size === 1 ? "" : "s"}, grouped into ${nextWindow - 1} window sequence${nextWindow === 2 ? "" : "s"}.`));
   const support = node("div", "sequence-peptide-support");
   support.append(node("h4", "", "Exacto sequence support for each vaccine peptide"));
   for (const row of rows) {
@@ -346,11 +362,12 @@ function targetComparison(report, rows, filters, columns) {
     support.append(entry);
   }
   // Keep the reference rows immediately above the reconstructed sequences.
-  let previousReconstructions = 0;
   groups.forEach((group, groupIndex) => {
-    if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "Unaligned candidates: no shared vaccine-sequence anchor. Each row shows the translated mutation with up to 16 residues on either side; these rows are not aligned to the vaccine peptides."));
+    if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "Unaligned candidates: no shared vaccine-sequence anchor. Each 45-aa window is centered on the translated mutation; these rows are not aligned to the vaccine peptides."));
     else if (groups.filter((g) => !g.unaligned).length > 1) fragment.append(node("p", "sequence-alignment-note",
       `Sequence group ${groupIndex + 1}: no unambiguous shared stretch with the other reference group${groups.length > 2 ? "s" : ""}; shown separately.`));
+    if (!group.unaligned) fragment.append(node("p", "sequence-alignment-note",
+      `${group.end - group.start}-aa comparison window${group.end - group.start > 45 ? " (expanded to include all aligned vaccine peptides)" : " centered on the aligned vaccine peptides"}.`));
     const nParts = Math.ceil((group.end - group.start) / columns);
     for (let start = group.start, part = 1; start < group.end; start += columns, part++) {
       const end = Math.min(start + columns, group.end);
@@ -360,11 +377,12 @@ function targetComparison(report, rows, filters, columns) {
         const slice = alignmentSlice(entry.row.peptide.sequence, entry.offset, start, end);
         if (slice) panel.append(referenceRow(entry, slice, part));
       }
-      for (const window of reconstructionWindows(group, start, end, previousReconstructions + 1))
-        panel.append(reconstructionRow(report, window, filters));
+      for (const window of group.windows) {
+        const slice = windowSlice(window, start, end);
+        if (slice) panel.append(reconstructionRow(report, window, slice, filters));
+      }
       fragment.append(panel);
     }
-    previousReconstructions += group.reconstructions.length;
   });
   fragment.append(support);
   if (!reconstructionIds.size) {
@@ -470,7 +488,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, rnaSupport, sequenceStatus, sourceRnaState };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowSlice, rnaSupport, sequenceStatus, sourceRnaState };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });

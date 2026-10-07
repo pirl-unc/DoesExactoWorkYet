@@ -129,7 +129,6 @@ a:hover { text-decoration-thickness: 2px; }
 .sequence-trim { color: var(--ink-faint); }
 .sequence-coordinates { font-size: .72rem; color: var(--ink-soft); margin: .25rem 0 .5rem; }
 .sequence-window-note { font-size: .8rem; color: var(--ink); margin: 0 0 .3rem; }
-.sequence-hidden-residues { font-size: .75rem; color: var(--ink-soft); margin: -.25rem 0 .6rem; }
 .sequence-support { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: .4rem .7rem; margin: 0; }
 .sequence-support-sample { min-width: 0; }
 .sequence-support dt { font-size: .74rem; font-weight: 650; color: var(--ink-soft); margin-bottom: .1rem; }
