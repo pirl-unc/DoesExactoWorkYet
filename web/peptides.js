@@ -302,7 +302,7 @@ function targetComparison(report, rows, filters, columns) {
   const sequences = new Set(groups.flatMap((group) => group.reconstructions.map((p) => p.sequence)));
   fragment.append(node("p", "sequence-methods", `${rows.length} recorded peptide entr${rows.length === 1 ? "y" : "ies"} · ${reconstructionIds.size} target-linked protein outputs · ${sequences.size} distinct full sequence${sequences.size === 1 ? "" : "s"}, all shown below.`));
   const support = node("div", "sequence-peptide-support");
-  support.append(node("h4", "", "RNA support for each vaccine peptide"));
+  support.append(node("h4", "", "Exacto sequence support for each vaccine peptide"));
   for (const row of rows) {
     const entry = node("div", "sequence-peptide-support-row");
     entry.append(node("strong", "", `P${row.variant.published_vaccine_peptides.indexOf(row.peptide) + 1} · ${row.peptide.in_vaccines.join(", ")} · ${row.peptide.sequence.length} aa`), supportGrid(report, row.matches, filters, row.variant));
@@ -396,6 +396,8 @@ function populateSequenceReport(report) {
   const link = node("a", "", `Exacto ${analysis.exacto_version} · benchmark run`);
   link.href = analysis.run_url;
   queryNode("#sequence-provenance").append(link, node("span", "", ` · ${analysis.n_completed_methods} completed methods. Saved outputs were re-scored; a target counts if any candidate contains a recorded vaccine peptide.`));
+  if (report.source?.snapshot?.name) queryNode("#sequence-provenance").append(node("span", "",
+    ` Sid RNA counts use the frozen osteosarc snapshot from ${report.source.snapshot.name}.`));
   const unavailable = analysis.samples_unavailable || [];
   if (unavailable.length) {
     const notice = queryNode("#sequence-availability");

@@ -151,6 +151,28 @@ test("source RNA distinguishes mutant support, measured zero, no coverage and mi
   assert.equal(sourceRnaState([]), "not_reported");
 });
 
+test("source RNA evidence can find missing proteins without crossing selected samples", () => {
+  const data = structuredClone(fixture);
+  data.variants[0].source_rna_support = [
+    { benchmark_sample: "T1-ONT", alt_reads: 3, total_reads: 20 },
+    { benchmark_sample: "T2-ILMN", alt_reads: 0, total_reads: 25 },
+  ];
+  const rows = sequenceRows(data, { status: "no_sequence", sourceRna: "supported" });
+  assert.equal(rows.length, 2);
+  assert.ok(rows.every((row) => row.variant.gene === "SPG11"));
+  assert.equal(sequenceRows(data, { sample: "T2-ILMN", sourceRna: "supported" }).length, 0);
+  assert.equal(sequenceRows(data, { sample: "T2-ILMN", sourceRna: "no_alt_reads" }).length, 2);
+});
+
+test("sample and method filters also exclude non-matching reconstructed proteins", { skip: !report }, () => {
+  const variant = report.variants.find((v) => v.gene === "SPG11");
+  const data = { ...report, variants: [variant] };
+  for (const filters of [{ sample: "T3-ONT" }, { method: "corrected" }, { sample: "T2-ONT" }]) {
+    const groups = sequenceComparison(data, sequenceRows(data, filters), filters);
+    assert.ok(groups.every((group) => group.reconstructions.length === 0));
+  }
+});
+
 test("identical full proteins combine support but differences outside the crop remain separate", () => {
   const peptide = { peptide_id: "P1", sequence: "PEPTIDE", matches: [
     { reconstruction_id: "a", protein_id: "a|orf_0-29", amino_acid_starts: [2], sample: "T1-ONT", arm: "reads", rna_call_id: "1" },
