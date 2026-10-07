@@ -172,6 +172,39 @@ function alignmentSlice(sequence, offset, start, end, ranges = []) {
     clippedLeft: from > 0, clippedRight: to < sequence.length };
 }
 
+function reconstructionWindows(group, start, end, firstNumber = 1) {
+  const windows = group.reconstructions.flatMap((protein, index) => {
+    const slice = alignmentSlice(protein.sequence, protein.offset, start, end, protein.ranges);
+    if (!slice) return [];
+    const length = protein.sequence.replace(/\*$/, "").length;
+    return [{ protein, slice, number: firstNumber + index,
+      hiddenBefore: Math.min(slice.from, length), hiddenAfter: Math.max(0, length - slice.to) }];
+  });
+  const identical = new Map();
+  for (const window of windows) {
+    // Compare the complete displayed fragment and its columns, including stops
+    // and missing ends. Highlighting is evidence, not a sequence difference.
+    const { slice } = window;
+    const key = JSON.stringify([slice.left, slice.pieces.map((piece) => piece.text).join(""), slice.right]);
+    if (!identical.has(key)) identical.set(key, []);
+    identical.get(key).push(window);
+  }
+  for (const shared of identical.values()) {
+    if (shared.length < 2) continue;
+    const first = shared[0];
+    first.sameRegionNote = new Set(shared.map((window) => window.protein.sequence)).size > 1
+      ? `Same displayed region in ${shared.length} reconstructions. Full proteins differ outside this window.`
+      : "Same full protein shown at multiple placements.";
+    for (const window of shared.slice(1)) {
+      window.sameRegionNote = `Same displayed region as R${first.number}. ` +
+        (window.protein.sequence === first.protein.sequence
+          ? "Same full protein, different placement."
+          : "Full sequence differs outside this window.");
+    }
+  }
+  return windows;
+}
+
 const statusText = { contained: "Contained", sequence_disagreement: "Sequence disagreement",
   no_sequence: "No reconstructed sequence", not_evaluated: "Not evaluated" };
 
@@ -281,15 +314,19 @@ function referenceRow(entry, slice, number) {
   return item;
 }
 
-function reconstructionRow(report, protein, slice, number, filters) {
+function reconstructionRow(report, window, filters) {
+  const { protein, slice, number, hiddenBefore, hiddenAfter, sameRegionNote } = window;
   const item = node("div", "alignment-row alignment-reconstruction");
   const label = node("div", "alignment-label");
   label.append(node("strong", "", `Reconstruction R${number}`), node("span", "sequence-meta", `${new Set([...protein.observations.values()].map((hit) => hit.reconstruction_id)).size} protein output${protein.observations.size === 1 ? "" : "s"}`));
   label.append(node("span", `sequence-status ${protein.ranges.length ? "contained" : "sequence_disagreement"}`,
     protein.ranges.length ? "Contains vaccine sequence" : "No contained vaccine sequence"));
   const content = node("div", "alignment-content");
+  if (sameRegionNote) content.append(node("p", "sequence-window-note", sameRegionNote));
   content.append(sequenceStrip(slice), node("p", "sequence-coordinates",
     `Residues ${slice.from + 1}–${Math.min(slice.to, protein.sequence.replace(/\*$/, "").length)} of ${protein.sequence.replace(/\*$/, "").length} aa${slice.to === protein.sequence.length && protein.sequence.endsWith("*") ? " · stop (*)" : ""}`));
+  if (hiddenBefore || hiddenAfter) content.append(node("p", "sequence-hidden-residues",
+    `Outside this window: ${hiddenBefore} aa before · ${hiddenAfter} aa after`));
   content.append(supportGrid(report, [...protein.observations.values()], filters));
   item.append(label, content);
   return item;
@@ -323,10 +360,8 @@ function targetComparison(report, rows, filters, columns) {
         const slice = alignmentSlice(entry.row.peptide.sequence, entry.offset, start, end);
         if (slice) panel.append(referenceRow(entry, slice, part));
       }
-      group.reconstructions.forEach((protein, index) => {
-        const slice = alignmentSlice(protein.sequence, protein.offset, start, end, protein.ranges);
-        if (slice) panel.append(reconstructionRow(report, protein, slice, previousReconstructions + index + 1, filters));
-      });
+      for (const window of reconstructionWindows(group, start, end, previousReconstructions + 1))
+        panel.append(reconstructionRow(report, window, filters));
       fragment.append(panel);
     }
     previousReconstructions += group.reconstructions.length;
@@ -435,7 +470,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, rnaSupport, sequenceStatus, sourceRnaState };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, rnaSupport, sequenceStatus, sourceRnaState };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });

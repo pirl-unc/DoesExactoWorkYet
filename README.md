@@ -55,7 +55,8 @@ for its variant. Shared sequence anchors align the rows; proteins are trimmed to
 the vaccine region plus up to eight residues on either side, with containment highlighted.
 References without an unambiguous shared stretch remain in separate groups.
 Identical full proteins share a row (differences outside the trimmed window are
-preserved). Per-sample RNA support counts unique input transcript/read identifiers
+preserved). Rows with identical displayed regions are labeled as such, with
+counts of amino acids hidden before and after the crop. Per-sample RNA support counts unique input transcript/read identifiers
 within each method for every peptide and reconstructed sequence. Raw reads,
 corrected inputs, and assembled transcripts are reported separately, never summed
 across methods; these counts measure sequence support, not locus coverage.
