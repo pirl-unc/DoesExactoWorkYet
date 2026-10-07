@@ -190,10 +190,11 @@ function reconstructionWindows(group, start, end, firstNumber = 1) {
     const key = JSON.stringify([slice.left, sequence, slice.right]);
     if (!identical.has(key)) identical.set(key, {
       sequence, offset: start + slice.left.length, number: firstNumber + identical.size,
-      members: [], observations: new Map(), ranges: [],
+      members: [], observations: new Map(), ranges: [], peptideIds: new Set(),
     });
     const window = identical.get(key);
     window.members.push({ protein, slice });
+    for (const id of protein.peptideIds || []) window.peptideIds.add(id);
     for (const [key, hit] of protein.observations || []) window.observations.set(key, hit);
     for (const [a, b] of protein.ranges) {
       const from = Math.max(a, slice.from), to = Math.min(b, slice.to);
@@ -201,6 +202,28 @@ function reconstructionWindows(group, start, end, firstNumber = 1) {
     }
   }
   return [...identical.values()];
+}
+
+// Compare residues only where both windows cover the same displayed column.
+// Missing ends are coverage differences, never inferred substitutions or gaps.
+function windowDifferences(windows, start, end) {
+  const comparisons = new Map(windows.map((window) => [window, {
+    reference: windows[0].number, positions: new Map(), substitutions: [], missing: 0, additional: 0,
+  }]));
+  for (let column = start; column < end; column++) {
+    const residues = windows.map((window) => window.sequence[column - window.offset] || null);
+    const position = column - start + 1;
+    windows.forEach((window, i) => {
+      const comparison = comparisons.get(window), reference = residues[0], residue = residues[i];
+      if (reference !== null && residue !== null && reference !== residue) {
+        comparison.substitutions.push({ position, reference, residue });
+        comparison.positions.set(column, `Window position ${position}: W${comparison.reference} ${reference} → W${window.number} ${residue}`);
+      }
+      if (reference !== null && residue === null) comparison.missing++;
+      if (reference === null && residue !== null) comparison.additional++;
+    });
+  }
+  return comparisons;
 }
 
 function windowSlice(window, start, end) {
@@ -261,21 +284,30 @@ function sourceRnaState(entries) {
   return entries.some((entry) => entry.total_reads > 0) ? "no_alt_reads" : "no_coverage";
 }
 
+function sourceRnaCount(entry) {
+  const state = sourceRnaState(entry ? [entry] : []);
+  const labels = { supported: "Mutant RNA observed", no_alt_reads: "No mutant reads observed",
+    no_coverage: "No coverage", not_reported: "Not reported" };
+  const value = entry && (entry.alt_reads != null || entry.total_reads != null)
+    ? `${entry.alt_reads ?? "—"} / ${entry.total_reads ?? "—"}` : "—";
+  const count = node("span", `sequence-source-count ${state}`, value);
+  count.title = `${labels[state]} · ${value} mutant / total reads`;
+  count.setAttribute("aria-label", count.title);
+  return count;
+}
+
 function sourceRnaEvidence(report, variant, filters) {
   const section = node("div", "sequence-source-evidence");
   section.append(node("h4", "", "Sid dataset: mutant RNA at this locus"), node("p", "sequence-methods",
-    "Published mutant / total RNA reads. This evidence is independent of Exacto and does not establish that a read spans the entire vaccine peptide. Libraries are shown separately, without pooling."));
-  const states = { supported: "Mutant RNA observed", no_alt_reads: "No mutant reads observed",
-    no_coverage: "No coverage", not_reported: "Not reported" };
+    "Mutant / total reads · independent of Exacto; locus support does not imply coverage of the full peptide. Libraries are not pooled."));
   const entries = variant.source_rna_support || [];
   const samples = rnaSupport(report, [], filters);
   const grid = node("div", "sequence-source-samples");
   for (const { sample, evaluated } of samples) {
     const rows = entries.filter((entry) => entry.benchmark_sample === sample);
-    const state = sourceRnaState(rows);
-    const item = node("div", `sequence-source-sample ${state}`);
-    item.append(node("strong", "", sample), node("span", "", states[state]));
-    for (const row of rows) item.append(node("span", "sequence-source-count", `${row.alt_reads ?? "?"} / ${row.total_reads ?? "?"} reads`));
+    const item = node("div", "sequence-source-sample");
+    item.append(node("strong", "", sample));
+    for (const row of rows.length ? rows : [null]) item.append(sourceRnaCount(row));
     const selected = { ...filters, sample };
     const runs = (variant.exacto_runs || []).filter((run) => selectedRun(run, selected));
     const hasProtein = (variant.reconstructed_candidates || []).some((run) => selectedRun(run, selected)) || runs.some((run) => run.n_proteoforms > 0);
@@ -292,8 +324,7 @@ function sourceRnaEvidence(report, variant, filters) {
     const table = node("div", "sequence-other-rna");
     for (const entry of other) {
       const row = node("div", "sequence-other-rna-row");
-      row.append(node("span", "", entry.sample_label), node("span", "sequence-source-count", `${entry.alt_reads ?? "?"} / ${entry.total_reads ?? "?"}`),
-        node("span", "", states[sourceRnaState([entry])]));
+      row.append(node("span", "", entry.sample_label), sourceRnaCount(entry));
       table.append(row);
     }
     section.append(table);
@@ -301,10 +332,22 @@ function sourceRnaEvidence(report, variant, filters) {
   return section;
 }
 
-function sequenceStrip(slice) {
+function sequenceStrip(slice, window = null, comparison = null) {
   const strip = node("code", "sequence-strip");
   strip.append(node("span", "sequence-trim", slice.clippedLeft ? "…" : " "), document.createTextNode(slice.left));
-  for (const piece of slice.pieces) strip.append(node(piece.matched ? "mark" : "span", "", piece.text));
+  let column = (window?.offset || 0) + slice.from;
+  for (const piece of slice.pieces) {
+    const segment = node(piece.matched ? "mark" : "span", "");
+    for (const residue of piece.text) {
+      const difference = comparison?.positions.get(column++);
+      if (difference) {
+        const aminoAcid = node("span", "sequence-difference", residue);
+        aminoAcid.title = difference;
+        segment.append(aminoAcid);
+      } else segment.append(document.createTextNode(residue));
+    }
+    strip.append(segment);
+  }
   strip.append(document.createTextNode(slice.right), node("span", "sequence-trim", slice.clippedRight ? "…" : " "));
   return strip;
 }
@@ -321,7 +364,7 @@ function referenceRow(entry, slice, number) {
   return item;
 }
 
-function reconstructionRow(report, window, slice, filters) {
+function reconstructionRow(report, window, slice, filters, rows, comparison) {
   const { members, observations, number } = window;
   const fullSequences = new Set(members.map(({ protein }) => protein.sequence));
   const lengths = [...new Set([...fullSequences].map((seq) => seq.replace(/\*$/, "").length))].sort((a, b) => a - b);
@@ -329,10 +372,20 @@ function reconstructionRow(report, window, slice, filters) {
   const item = node("div", "alignment-row alignment-reconstruction");
   const label = node("div", "alignment-label");
   label.append(node("strong", "", `Window sequence W${number}`), node("span", "sequence-meta", `${outputs} protein output${outputs === 1 ? "" : "s"}`));
-  label.append(node("span", `sequence-status ${window.ranges.length ? "contained" : "sequence_disagreement"}`,
-    window.ranges.length ? "Contains vaccine sequence" : "No contained vaccine sequence"));
+  const contained = rows.filter(({ peptide }) => window.peptideIds.has(peptide.peptide_id)).map(({ variant, peptide }) =>
+    `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`);
+  label.append(node("span", `sequence-status ${contained.length ? "contained" : "sequence_disagreement"}`,
+    contained.length ? `Contains ${contained.join(", ")}${contained.length < rows.length ? " only" : ""}` : "No contained vaccine sequence"));
   const content = node("div", "alignment-content");
-  content.append(sequenceStrip(slice));
+  content.append(sequenceStrip(slice, window, comparison));
+  if (comparison && number !== comparison.reference) {
+    const { substitutions, missing, additional } = comparison;
+    const changes = substitutions.slice(0, 8).map(({ position, reference, residue }) => `${position}: ${reference} → ${residue}`);
+    if (substitutions.length > 8) changes.push(`+${substitutions.length - 8} more residue differences`);
+    if (missing) changes.push(`${missing} fewer covered positions`);
+    if (additional) changes.push(`${additional} additional covered positions`);
+    content.append(node("p", "sequence-difference-note", `vs W${comparison.reference} · ${changes.join(" · ")}`));
+  }
   const lengthText = lengths.length <= 6 ? lengths.join(", ") : `${lengths[0]}–${lengths[lengths.length - 1]} (${lengths.length} lengths)`;
   content.append(node("p", "sequence-coordinates",
     `${fullSequences.size} full protein sequence${fullSequences.size === 1 ? "" : "s"} · Full length${lengths.length === 1 ? "" : "s"}: ${lengthText} aa`));
@@ -369,6 +422,7 @@ function targetComparison(report, rows, filters, columns) {
     if (!group.unaligned) fragment.append(node("p", "sequence-alignment-note",
       `${group.end - group.start}-aa comparison window${group.end - group.start > 45 ? " (expanded to include all aligned vaccine peptides)" : " centered on the aligned vaccine peptides"}.`));
     const nParts = Math.ceil((group.end - group.start) / columns);
+    const comparisons = group.unaligned ? null : windowDifferences(group.windows, group.start, group.end);
     for (let start = group.start, part = 1; start < group.end; start += columns, part++) {
       const end = Math.min(start + columns, group.end);
       const panel = node("div", "sequence-alignment");
@@ -379,7 +433,7 @@ function targetComparison(report, rows, filters, columns) {
       }
       for (const window of group.windows) {
         const slice = windowSlice(window, start, end);
-        if (slice) panel.append(reconstructionRow(report, window, slice, filters));
+        if (slice) panel.append(reconstructionRow(report, window, slice, filters, rows, comparisons?.get(window)));
       }
       fragment.append(panel);
     }
@@ -488,7 +542,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowSlice, rnaSupport, sequenceStatus, sourceRnaState };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });

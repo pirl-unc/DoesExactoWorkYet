@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
-  sequenceComparison, alignmentSlice, reconstructionWindows, windowSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
+  sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -182,6 +182,53 @@ test("equivalent window support deduplicates RNA inputs while keeping samples an
   ]);
 });
 
+test("VPS72 distinguishes the one-residue difference and identifies which peptides each window contains", () => {
+  // Freeze this example so a future benchmark can change its recovered proteins.
+  const sequences = {
+    a: "EPLKSLRPRKVNTPAGSSQKAREERALLPLELQDDGSDSRKSMRQ",
+    b: "EPLKSLRPRKVNTPAGGSQKAREERALLPLELQDDGSDSRKSMRQ",
+  };
+  const peptides = [
+    { peptide_id: "P1", sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD", start: 4 },
+    { peptide_id: "P2", sequence: "ERALLPLEL", start: 24 },
+    { peptide_id: "P3", sequence: "GSSQKAREERALLPLELQDDGSDSRKS", start: 16 },
+  ];
+  const rows = peptides.map((peptide) => ({ peptide, matches: [
+    { reconstruction_id: "a", rna_call_id: "a1", amino_acid_starts: [peptide.start] },
+    { reconstruction_id: "a", rna_call_id: "a2", amino_acid_starts: [peptide.start] },
+    ...(peptide.peptide_id === "P2" ? [{ reconstruction_id: "b", rna_call_id: "b1", amino_acid_starts: [24] }] : []),
+  ] }));
+  const [group] = sequenceComparison({ reconstructions: sequences }, rows);
+  const windows = reconstructionWindows(group, group.start, group.end);
+  const [first, second] = windows;
+  assert.equal(first.sequence, "EPLKSLRPRKVNTPAGSSQKAREERALLPLELQDDGSDSRKSMRQ");
+  assert.equal(second.sequence, "EPLKSLRPRKVNTPAGGSQKAREERALLPLELQDDGSDSRKSMRQ");
+  assert.deepEqual(first.peptideIds, new Set(rows.map(({ peptide }) => peptide.peptide_id)));
+  assert.deepEqual(second.peptideIds, new Set([rows[1].peptide.peptide_id]));
+  const comparisons = windowDifferences(windows, group.start, group.end);
+  assert.deepEqual(comparisons.get(second).substitutions, [{ position: 17, reference: "S", residue: "G" }]);
+  const pair = windowDifferences([first, second], group.start, group.end);
+  assert.equal(pair.get(first).positions.size, 0);
+  assert.deepEqual([...pair.get(second).positions.keys()], [group.start + 16]);
+});
+
+test("window differences distinguish missing coverage from substitutions and preserve window coordinates", () => {
+  const windows = [
+    { number: 4, sequence: "ABCDEFG*", offset: -2 },
+    { number: 5, sequence: "CEEFG", offset: 0 },
+    { number: 6, sequence: "XABCDEFGQ", offset: -3 },
+  ];
+  const comparisons = windowDifferences(windows, -3, 7);
+  assert.deepEqual(comparisons.get(windows[1]).substitutions, [{ position: 5, reference: "D", residue: "E" }]);
+  assert.equal(comparisons.get(windows[1]).missing, 3);
+  assert.equal(comparisons.get(windows[1]).additional, 0);
+  assert.deepEqual(comparisons.get(windows[2]).substitutions, [{ position: 9, reference: "*", residue: "Q" }]);
+  assert.equal(comparisons.get(windows[2]).additional, 1);
+  assert.deepEqual([...comparisons.get(windows[0]).positions.keys()], []);
+  assert.deepEqual([...comparisons.get(windows[1]).positions.keys()], [1]);
+  assert.equal(windowDifferences([], 0, 45).size, 0);
+});
+
 test("all supporting sequences and anchored occurrences survive inline grouping", { skip: !report }, () => {
   for (const variant of report.variants) {
     const rows = sequenceRows({ ...report, variants: [variant] });
@@ -245,7 +292,11 @@ test("sample and method filters also exclude non-matching reconstructed proteins
   const data = { ...report, variants: [variant] };
   for (const filters of [{ sample: "T3-ONT" }, { method: "corrected" }, { sample: "T2-ONT" }]) {
     const groups = sequenceComparison(data, sequenceRows(data, filters), filters);
-    assert.ok(groups.every((group) => group.reconstructions.length === 0));
+    const selected = (hit) => (!filters.sample || hit.sample === filters.sample) && (!filters.method || hit.arm === filters.method);
+    const displayed = groups.flatMap((group) => group.reconstructions.flatMap((protein) => [...protein.observations.values()]));
+    const expected = [...variant.reconstructed_candidates, ...variant.published_vaccine_peptides.flatMap((peptide) => peptide.matches)].filter(selected);
+    assert.ok(displayed.every(selected));
+    assert.deepEqual(new Set(displayed.map((hit) => hit.reconstruction_id)), new Set(expected.map((hit) => hit.reconstruction_id)));
   }
 });
 
