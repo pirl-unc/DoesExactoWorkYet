@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261007-equivalence">
+<link rel="stylesheet" href="style.css?v=20261007-evidence">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -39,6 +39,9 @@
       window share one row, even if they differ outside it. Missing ends and stop markers remain distinct.
       Full-protein counts and lengths preserve provenance; ellipses mean at least one member continues
       beyond the displayed region. Screen size changes line wrapping, not sequence grouping.</p>
+    <p class="section-note">Underlined residues differ between aligned window rows. Changes are listed
+      relative to the first window in each group, using 1-based window positions, not full-protein positions.
+      “Contains P1, P2” identifies the specific recorded peptides recovered.</p>
     <p class="section-note">Window RNA support combines distinct input RNAs producing the same window
       sequence, counted once per sample and method. The per-peptide support below retains the full
       vaccine-containment checks. Raw reads, corrected RNAs, and
@@ -55,6 +58,13 @@
       <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
       <label>Sid RNA evidence <select id="sequence-source-rna"><option value="">All source evidence</option><option value="supported">Mutant RNA observed</option><option value="no_alt_reads">Covered, no mutant reads</option><option value="no_coverage">No coverage</option><option value="not_reported">Not reported</option></select></label>
     </div>
+    <div class="sequence-rna-legend" aria-label="Sid RNA read-count legend">
+      <strong>Sid RNA: mutant / total reads</strong>
+      <span><span class="sequence-source-count supported">3 / 20</span> mutant reads</span>
+      <span><span class="sequence-source-count no_alt_reads">0 / 20</span> covered, no mutant reads</span>
+      <span><span class="sequence-source-count no_coverage">0 / 0</span> no coverage</span>
+      <span><span class="sequence-source-count not_reported">—</span> not reported</span>
+    </div>
     <p id="sequence-count" class="section-note" aria-live="polite"></p>
     <div id="sequence-targets"></div>
   </section>
@@ -69,6 +79,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261007-equivalence"></script>
+<script src="peptides.js?v=20261007-evidence"></script>
 </body>
 </html>

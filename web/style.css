@@ -126,15 +126,17 @@ a:hover { text-decoration-thickness: 2px; }
 .alignment-reference .alignment-label { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: .15rem .5rem; }
 .sequence-strip { display: block; font-family: var(--mono); font-size: 13px; line-height: 1.9; white-space: pre; letter-spacing: 0; overflow-x: auto; margin: 0; color: var(--ink-soft); }
 .sequence-strip mark { color: var(--ok); background: var(--ok-soft); font-weight: 700; padding-block: .2rem; }
+.sequence-difference { color: var(--ink); background: var(--warn-soft); font-weight: 750; text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.sequence-difference-note { color: var(--ink); font-size: .85rem; margin: .3rem 0 .5rem; }
 .sequence-trim { color: var(--ink-faint); }
 .sequence-coordinates { font-size: .72rem; color: var(--ink-soft); margin: .25rem 0 .5rem; }
 .sequence-window-note { font-size: .8rem; color: var(--ink); margin: 0 0 .3rem; }
 .sequence-support { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: .4rem .7rem; margin: 0; }
 .sequence-support-sample { min-width: 0; }
-.sequence-support dt { font-size: .74rem; font-weight: 650; color: var(--ink-soft); margin-bottom: .1rem; }
-.sequence-support dd { margin: 0; font-size: .72rem; overflow-wrap: anywhere; }
-.sequence-support dd strong { font-family: var(--mono); font-size: .95em; }
-.sequence-support-positive { color: var(--ink); }
+.sequence-support dt { font-size: .8rem; font-weight: 650; color: var(--ink-soft); margin-bottom: .1rem; }
+.sequence-support dd { margin: 0; font-size: .8rem; overflow-wrap: anywhere; }
+.sequence-support dd strong { font-family: var(--mono); font-size: 1.05em; }
+.sequence-support-positive { color: var(--ok); }
 .sequence-support-zero, .sequence-support-unavailable { color: var(--ink-soft); }
 .sequence-peptide-support { margin: 1rem 0 1.5rem; }
 .sequence-peptide-support h4 { font-size: .85rem; margin: 0 0 .5rem; }
@@ -1121,13 +1123,15 @@ th.assay-group .tested { display: inline-block; margin-top: .2rem; font-size: .5
 .sequence-source-evidence { margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid var(--rule); border-radius: 4px; }
 .sequence-source-evidence h4 { margin: 0 0 .4rem; font-size: .95rem; }
 .sequence-source-samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .9rem; margin: 1rem 0; }
-.sequence-source-sample { display: flex; flex-direction: column; gap: .2rem; font-size: .77rem; }
-.sequence-source-sample > strong { font-size: .85rem; }
-.sequence-source-sample.supported > strong { color: var(--ok); }
-.sequence-source-count { font-family: var(--mono); font-size: .85em; white-space: nowrap; }
+.sequence-source-sample { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; font-size: .8rem; }
+.sequence-source-sample > strong { font-size: .9rem; }
+.sequence-source-count { display: inline-block; font-family: var(--mono); font-size: 1rem; font-weight: 600; white-space: nowrap; padding: .15rem .45rem; border-radius: 3px; color: var(--ink-soft); background: var(--bg-sunken); }
+.sequence-source-count.supported { color: var(--ok); background: color-mix(in srgb, var(--ok-soft) 65%, var(--bg)); }
+.sequence-source-count.no_alt_reads { color: var(--warn); background: color-mix(in srgb, var(--warn-soft) 60%, var(--bg)); }
+.sequence-source-count.not_reported { background: transparent; }
 .sequence-source-exacto { color: var(--ink-soft); margin-top: .3rem; }
-.sequence-other-rna-row { display: grid; grid-template-columns: minmax(0, 1fr) 7rem 11rem; gap: .5rem; padding: .3rem 0; border-top: 1px solid var(--rule); font-size: .75rem; color: var(--ink-soft); }
-@media (max-width: 600px) {
-  .sequence-other-rna-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .sequence-other-rna-row > :last-child { grid-column: 1 / -1; }
-}
+.sequence-other-rna-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: .5rem; padding: .3rem 0; border-top: 1px solid var(--rule); font-size: .85rem; color: var(--ink-soft); }
+.sequence-rna-legend { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.1rem; color: var(--ink-soft); font-size: .8rem; margin: 1rem 0; }
+.sequence-rna-legend > strong { flex-basis: 100%; font-weight: 600; }
+.sequence-rna-legend > span { display: flex; align-items: center; gap: .4rem; }
+.sequence-rna-legend .sequence-source-count { font-size: .85rem; }
