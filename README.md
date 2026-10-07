@@ -50,14 +50,18 @@ The subset reanalysis is saved in
 [`results/vaccine_peptide_analysis.json`](results/vaccine_peptide_analysis.json).
 The website's [per-sequence report](https://pirl-unc.github.io/DoesExactoWorkYet/peptides.html)
 shows all reference peptides, filters by gene/sequence, vaccine, sample and method,
-and displays every supporting reconstruction inline beneath the vaccine peptides
-for its variant. Shared sequence anchors align the rows; proteins are trimmed to
-the vaccine region plus up to eight residues on either side, with containment highlighted.
+and displays reconstructed window sequences inline beneath the vaccine peptides
+for its variant. Shared sequence anchors align the rows in a 45-amino-acid window
+centered on the aligned vaccine region, expanded when needed to include all reference
+peptides. Confirmed containment is highlighted.
 References without an unambiguous shared stretch remain in separate groups.
-Identical full proteins share a row (differences outside the trimmed window are
-preserved). Rows with identical displayed regions are labeled as such, with
-counts of amino acids hidden before and after the crop. Per-sample RNA support counts unique input transcript/read identifiers
-within each method for every peptide and reconstructed sequence. Raw reads,
+Identical sequences with the same coverage within the full comparison window share
+one row, ignoring differences outside it. Missing ends and stops remain distinct.
+Grouping is independent of screen width; narrow screens wrap the same groups into
+blocks. Each row retains full-protein counts and lengths. Per-sample RNA support
+combines unique input transcript/read identifiers within each method across all
+members of the window group. Per-peptide support retains the original containment
+checks. Raw reads,
 corrected inputs, and assembled transcripts are reported separately, never summed
 across methods; these counts measure sequence support, not locus coverage.
 Full proteins and RNA call identifiers remain available in the analysis download. Missing

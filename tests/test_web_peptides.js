@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
-  sequenceComparison, alignmentSlice, reconstructionWindows, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
+  sequenceComparison, alignmentSlice, reconstructionWindows, windowSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -110,23 +110,19 @@ test("trimmed regions retain shared columns, highlights, and full-protein coordi
   assert.equal(alignmentSlice("FGHI", 20, 0, 10), null);
 });
 
-test("identical visible regions explain hidden full-protein differences without combining support", () => {
+test("identical window sequences combine full proteins and preserve their provenance", () => {
   const proteins = [
     { sequence: "MPEPTIDEKK*", offset: -1, ranges: [[1, 8]] },
     { sequence: "MQQPEPTIDEK*", offset: -3, ranges: [] },
     { sequence: "MPEPTVDEKK*", offset: -1, ranges: [] },
   ];
   const windows = reconstructionWindows({ reconstructions: proteins }, 0, 7, 4);
-  assert.equal(windows.length, 3);
-  assert.equal(windows[0].protein, proteins[0]);
-  assert.equal(windows[1].protein, proteins[1]);
-  assert.equal(windows[0].sameRegionNote,
-    "Same displayed region in 2 reconstructions. Full proteins differ outside this window.");
-  assert.equal(windows[1].sameRegionNote,
-    "Same displayed region as R4. Full sequence differs outside this window.");
-  assert.equal(windows[2].sameRegionNote, undefined);
-  assert.deepEqual(windows.map((w) => [w.hiddenBefore, w.hiddenAfter]), [[1, 2], [3, 1], [1, 2]],
-    "a terminal stop is not counted as a hidden amino acid");
+  assert.equal(windows.length, 2);
+  assert.deepEqual(windows[0].members.map((m) => m.protein), proteins.slice(0, 2));
+  assert.equal(windows[1].members[0].protein, proteins[2]);
+  assert.deepEqual(windows.map((w) => w.number), [4, 5]);
+  assert.equal(windows[0].sequence, "PEPTIDE");
+  assert.equal(windowSlice(windows[0], 0, 7).pieces.filter((p) => p.matched).map((p) => p.text).join(""), "PEPTIDE");
 });
 
 test("visible missing ends, different placement, and stops are not labeled identical", () => {
@@ -137,8 +133,53 @@ test("visible missing ends, different placement, and stops are not labeled ident
     { sequence: "PEPTID", offset: 0, ranges: [] },
   ];
   const windows = reconstructionWindows({ reconstructions: proteins }, 0, 8);
-  assert.ok(windows.every((w) => !w.sameRegionNote));
-  assert.ok(windows.every((w) => w.hiddenBefore === 0 && w.hiddenAfter === 0));
+  assert.equal(windows.length, 4);
+  assert.ok(windows.every((w) => w.members.length === 1));
+});
+
+test("window equivalence is computed before screen wrapping and keeps differences in later blocks", () => {
+  const proteins = [
+    { sequence: "MPEPTIDEKKK", offset: -1, ranges: [] },
+    { sequence: "MPEPTIDEKKV", offset: -1, ranges: [] },
+  ];
+  const windows = reconstructionWindows({ reconstructions: proteins }, 0, 10);
+  assert.equal(windows.length, 2);
+  assert.deepEqual(windowSlice(windows[0], 0, 7).pieces, windowSlice(windows[1], 0, 7).pieces);
+  assert.notDeepEqual(windowSlice(windows[0], 7, 10).pieces, windowSlice(windows[1], 7, 10).pieces);
+});
+
+test("comparison windows are 45 aa or wide enough to preserve every reference", () => {
+  for (const length of [9, 31, 45, 80]) {
+    const peptide = { sequence: "A".repeat(length), matches: [] };
+    const [group] = sequenceComparison({ reconstructions: {} }, [{ peptide, matches: [] }]);
+    assert.equal(group.end - group.start, Math.max(45, length));
+    assert.ok(group.start <= 0 && group.end >= length);
+  }
+});
+
+test("equivalent window support deduplicates RNA inputs while keeping samples and methods separate", () => {
+  const runData = { analysis: { artifacts: [
+    { sample: "T1-ONT", arm: "reads" }, { sample: "T1-ONT", arm: "corrected" },
+    { sample: "T3-ONT", arm: "reads" },
+  ] } };
+  const hits = [
+    { sample: "T1-ONT", arm: "reads", protein_id: "r1|orf_0-29" },
+    { sample: "T1-ONT", arm: "reads", protein_id: "r1|orf_3-32" },
+    { sample: "T1-ONT", arm: "corrected", protein_id: "r1|orf_0-29" },
+    { sample: "T3-ONT", arm: "reads", protein_id: "r1|orf_0-29" },
+    { sample: "T3-ONT", arm: "reads", protein_id: "r2|orf_0-29" },
+  ];
+  const proteins = hits.map((hit, i) => ({
+    sequence: "MPEPTIDE" + "K".repeat(i), offset: -1, ranges: [],
+    observations: new Map([[String(i), { ...hit, reconstruction_id: String(i) }]]),
+  }));
+  const [window] = reconstructionWindows({ reconstructions: proteins }, 0, 7);
+  assert.equal(window.members.length, 5);
+  assert.equal(window.observations.size, 5);
+  assert.deepEqual(rnaSupport(runData, [...window.observations.values()]), [
+    { sample: "T1-ONT", evaluated: true, methods: [{ method: "corrected", count: 1 }, { method: "reads", count: 1 }] },
+    { sample: "T3-ONT", evaluated: true, methods: [{ method: "reads", count: 2 }] },
+  ]);
 });
 
 test("all supporting sequences and anchored occurrences survive inline grouping", { skip: !report }, () => {
@@ -152,6 +193,10 @@ test("all supporting sequences and anchored occurrences survive inline grouping"
     assert.deepEqual(displayed, expected, variant.gene);
     assert.equal(groups.reduce((n, group) => n + group.references.length, 0), rows.length);
     for (const group of groups) {
+      const windows = reconstructionWindows(group, group.start, group.end);
+      const groupedIds = new Set(windows.flatMap((window) => [...window.observations.values()].map((hit) => hit.reconstruction_id)));
+      const groupIds = new Set(group.reconstructions.flatMap((protein) => [...protein.observations.values()].map((hit) => hit.reconstruction_id)));
+      assert.deepEqual(groupedIds, groupIds, `${variant.gene}: window grouping preserves every output`);
       for (const { row, offset } of group.references) {
         for (const match of row.matches) {
           for (const start of match.amino_acid_starts) {
