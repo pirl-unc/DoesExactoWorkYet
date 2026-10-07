@@ -1,0 +1,2108 @@
+{
+  "source": {
+    "repository": "https://github.com/iskandr/osteosarc",
+    "input_id": "af299e74992360e7892c7effbe163bcec7d61d044981807b2dc100bca55d845d",
+    "snapshot": {
+      "id": "efb65d4b683bda162879c86c0ea889afcc64704b5228224c061109f306503b91",
+      "name": "2026-09-28"
+    },
+    "osteosarc_version": "0.15.0",
+    "membership_policy": "union of index vaccine_count, source_variants flags, and vaccine-overlap membership",
+    "provenance": {
+      "aliases": {
+        "tumor_scrnaseq_T1.bam": "kamil/tumor/output/T1/outs/per_sample_outs/T1/sample_alignments.bam",
+        "tumor_scrnaseq_T2.bam": "kamil/tumor/output/T2/outs/per_sample_outs/T2/sample_alignments.bam",
+        "tumor_scrnaseq_T3.bam": "kamil/tumor/output/T3/outs/per_sample_outs/T3/sample_alignments.bam",
+        "tumor_scrnaseq_T3_CD45neg.bam": "kamil/tumor/output/T3_CD45neg/outs/per_sample_outs/T3_CD45neg/sample_alignments.bam"
+      },
+      "aliases_basis": "Explicit T1/T2/T3/CD45neg CellRanger sample paths in bams.json",
+      "allele_resolutions_sha256": "ade4b130e4031fa853c961798418df5c5ae0208e2ea4f2d2f981276a2fc4c18d",
+      "corrections": "osteosarc curated snapshot; corrections retained per row/variant",
+      "curation_sha256": "6eb51bb504bd5dfae0090bdbdddfa70346ab7cf27b637eae8a98c6a9044f373c",
+      "sources": {
+        "bam_metadata": {
+          "retrieved_at": "2026-09-28T03:09:30.841374+00:00",
+          "sha256": "1a1fd0d84a2027988aba0f996a5908329bbc33bc3671c96c4323f3e3c78c9c6a",
+          "size": 23005,
+          "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/bam-metadata-consolidated.tsv"
+        },
+        "bams": {
+          "retrieved_at": "2026-09-28T03:09:24.588217+00:00",
+          "sha256": "7d90c733a3cb157ff70e9302a7f7ea302cc5cac0cfd244b6d65a24d7b245e2e7",
+          "size": 45478,
+          "url": "https://osteosarc.com/bams/bams.json"
+        },
+        "source_variants": {
+          "retrieved_at": "2026-09-28T03:09:30.195437+00:00",
+          "sha256": "f90e2d8c896cb45a002610f233212ed1b28d0e56891365590947d31485947e16",
+          "size": 6411344,
+          "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/src/data/variants.json"
+        },
+        "specimens": {
+          "retrieved_at": "2026-09-28T03:09:33.919413+00:00",
+          "sha256": "c42c48b41e4b29a7c7feaa60d9401e8ccfb1faf30ac24ec5011945b32016ff56",
+          "size": 6990,
+          "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/samples-consolidated.tsv"
+        },
+        "vaccine_overlap": {
+          "retrieved_at": "2026-09-28T03:09:29.118440+00:00",
+          "sha256": "3572f7ded10bc10e4dae92805210e858a024449e037e7f47320a05c93991053f",
+          "size": 33292,
+          "url": "https://osteosarc.com/data/vaccine_overlap.json"
+        },
+        "vaf_columns": {
+          "retrieved_at": "2026-09-28T03:09:28.375868+00:00",
+          "sha256": "935507a2cf33688243b92285e5107c6e814aee635c5ce5f8963f2b8f3ec0535f",
+          "size": 1482,
+          "url": "https://osteosarc.com/variants/variant_vafs_long.columns.tsv"
+        },
+        "vafs": {
+          "retrieved_at": "2026-09-28T03:09:27.703470+00:00",
+          "sha256": "e5627735897ba62d19c207e40d7e8516c81bd0fc793a339c8aa5138ab63f3913",
+          "size": 1631141,
+          "url": "https://osteosarc.com/variants/variant_vafs_long.tsv"
+        },
+        "variant_index": {
+          "retrieved_at": "2026-09-28T03:09:26.857774+00:00",
+          "sha256": "91036401893aa14ad69091825d3636ce0990bdd47cc5e2fca297ddfd7acddb48",
+          "size": 545438,
+          "url": "https://osteosarc.com/variants/"
+        }
+      }
+    }
+  },
+  "selection_policy": "Keep published_vaccine_peptides entries with a nonempty sequence and nonempty in_vaccines. Include a variant if it has at least one such entry. Preserve full peptides and mRNA minimal epitopes as recorded; do not include pVACtools predictions or peptides without vaccine membership. Membership does not establish expression or RNA recovery.",
+  "n_catalogue_variants": 51,
+  "n_variants": 36,
+  "n_peptides": 78,
+  "n_unique_sequences": 77,
+  "variants": [
+    {
+      "variant_id": "ZNF436-chr1-23362762",
+      "gene": "ZNF436",
+      "chrom": "chr1",
+      "pos": 23362762,
+      "ref": "G",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ser207Cys",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "ZNF436-chr1-23362762.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 15,
+          "sequence": "RTHTGERPYDCNECGKSFGRSCHLIQHQTIH"
+        },
+        {
+          "peptide_id": "ZNF436-chr1-23362762.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "KSFGRSCHL"
+        },
+        {
+          "peptide_id": "ZNF436-chr1-23362762.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 1,
+          "sequence": "GKSFGRSCHLIQHQTI"
+        }
+      ]
+    },
+    {
+      "variant_id": "VPS72-chr1-151185547",
+      "gene": "VPS72",
+      "chrom": "chr1",
+      "pos": 151185547,
+      "ref": "T",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Lys115Arg",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "VPS72-chr1-151185547.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 20,
+          "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD"
+        },
+        {
+          "peptide_id": "VPS72-chr1-151185547.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "ERALLPLEL"
+        },
+        {
+          "peptide_id": "VPS72-chr1-151185547.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "GSSQKAREERALLPLELQDDGSDSRKS"
+        }
+      ]
+    },
+    {
+      "variant_id": "PIP5K1A-chr1-151242178",
+      "gene": "PIP5K1A",
+      "chrom": "chr1",
+      "pos": 151242178,
+      "ref": "AG",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly474fs",
+      "consequence": "frameshift_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "PIP5K1A-chr1-151242178.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 10,
+          "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK"
+        },
+        {
+          "peptide_id": "PIP5K1A-chr1-151242178.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "AAPVATPAL"
+        },
+        {
+          "peptide_id": "PIP5K1A-chr1-151242178.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 6,
+          "sequence": "SSFSRRAAPVATPALLTSHR"
+        }
+      ]
+    },
+    {
+      "variant_id": "PRRC2C-chr1-171540477",
+      "gene": "PRRC2C",
+      "chrom": "chr1",
+      "pos": 171540477,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Arg1004Met",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "PRRC2C-chr1-171540477.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 15,
+          "sequence": "YKSKSETRWGPRPSSNRMEEVNDRPVRR"
+        },
+        {
+          "peptide_id": "PRRC2C-chr1-171540477.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "NRMEEVNDR"
+        }
+      ]
+    },
+    {
+      "variant_id": "CENPL-chr1-173811223",
+      "gene": "CENPL",
+      "chrom": "chr1",
+      "pos": 173811223,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Pro26His",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "CENPL-chr1-173811223.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "SSRPEDYFIGATHLQKRLESVRK"
+        }
+      ]
+    },
+    {
+      "variant_id": "ASPM-chr1-197102716",
+      "gene": "ASPM",
+      "chrom": "chr1",
+      "pos": 197102716,
+      "ref": "C",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly2179Arg",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "ASPM-chr1-197102716.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 18,
+          "sequence": "REKYLTILKAVKVLQASFRRVRVRRTLRKMQ"
+        },
+        {
+          "peptide_id": "ASPM-chr1-197102716.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "RRVRVRRTLR"
+        }
+      ]
+    },
+    {
+      "variant_id": "DYNC1H1-chr14-101980529",
+      "gene": "DYNC1H1",
+      "chrom": "chr14",
+      "pos": 101980529,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Val314Ile",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V2",
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "DYNC1H1-chr14-101980529.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 11,
+          "sequence": "VLLTLDILKHGKRFHATISFDTDTGLKQAL"
+        },
+        {
+          "peptide_id": "DYNC1H1-chr14-101980529.peptide-2",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+              "peptide_id": "P10-3.DYNC1H1",
+              "pool": "S3",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "KRFHATISF"
+        },
+        {
+          "peptide_id": "DYNC1H1-chr14-101980529.peptide-3",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.52.DYNC1H1",
+              "pool": "L2",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+              "pool": "Pool 1",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+              "pool": "",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "Sent to MUSC for expansion",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V3",
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 1,
+          "sequence": "GKRFHATISFDTDTGLKQALETKK"
+        },
+        {
+          "peptide_id": "DYNC1H1-chr14-101980529.peptide-4",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 3,
+          "sequence": "KHGKRFHATISFDTDTGL"
+        }
+      ]
+    },
+    {
+      "variant_id": "SPG11-chr15-44660435",
+      "gene": "SPG11",
+      "chrom": "chr15",
+      "pos": 44660435,
+      "ref": "T",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ile147Val",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "SPG11-chr15-44660435.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 13,
+          "sequence": "ATILYSCSREALQKLIDDQDVSISLLSLRIL"
+        },
+        {
+          "peptide_id": "SPG11-chr15-44660435.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "KLIDDQDVSI"
+        }
+      ]
+    },
+    {
+      "variant_id": "MYO9A-chr15-71994488",
+      "gene": "MYO9A",
+      "chrom": "chr15",
+      "pos": 71994488,
+      "ref": "T",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Asp523Val",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "MYO9A-chr15-71994488.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.53.MYO9A",
+              "pool": "L3",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.53.MYO9A.1",
+              "pool": "Pool 1",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.53.MYO9A.1",
+              "pool": "",
+              "result": "Negative",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.53.MYO9A.1",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "KKFDWIVFRINHALLNSKVLEHNTK"
+        }
+      ]
+    },
+    {
+      "variant_id": "NR2F2-chr15-96332299",
+      "gene": "NR2F2",
+      "chrom": "chr15",
+      "pos": 96332299,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly65Val",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "NR2F2-chr15-96332299.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.58.NR2F2",
+              "pool": "L3",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.58.NR2F2.2",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "AQTAAGGQGGPGVPGSDKQQQQQHIE"
+        },
+        {
+          "peptide_id": "NR2F2-chr15-96332299.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "AGGQGGPGVPGSDKQQQ"
+        }
+      ]
+    },
+    {
+      "variant_id": "KIF1C-chr17-5007293",
+      "gene": "KIF1C",
+      "chrom": "chr17",
+      "pos": 5007293,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Glu456Lys",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V1",
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "KIF1C-chr17-5007293.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.60.KIF1C",
+              "pool": "L1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.60.KIF1C.2",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.60.KIF1C.2",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "TEKIIAELNKTWEEKLRKTEA"
+        }
+      ]
+    },
+    {
+      "variant_id": "NME1-chr17-51154443",
+      "gene": "NME1",
+      "chrom": "chr17",
+      "pos": 51154443,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly24Arg",
+      "consequence": "intron_variant",
+      "vaccines": [
+        "CeGaT"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "NME1-chr17-51154443.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "PPISSCDTRTMAN"
+        }
+      ]
+    },
+    {
+      "variant_id": "MYO15B-chr17-75589953",
+      "gene": "MYO15B",
+      "chrom": "chr17",
+      "pos": 75589953,
+      "ref": "GC",
+      "alt": "G",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "fs",
+      "consequence": "frameshift_variant",
+      "vaccines": [
+        "JLF V1",
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "MYO15B-chr17-75589953.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.67.MYO15B",
+              "pool": "L1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.67.MYO15B.1",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.67.MYO15B.1",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "AGRRAQAPTRVLGLAPP"
+        }
+      ]
+    },
+    {
+      "variant_id": "EPG5-chr18-45925851",
+      "gene": "EPG5",
+      "chrom": "chr18",
+      "pos": 45925851,
+      "ref": "C",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ala869Thr",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V1",
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "EPG5-chr18-45925851.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.76.EPG5",
+              "pool": "L1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.76.EPG5.2",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.76.EPG5.2",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "KELPLYLWQPSTSEIAVIRDWKK"
+        },
+        {
+          "peptide_id": "EPG5-chr18-45925851.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "KELPLYLWQPSTSEIAVIRD"
+        },
+        {
+          "peptide_id": "EPG5-chr18-45925851.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "KKSVIRTLSTIDDVEDRENEKGR"
+        }
+      ]
+    },
+    {
+      "variant_id": "SLC25A12-chr2-171813470",
+      "gene": "SLC25A12",
+      "chrom": "chr2",
+      "pos": 171813470,
+      "ref": "A",
+      "alt": "G",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ile347Thr",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V1",
+        "JLF V2",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "SLC25A12-chr2-171813470.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 14,
+          "sequence": "AYRFTLGSVAGAVGATAVYPTDLVKTRMQNQ"
+        },
+        {
+          "peptide_id": "SLC25A12-chr2-171813470.peptide-2",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+              "peptide_id": "P6-2.SLC25A12",
+              "pool": "S2",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "ATAVYPTDL"
+        },
+        {
+          "peptide_id": "SLC25A12-chr2-171813470.peptide-3",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.8.SLC25A12",
+              "pool": "L2",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.8.SLC25A12.3",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.8.SLC25A12.3",
+              "pool": "Pool 1",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.8.SLC25A12.3",
+              "pool": "",
+              "result": "Negative",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.8.SLC25A12.3",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "GSVAGAVGATAVYPTDLVKTRMQNQR"
+        },
+        {
+          "peptide_id": "SLC25A12-chr2-171813470.peptide-4",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 2,
+          "sequence": "VGATAVYPTDLVKTRMQ"
+        }
+      ]
+    },
+    {
+      "variant_id": "MAP2-chr2-209694768",
+      "gene": "MAP2",
+      "chrom": "chr2",
+      "pos": 209694768,
+      "ref": "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT",
+      "alt": "CAGGG",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Leu867fs",
+      "consequence": "frameshift_variant",
+      "vaccines": [
+        "JLF V1",
+        "JLF V2",
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "MAP2-chr2-209694768.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 22,
+          "sequence": "DSQLEDRAHCHHLFKTVRIYQGRVVPFTKALMIKFEEIWPQTFH"
+        },
+        {
+          "peptide_id": "MAP2-chr2-209694768.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "RVVPFTKAL"
+        },
+        {
+          "peptide_id": "MAP2-chr2-209694768.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "KTVRIYQGRVVPFTKALMIKFEE"
+        },
+        {
+          "peptide_id": "MAP2-chr2-209694768.peptide-4",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.14.MAP2",
+              "pool": "L2",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038.MT.14.MAP2.2",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038.MT.14.MAP2.2",
+              "pool": "Pool 1",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038.MT.14.MAP2.2",
+              "pool": "",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038.MT.14.MAP2.2",
+              "pool": "NA",
+              "result": "Positive (Strong**)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "KTVRIYQGRVVPFTKALMIKFEEI"
+        }
+      ]
+    },
+    {
+      "variant_id": "BTD-chr3-15645183",
+      "gene": "BTD",
+      "chrom": "chr3",
+      "pos": 15645183,
+      "ref": "T",
+      "alt": "G",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Phe445Val",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V1",
+        "JLF V2",
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "BTD-chr3-15645183.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 16,
+          "sequence": "YLLYERPTLSKELYALGVVDGLHTVHGTYYI"
+        },
+        {
+          "peptide_id": "BTD-chr3-15645183.peptide-2",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+              "peptide_id": "P4-2.BTD",
+              "pool": "S1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "GVVDGLHTV"
+        },
+        {
+          "peptide_id": "BTD-chr3-15645183.peptide-3",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.19.BTD",
+              "pool": "L1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.19.BTD.1",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.19.BTD.1",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V3",
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 11,
+          "sequence": "RPTLSKELYALGVVDGLHTVHGT"
+        }
+      ]
+    },
+    {
+      "variant_id": "PTH1R-chr3-46898732",
+      "gene": "PTH1R",
+      "chrom": "chr3",
+      "pos": 46898732,
+      "ref": "A",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ile237Phe",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "PTH1R-chr3-46898732.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "SFMLRAVSFFVKDAVLYSGAKKK"
+        }
+      ]
+    },
+    {
+      "variant_id": "ABI3BP-chr3-100850671",
+      "gene": "ABI3BP",
+      "chrom": "chr3",
+      "pos": 100850671,
+      "ref": "C",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Arg472Met",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "ABI3BP-chr3-100850671.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 17,
+          "sequence": "TATSDRILDSIPPKTSRTLEQPMATLAPSET"
+        },
+        {
+          "peptide_id": "ABI3BP-chr3-100850671.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "TLEQPMATL"
+        }
+      ]
+    },
+    {
+      "variant_id": "ANKRD17-chr4-73097139",
+      "gene": "ANKRD17",
+      "chrom": "chr4",
+      "pos": 73097139,
+      "ref": "C",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly1719Arg",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "ANKRD17-chr4-73097139.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 17,
+          "sequence": "PNGKLTVASPKRGQKREERWKEVVRRSKKV"
+        },
+        {
+          "peptide_id": "ANKRD17-chr4-73097139.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "ERWKEVVRR"
+        }
+      ]
+    },
+    {
+      "variant_id": "KDM3B-chr5-138391529",
+      "gene": "KDM3B",
+      "chrom": "chr5",
+      "pos": 138391529,
+      "ref": "C",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Pro633Ser",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V1",
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "KDM3B-chr5-138391529.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.29.KDM3B",
+              "pool": "L1",
+              "result": "Negative",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.29.KDM3B.1",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.29.KDM3B.1",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "HENLFLQPPKLSREESSNPFLAFVEK"
+        },
+        {
+          "peptide_id": "KDM3B-chr5-138391529.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "PPKLSREESSNPFLAFV"
+        }
+      ]
+    },
+    {
+      "variant_id": "WWC1-chr5-168399513",
+      "gene": "WWC1",
+      "chrom": "chr5",
+      "pos": 168399513,
+      "ref": "T",
+      "alt": "G",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Val179Gly",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "WWC1-chr5-168399513.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 17,
+          "sequence": "AEIATAKSRVNKLKREMGHLQHELQFKERGF"
+        },
+        {
+          "peptide_id": "WWC1-chr5-168399513.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "GHLQHELQF"
+        },
+        {
+          "peptide_id": "WWC1-chr5-168399513.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 7,
+          "sequence": "NKLKREMGHLQHELQFKERG"
+        }
+      ]
+    },
+    {
+      "variant_id": "H1_2-chr6-26055824",
+      "gene": "H1-2",
+      "chrom": "chr6",
+      "pos": 26055824,
+      "ref": "ACCTTGGGCTTAGCGG",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ala197_Lys201del",
+      "consequence": "inframe_deletion",
+      "vaccines": [
+        "CeGaT"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "H1_2-chr6-26055824.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "AAKAVKPKVVKPKKAA"
+        }
+      ]
+    },
+    {
+      "variant_id": "CUL9-chr6-43186384",
+      "gene": "CUL9",
+      "chrom": "chr6",
+      "pos": 43186384,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Asp403Tyr",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "CUL9-chr6-43186384.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.33.CUL9",
+              "pool": "L3",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.33.CUL9.1",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "RMLDYYEEISAGDEGEFRQSKKK"
+        }
+      ]
+    },
+    {
+      "variant_id": "ADGRF5-chr6-46856758",
+      "gene": "ADGRF5",
+      "chrom": "chr6",
+      "pos": 46856758,
+      "ref": "T",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Asn1279Ser",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V2"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "ADGRF5-chr6-46856758.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.34.ADGRF5",
+              "pool": "L3",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.34.ADGRF5.1",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "VQEALLSKFSLSRWSSQHSKST"
+        }
+      ]
+    },
+    {
+      "variant_id": "CD109-chr6-73818405",
+      "gene": "CD109",
+      "chrom": "chr6",
+      "pos": 73818405,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Arg1310Met",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "CD109-chr6-73818405.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "SFSGPGMSGMALMEVNLLSGKKK"
+        }
+      ]
+    },
+    {
+      "variant_id": "CDC40-chr6-110228838",
+      "gene": "CDC40",
+      "chrom": "chr6",
+      "pos": 110228838,
+      "ref": "G",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Trp475Ser",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "CDC40-chr6-110228838.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 10,
+          "sequence": "EPSMHSMPAVTLSPNGKSLACQSMDNQILIF"
+        },
+        {
+          "peptide_id": "CDC40-chr6-110228838.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "TLSPNGKSL"
+        },
+        {
+          "peptide_id": "CDC40-chr6-110228838.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 6,
+          "sequence": "HSMPAVTLSPNGKSLACQSMDNQKK"
+        }
+      ]
+    },
+    {
+      "variant_id": "TECPR1-chr7-98241127",
+      "gene": "TECPR1",
+      "chrom": "chr7",
+      "pos": 98241127,
+      "ref": "TG",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Thr259fs",
+      "consequence": "frameshift_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V1",
+        "JLF V2",
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 75,
+          "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGRCGSEEASTLTIPAAPVGLRWLVR"
+        },
+        {
+          "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "TIPAAPVGL"
+        },
+        {
+          "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.38.TECPR1.1",
+              "pool": "L2",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038R.MT.38.TECPR1.1",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.38.TECPR1.1",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V3",
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "GSEEASTLTIPAAPVGLRWLVR"
+        },
+        {
+          "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038.MT.38.TECPR1.2",
+              "pool": "L2",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2023-09-22",
+              "experiment": "UNC Immune Monitoring (Spring, 2024)",
+              "outcomes": "Observed reactivity to MAP2 / TECPR1; no sequencing performed",
+              "pbmcs_label": "(2023/09/22, 2023/11/28)",
+              "peptide_id": "JLF-100-038.MT.38.TECPR1.2",
+              "pool": "NA",
+              "result": "Negative",
+              "summary": "Whole PBMCs stimulated with 9 pooled CSBio long peptides. ELISPOT performed with individual peptide stimulation."
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038.MT.38.TECPR1.2",
+              "pool": "NA",
+              "result": "Positive (Weak)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "TSRWESAWSGLSPRTGR"
+        },
+        {
+          "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "LWAHSGRDRPWSGKES"
+        }
+      ]
+    },
+    {
+      "variant_id": "EXOC4-chr7-133274996",
+      "gene": "EXOC4",
+      "chrom": "chr7",
+      "pos": 133274996,
+      "ref": "G",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ser34Ile",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V2",
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "EXOC4-chr7-133274996.peptide-1",
+          "experiments": [
+            {
+              "additional_testing": "Sent to Celldom",
+              "date": "2023-09-22",
+              "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+              "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+              "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+              "peptide_id": "JLF-100-038R.MT.39.EXOC4",
+              "pool": "L3",
+              "result": "Positive",
+              "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.39.EXOC4.1",
+              "pool": "Pool 1",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "",
+              "date": "2024-05-15",
+              "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+              "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+              "pbmcs_label": "Apheresis (2024/05/15)",
+              "peptide_id": "JLF-100-038R.MT.39.EXOC4.1",
+              "pool": "",
+              "result": "Positive (Weak)",
+              "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses"
+            },
+            {
+              "additional_testing": "Sent to MUSC for expansion",
+              "date": "2024-05-15",
+              "experiment": "UNC Immune Monitoring (Summer, 2024)",
+              "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+              "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+              "peptide_id": "JLF-100-038R.MT.39.EXOC4.1",
+              "pool": "NA",
+              "result": "Positive (Strong)",
+              "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing"
+            }
+          ],
+          "in_vaccines": [
+            "JLF V3",
+            "JLF V2"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "KKSVIRTLSTIDDVEDRENEKGR"
+        },
+        {
+          "peptide_id": "EXOC4-chr7-133274996.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "SVIRTLSTIDDVEDREN"
+        }
+      ]
+    },
+    {
+      "variant_id": "BMP1-chr8-22192067",
+      "gene": "BMP1",
+      "chrom": "chr8",
+      "pos": 22192067,
+      "ref": "T",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ser366Thr",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "BMP1-chr8-22192067.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 17,
+          "sequence": "YSAHMHCVWRISVTPGEKIILNFTTLDLYRSRL"
+        },
+        {
+          "peptide_id": "BMP1-chr8-22192067.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "KIILNFTTL"
+        },
+        {
+          "peptide_id": "BMP1-chr8-22192067.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 8,
+          "sequence": "RISVTPGEKIILNFTTLDLYRSR"
+        }
+      ]
+    },
+    {
+      "variant_id": "VPS13B-chr8-99861923",
+      "gene": "VPS13B",
+      "chrom": "chr8",
+      "pos": 99861923,
+      "ref": "C",
+      "alt": "T",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ser3756Phe",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT",
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "VPS13B-chr8-99861923.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "RQLPESLGEGLRQGLFRLGIS"
+        },
+        {
+          "peptide_id": "VPS13B-chr8-99861923.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "GEGLRQGLFRLGISLLGAIA"
+        }
+      ]
+    },
+    {
+      "variant_id": "GLIS3-chr9-3856149",
+      "gene": "GLIS3",
+      "chrom": "chr9",
+      "pos": 3856149,
+      "ref": "CTGATGTGG",
+      "alt": "C",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ser775fs",
+      "consequence": "frameshift_variant",
+      "vaccines": [
+        "JLF V3"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "GLIS3-chr9-3856149.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "QPPESSSSFFNTAKNTASLYPAAIRFTPEVLSARNKLFFSTKWYPCPWILWAAAEVLSPTLPRFPENCAACQLLQCGAFV"
+        }
+      ]
+    },
+    {
+      "variant_id": "SMC5-chr9-70298024",
+      "gene": "SMC5",
+      "chrom": "chr9",
+      "pos": 70298024,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Arg371Lys",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "JLF V3",
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "SMC5-chr9-70298024.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 16,
+          "sequence": "EELQQALIVKQNEELDRQKRIGNTRKMIEDL"
+        },
+        {
+          "peptide_id": "SMC5-chr9-70298024.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "RQKRIGNTR"
+        },
+        {
+          "peptide_id": "SMC5-chr9-70298024.peptide-3",
+          "experiments": [],
+          "in_vaccines": [
+            "JLF V3"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 1,
+          "sequence": "DRQKRIGNTRKMIEDLQNELK"
+        }
+      ]
+    },
+    {
+      "variant_id": "EXD3-chr9-137373504",
+      "gene": "EXD3",
+      "chrom": "chr9",
+      "pos": 137373504,
+      "ref": "C",
+      "alt": "G",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Glu72Asp",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "EXD3-chr9-137373504.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 12,
+          "sequence": "LAGLLDMLESCRGQRGDGPSLAAWISHQLQ"
+        },
+        {
+          "peptide_id": "EXD3-chr9-137373504.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "GQRGDGPSL"
+        }
+      ]
+    },
+    {
+      "variant_id": "MT_ND5-chrM-12994",
+      "gene": "MT-ND5",
+      "chrom": "chrM",
+      "pos": 12994,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Ala220Thr",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "CeGaT"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "MT_ND5-chrM-12994.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "CeGaT"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": null,
+          "sequence": "PLLGLLLATAGKSAQLG"
+        }
+      ]
+    },
+    {
+      "variant_id": "PPP1R3F-chrX-49270761",
+      "gene": "PPP1R3F",
+      "chrom": "chrX",
+      "pos": 49270761,
+      "ref": "G",
+      "alt": "A",
+      "assembly": "GRCh38",
+      "allele_status": "ready",
+      "protein_change": "p.Gly298Arg",
+      "consequence": "missense_variant",
+      "vaccines": [
+        "mRNA"
+      ],
+      "published_vaccine_peptides": [
+        {
+          "peptide_id": "PPP1R3F-chrX-49270761.peptide-1",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": false,
+          "minimal_epitope_offset": 18,
+          "sequence": "RNYTVLLRIAPAPTPTDAERLPQQQQLPQLE"
+        },
+        {
+          "peptide_id": "PPP1R3F-chrX-49270761.peptide-2",
+          "experiments": [],
+          "in_vaccines": [
+            "mRNA"
+          ],
+          "is_mrna_minimal_epitope": true,
+          "minimal_epitope_offset": null,
+          "sequence": "ERLPQQQQL"
+        }
+      ]
+    }
+  ]
+}

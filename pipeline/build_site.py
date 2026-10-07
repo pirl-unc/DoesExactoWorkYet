@@ -25,6 +25,7 @@ from .config import (
 )
 from .extract_reads import stats_path
 from .sources import configuration, data_sources, reproduction
+from .vaccine_peptides import results_fingerprint
 
 WEB_DIR = REPO_ROOT / "web"
 HISTORY_PATH = RESULTS_DIR / "history.json"
@@ -41,6 +42,15 @@ def git(*args: str) -> str | None:
 
 def load(path: Path) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
+
+
+def current_peptide_report(catalogue: dict, results: dict | None) -> dict | None:
+    report = load(RESULTS_DIR / "vaccine_peptide_analysis.json")
+    if (not report or not results
+            or report.get("source", {}).get("input_id") != catalogue.get("source", {}).get("input_id")
+            or report.get("analysis", {}).get("results_sha256") != results_fingerprint(results)):
+        return None
+    return report
 
 
 # Runs are keyed on the sequencing sample now, not the biopsy — but a run that
@@ -211,7 +221,9 @@ def build_payload() -> dict:
         raise SystemExit(
             "results/vaccine_variants.json missing — run pipeline.fetch_osteosarc"
         )
-    exacto_payload = migrate_payload(load(RESULTS_DIR / "exacto_results.json"))
+    raw_results = load(RESULTS_DIR / "exacto_results.json")
+    peptide_report = current_peptide_report(variants_payload, raw_results)
+    exacto_payload = migrate_payload(raw_results)
     source = variants_payload.get("source", {})
     mismatched_result = bool(source.get("input_id") and exacto_payload and (
         exacto_payload.get("input_id") != source["input_id"]
@@ -347,6 +359,13 @@ def build_payload() -> dict:
         "runs": (exacto_payload or {}).get("runs", []),
         "variants": variants,
         "history": history,
+        "vaccine_sequence_report": {
+            "summary": peptide_report["summary"],
+            "analysis": {
+                key: value for key, value in peptide_report["analysis"].items()
+                if key != "artifacts"
+            },
+        } if peptide_report else None,
     }
 
 
@@ -357,6 +376,16 @@ def main() -> None:
         shutil.rmtree(SITE_DIR)
     shutil.copytree(WEB_DIR, SITE_DIR)
     (SITE_DIR / "data.json").write_text(json.dumps(payload, indent=2) + "\n")
+    if payload["vaccine_sequence_report"]:
+        shutil.copyfile(RESULTS_DIR / "vaccine_peptide_analysis.json", SITE_DIR / "vaccine_peptide_analysis.json")
+    else:
+        (SITE_DIR / "vaccine_peptide_analysis.json").write_text(json.dumps({
+            "status": "unavailable",
+            "message": "A vaccine-sequence analysis is not available for the current benchmark run.",
+        }) + "\n")
+    for name in ("vaccine_peptide_subset.json", "vaccine_peptide_subset.fasta"):
+        if (RESULTS_DIR / name).exists():
+            shutil.copyfile(RESULTS_DIR / name, SITE_DIR / name)
     # Pages would otherwise run the files through Jekyll.
     (SITE_DIR / ".nojekyll").touch()
 

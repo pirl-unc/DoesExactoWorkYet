@@ -31,6 +31,61 @@ The earlier 37-mutation scores remain in history. They are not measurements of t
 expanded input set; results carry a catalogue identity, and the site refuses to attach
 an older evaluation to the new panel.
 
+A sequence-backed subset is available as
+[`results/vaccine_peptide_subset.fasta`](results/vaccine_peptide_subset.fasta)
+and [`results/vaccine_peptide_subset.json`](results/vaccine_peptide_subset.json).
+It contains **36 variants with 78 recorded vaccine-peptide entries (77 distinct
+sequences)**. Inclusion requires both a sequence and an explicit `in_vaccines`
+label in `published_vaccine_peptides`. The export retains the recorded long
+peptides and mRNA minimal epitopes, their vaccine labels, and the original
+mutation annotations. Identical sequences retain separate records where the
+source does. NME1 remains included because a vaccine peptide is recorded, despite
+its conflicting consequence annotation; ABCF2 has no recorded vaccine peptide.
+The subset excludes pVACtools-only predictions and peptides without vaccine
+membership. Its denominator describes available reference sequences, not verified
+expression in every sample. The full benchmark still evaluates the 51-variant
+panel. Rebuild both exports offline with `python -m pipeline.fetch_osteosarc`.
+
+The subset reanalysis is saved in
+[`results/vaccine_peptide_analysis.json`](results/vaccine_peptide_analysis.json).
+The website's [per-sequence report](https://pirl-unc.github.io/DoesExactoWorkYet/peptides.html)
+shows all reference peptides, filters by gene/sequence, vaccine, sample and method,
+and highlights each contained peptide inside its reconstructed protein. Missing
+sample/method outputs are shown as not evaluated. The report is tied to the exact
+scored result so a new run cannot inherit stale containment results.
+Its metric is **vaccine sequence contained in reconstruction**: the recorded
+vaccine peptide must appear as a contiguous substring of a reconstructed protein,
+which can extend on either side. Every counted occurrence is tied to an RNA call
+at the target's exact locus and allele, and overlaps its translated codon/junction
+or frameshifted tail. The analysis reads the full exported protein FASTAs, since
+the main results JSON retains only three candidate examples per target/method.
+
+Re-scoring run 51 (Exacto 0.5.0a1) found **15/36 targets** with at least one
+recorded vaccine sequence contained in a reconstruction: **37/78 peptide entries**.
+All 15 also matched a non-minimal vaccine peptide. The subset's broader candidate
+recovery was 22/36, with the expected residue in 17/19 recovered missense targets.
+These are unions over 22 completed methods; T2-ONT input preparation failed and
+its methods are unavailable. This reanalysis uses the saved translations and
+does not rerun alignment, assembly, or Exacto.
+
+The full benchmark workflow regenerates this report from the current run's
+archived proteins and RNA calls before publishing. If those outputs cannot be
+verified, the site marks the sequence report unavailable while still publishing
+the main benchmark diagnostics.
+
+To reproduce it while the GitHub artifacts remain available:
+
+```bash
+mkdir -p work/run-51
+git show 01475a2:results/exacto_results.json > work/run-51/exacto_results.json
+gh run download 37536966270 --repo pirl-unc/DoesExactoWorkYet \
+  --pattern 'exacto-outputs-*' --dir work/run-51/outputs
+python -m pipeline.score_vaccine_peptides \
+  --results work/run-51/exacto_results.json --outputs-dir work/run-51/outputs \
+  --run-url https://github.com/pirl-unc/DoesExactoWorkYet/actions/runs/37536966270 \
+  --exacto-version 0.5.0a1
+```
+
 The verdict is graded, not binary:
 
 | Outcome | Meaning |
@@ -61,12 +116,11 @@ Two further checks run on top of the ladder:
 - **Right residue.** For missense mutations the amino acid Exacto produced is compared
   against the one the portal's HGVS annotation predicts. A change at the right codon but
   the wrong residue is reported, not counted as a win.
-- **Right peptide.** The portal publishes the curated pVACtools run the vaccine designs
-  were picked from, whose `MT Epitope Seq` column is the closest thing available to the
-  peptides that were actually manufactured. For the 10 mutations it covers, the test asks
-  whether Exacto's translated proteoform *literally contains* that epitope as a substring.
-  That is the strictest available form of "the mutant proteoform matches what was in the
-  vaccine".
+- **Predicted epitope match.** For the 15 variants linked to the frozen pVACtools
+  predictions, the current scorer asks whether Exacto's translated proteoform
+  contains a predicted mutant epitope as a substring. This score does not yet use
+  the published vaccine-peptide sequences in the 36-variant subset above, and
+  should not be interpreted as recovery of all recorded vaccine peptides.
 
 ## What actually runs
 

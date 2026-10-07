@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import subprocess
 from email.utils import parsedate_to_datetime
 from importlib.metadata import version
 from pathlib import Path
@@ -71,15 +72,25 @@ def regional_reads(sample: str, regions: list[dict], cache_path: Path):
         Region(r["chrom"], r["start"] - 1, min(r["end"], lengths[r["chrom"]]), "GRCh38")
         for r in regions
     ]
-    subset = extract_reads(
-        source,
-        targets,
-        cache=cache,
-        snapshot_id=snapshot_id,
-        filters=ReadFilter(exclude_flags=0x900),
-        fetch_pairs=False,
-        timeout=1800,
-    )
+    try:
+        subset = extract_reads(
+            source,
+            targets,
+            cache=cache,
+            snapshot_id=snapshot_id,
+            filters=ReadFilter(exclude_flags=0x900),
+            fetch_pairs=False,
+            timeout=1800,
+        )
+    except subprocess.CalledProcessError as error:
+        # osteosarc captures stderr, but CalledProcessError.__str__ omits it.
+        # Preserve the diagnostic in CI rather than guessing why I/O failed.
+        stderr = error.stderr or "No stderr was returned by the extraction command."
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode(errors="replace")
+        raise RuntimeError(
+            f"{sample}: read extraction failed (exit {error.returncode}).\n{stderr}"
+        ) from error
     check_source_identity(source, subset.receipt["remote_identity"])
     return subset
 

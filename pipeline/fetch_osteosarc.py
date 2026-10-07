@@ -15,6 +15,7 @@ from .osteosarc_inputs import (
     manifest,
     require_version,
 )
+from .vaccine_peptides import write_vaccine_peptide_subset
 
 # Shared by the reference downloader; catalogue construction does no HTTP I/O.
 USER_AGENT = "DoesExactoWorkYet/1.0 (+https://github.com/pirl-unc/DoesExactoWorkYet)"
@@ -249,9 +250,15 @@ def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     out = RESULTS_DIR / "vaccine_variants.json"
     out.write_text(json.dumps(payload, indent=2) + "\n")
+    subset = write_vaccine_peptide_subset(payload, RESULTS_DIR)
     print(
         f"{payload['n_variants']} osteosarc vaccine variants ({payload['n_ready']} ready), "
         f"snapshot {payload['source']['snapshot']['name']} -> {out}"
+    )
+    print(
+        f"{subset['n_variants']} targets with {subset['n_peptides']} recorded vaccine "
+        f"peptides ({subset['n_unique_sequences']} distinct sequences) "
+        f"-> {RESULTS_DIR / 'vaccine_peptide_subset.json'} and .fasta"
     )
 
 

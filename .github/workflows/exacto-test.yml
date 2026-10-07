@@ -49,6 +49,8 @@ on:
       - "pipeline/extract_reads.py"
       - "pipeline/run_exacto.py"
       - "pipeline/evaluate.py"
+      - "pipeline/score_vaccine_peptides.py"
+      - "pipeline/vaccine_peptides.py"
       # Was "scripts/**", which is why writing documentation tooling evicted a
       # queued 25-leg sweep. Only the installer decides which Exacto runs;
       # build_notes.py and build_issues.py generate documents and must not
@@ -334,6 +336,25 @@ jobs:
 
       - name: Merge into a verdict
         run: python -m pipeline.evaluate --merge-only
+
+      - name: Collect protein sequences and RNA calls
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: exacto-outputs-*
+          path: work/sequence-report-inputs
+
+      - name: Check vaccine sequence containment
+        # A missing archive must leave the report unavailable, never reuse an
+        # earlier run's matches. Still publish the main benchmark diagnostics.
+        continue-on-error: true
+        run: |
+          rm -f results/vaccine_peptide_analysis.json
+          version="$(python -c 'import json; print(json.load(open("results/environment.json"))["exacto_version"])')"
+          python -m pipeline.score_vaccine_peptides \
+            --results results/exacto_results.json --outputs-dir work/sequence-report-inputs \
+            --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --exacto-version "$version"
 
       - name: Build site
         run: python -m pipeline.build_site

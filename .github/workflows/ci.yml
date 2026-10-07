@@ -36,7 +36,7 @@ jobs:
         run: python -m pytest tests/ -q
 
       - name: Site rendering tests
-        run: node --test tests/test_web_results.js
+        run: node --test tests/test_web_results.js tests/test_web_peptides.js
 
       - name: Smoke test — the site builds
         run: |

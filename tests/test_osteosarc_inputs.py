@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import gzip
 import json
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -180,6 +181,24 @@ def test_gzip_fastq_rebuilds_have_identical_bytes(tmp_path):
         with extract_reads.fastq_writer(p) as out:
             out.write("@read\nACGT\n+\nIIII\n")
     assert a.read_bytes() == b.read_bytes()
+
+
+def test_regional_extraction_surfaces_captured_samtools_stderr(tmp_path, monkeypatch):
+    import osteosarc
+
+    source = SimpleNamespace(key="example.bam", size=123, modified=None)
+    monkeypatch.setattr(osteosarc_inputs, "source_file", lambda name: source)
+    monkeypatch.setattr(osteosarc, "inspect_alignment", lambda *a, **k: SimpleNamespace(
+        header={"SQ": [{"SN": "chr1", "LN": 1000}]},
+        receipt={"remote_identity": {"content-length": "123"}},
+    ))
+
+    def fail(*args, **kwargs):
+        raise subprocess.CalledProcessError(1, ["samtools", "view"], stderr=b"HTTP connection reset")
+
+    monkeypatch.setattr(osteosarc, "extract_reads", fail)
+    with pytest.raises(RuntimeError, match="T2-ONT: read extraction failed.*\\nHTTP connection reset"):
+        osteosarc_inputs.regional_reads("T2-ONT", [{"chrom": "chr1", "start": 10, "end": 20}], tmp_path)
 
 
 @pytest.mark.parametrize(
