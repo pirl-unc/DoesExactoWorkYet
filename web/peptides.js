@@ -430,7 +430,7 @@ function populateSequenceReport(report) {
 }
 
 async function main() {
-  const response = await fetch("vaccine_peptide_analysis.json");
+  const response = await fetch("vaccine_peptide_analysis.json", { cache: "no-cache" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   populateSequenceReport(await response.json());
 }
