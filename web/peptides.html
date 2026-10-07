@@ -29,17 +29,28 @@
   <div id="sequence-availability" class="sequence-availability" hidden></div>
   <section aria-labelledby="sequence-list-title">
     <h2 id="sequence-list-title">Per-sequence report</h2>
-    <p class="section-note">Each row is a recorded vaccine peptide or mRNA minimal epitope.
-      Open a contained sequence to inspect the reconstructed protein and its supporting RNA call.
-      “Not found” refers to the available outputs, and does not establish absence from the tumour.</p>
+    <p class="section-note">Vaccine peptides for the same variant line up above every supporting
+      reconstruction. Long proteins are trimmed to the vaccine region with up to eight flanking residues;
+      ellipses indicate omitted sequence. Green highlights mark confirmed containment.
+      “Sequence disagreement” means a protein was produced but the full vaccine sequence is absent or incomplete. “No reconstructed sequence” means Exacto produced no target-linked protein in the selected runs.</p>
+    <p class="section-note">Rows are positioned by shared sequence, without inserting alignment gaps.
+      References without an unambiguous shared stretch appear separately. Long regions continue
+      in additional blocks. Identical full proteins share a row; differences outside the displayed
+      window still produce separate rows.</p>
+    <p class="section-note">RNA support counts distinct input RNA sequences whose translated protein
+      contains the peptide, or produces that full reconstruction. Raw reads, corrected RNAs, and
+      assembled RNAs are counted separately by sample and method; they can reuse the same reads,
+      so the counts must not be added together. These are sequence-support counts, not total
+      RNA coverage at the mutation. Full proteins and supporting RNA call IDs are in the analysis download.</p>
     <div class="sequence-controls" id="sequence-controls" hidden>
       <label class="sequence-search">Search targets or sequences
         <input type="search" id="sequence-search" placeholder="Gene, mutation, or amino-acid sequence">
       </label>
-      <label>Recovery <select id="sequence-status"><option value="all">All sequences</option><option value="contained">Contained</option><option value="not_found">Not found</option><option value="not_evaluated">Not evaluated</option></select></label>
+      <label>Recovery <select id="sequence-status"><option value="all">All sequences</option><option value="contained">Contained</option><option value="sequence_disagreement">Sequence disagreement</option><option value="no_sequence">No reconstructed sequence</option><option value="not_found">All non-contained sequences</option><option value="not_evaluated">Not evaluated</option></select></label>
       <label>Sample <select id="sequence-sample"><option value="">All available samples</option></select></label>
       <label>Method <select id="sequence-method"><option value="">All available methods</option></select></label>
       <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
+      <label>Sid RNA evidence <select id="sequence-source-rna"><option value="">All source evidence</option><option value="supported">Mutant RNA observed</option><option value="no_alt_reads">Covered, no mutant reads</option><option value="no_coverage">No coverage</option><option value="not_reported">Not reported</option></select></label>
     </div>
     <p id="sequence-count" class="section-note" aria-live="polite"></p>
     <div id="sequence-targets"></div>

@@ -2,7 +2,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
-const { sequenceRows, highlightedPieces } = require("../web/peptides.js");
+const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
+  sequenceComparison, alignmentSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -79,4 +80,112 @@ test("every displayed reconstruction contains the highlighted reference peptide"
       }
     }
   }
+});
+
+test("reference offsets align nested peptides and overlapping extensions", () => {
+  const variant = { published_vaccine_peptides: [
+    { sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD" },
+    { sequence: "ERALLPLEL" },
+    { sequence: "GSSQKAREERALLPLELQDDGSDSRKS" },
+  ] };
+  const groups = referenceGroups(variant.published_vaccine_peptides.map((peptide) => ({ variant, peptide })));
+  assert.equal(groups.length, 1);
+  const offsets = new Map(groups[0].map((entry) => [entry.row.peptide.sequence, entry.offset]));
+  assert.equal(offsets.get("ERALLPLEL"), 20);
+  assert.equal(offsets.get("GSSQKAREERALLPLELQDDGSDSRKS"), 12);
+  assert.equal(sharedOffset("AAAAAAXAAAAAA", "AAAAAA"), null, "repeated anchors are ambiguous");
+  assert.equal(sharedOffset("KELPLYLWQPSTSEIAVIRDWKK", "KKSVIRTLSTIDDVEDRENEKGR"), null);
+});
+
+test("trimmed regions retain shared columns, highlights, and full-protein coordinates", () => {
+  const slice = alignmentSlice("ABCDEFGHIJKLMN", -5, -2, 6, [[5, 8], [7, 9]]);
+  assert.equal(slice.from, 3);
+  assert.equal(slice.to, 11);
+  assert.equal(slice.pieces.map((piece) => piece.text).join(""), "DEFGHIJK");
+  assert.equal(slice.pieces.filter((piece) => piece.matched).map((piece) => piece.text).join(""), "FGHI");
+  assert.ok(slice.clippedLeft && slice.clippedRight);
+  const short = alignmentSlice("FGHI", 0, -2, 6);
+  assert.equal(short.left, "  ");
+  assert.equal(short.right, "  ");
+  assert.equal(alignmentSlice("FGHI", 20, 0, 10), null);
+});
+
+test("all supporting sequences and anchored occurrences survive inline grouping", { skip: !report }, () => {
+  for (const variant of report.variants) {
+    const rows = sequenceRows({ ...report, variants: [variant] });
+    const groups = sequenceComparison(report, rows);
+    const expected = new Set(rows.flatMap((row) => row.matches.map((match) => match.reconstruction_id)));
+    (variant.reconstructed_candidates || []).forEach((hit) => expected.add(hit.reconstruction_id));
+    const displayed = new Set(groups.flatMap((group) => group.reconstructions.flatMap((protein) =>
+      [...protein.observations.values()].map((hit) => hit.reconstruction_id))));
+    assert.deepEqual(displayed, expected, variant.gene);
+    assert.equal(groups.reduce((n, group) => n + group.references.length, 0), rows.length);
+    for (const group of groups) {
+      for (const { row, offset } of group.references) {
+        for (const match of row.matches) {
+          for (const start of match.amino_acid_starts) {
+            assert.ok(group.reconstructions.some((protein) =>
+              protein.sequence === report.reconstructions[match.reconstruction_id] &&
+              protein.offset + start - 1 === offset &&
+              protein.ranges.some(([a, b]) => a === start - 1 && b === start - 1 + row.peptide.sequence.length)));
+          }
+        }
+      }
+    }
+  }
+});
+
+test("protein disagreement is distinct from no translation and unavailable runs", () => {
+  const variant = { reconstructed_candidates: [{ sample: "T1-ONT", arm: "reads" }] };
+  assert.equal(sequenceStatus(fixture, variant, [], {}), "sequence_disagreement");
+  assert.equal(sequenceStatus(fixture, variant, [], { sample: "T1-PacBio" }), "no_sequence");
+  assert.equal(sequenceStatus(fixture, variant, [], { sample: "T2-ONT" }), "not_evaluated");
+  assert.equal(sequenceStatus(fixture, variant, [{ sample: "T1-ONT", arm: "reads" }]), "contained");
+});
+
+test("source RNA distinguishes mutant support, measured zero, no coverage and missing counts", () => {
+  assert.equal(sourceRnaState([{ alt_reads: 4, total_reads: 20 }]), "supported");
+  assert.equal(sourceRnaState([{ alt_reads: 0, total_reads: 20 }]), "no_alt_reads");
+  assert.equal(sourceRnaState([{ alt_reads: 0, total_reads: 0 }]), "no_coverage");
+  assert.equal(sourceRnaState([{ alt_reads: null, total_reads: 20 }]), "not_reported");
+  assert.equal(sourceRnaState([]), "not_reported");
+});
+
+test("identical full proteins combine support but differences outside the crop remain separate", () => {
+  const peptide = { peptide_id: "P1", sequence: "PEPTIDE", matches: [
+    { reconstruction_id: "a", protein_id: "a|orf_0-29", amino_acid_starts: [2], sample: "T1-ONT", arm: "reads", rna_call_id: "1" },
+    { reconstruction_id: "b", protein_id: "b|orf_0-29", amino_acid_starts: [2], sample: "T1-ONT", arm: "reads", rna_call_id: "2" },
+    { reconstruction_id: "c", protein_id: "c|orf_0-32", amino_acid_starts: [2], sample: "T1-PacBio", arm: "corrected", rna_call_id: "1" },
+  ] };
+  const report = { reconstructions: { a: "MPEPTIDEK*", b: "MPEPTIDEK*", c: "MPEPTIDEKK*" } };
+  const [group] = sequenceComparison(report, [{ peptide, matches: peptide.matches }]);
+  assert.equal(group.reconstructions.length, 2);
+  assert.equal(group.reconstructions[0].observations.size, 2);
+  assert.deepEqual(rnaSupport(fixture, [...group.reconstructions[0].observations.values()])[0], {
+    sample: "T1-ONT", evaluated: true, methods: [{ method: "reads", count: 2 }],
+  });
+});
+
+test("RNA support counts input RNAs once per sample and method, without counting repeated ORFs or calls", () => {
+  const data = { analysis: { samples_unavailable: ["T2-ONT"], artifacts: [
+    { sample: "T1-ONT", arm: "reads" }, { sample: "T1-ONT", arm: "corrected" },
+    { sample: "T2-ILMN", arm: "spades" },
+  ] } };
+  const hits = [
+    { sample: "T1-ONT", arm: "reads", protein_id: "read-1|orf_0-29", rna_call_id: "1" },
+    { sample: "T1-ONT", arm: "reads", protein_id: "read-1|orf_3-29", rna_call_id: "2" },
+    { sample: "T1-ONT", arm: "reads", protein_id: "read-2|orf_0-29", rna_call_id: "3" },
+    { sample: "T1-ONT", arm: "corrected", protein_id: "read-1|orf_0-29", rna_call_id: "1" },
+  ];
+  const support = rnaSupport(data, hits);
+  assert.deepEqual(support, [
+    { sample: "T1-ONT", evaluated: true, methods: [{ method: "corrected", count: 1 }, { method: "reads", count: 2 }] },
+    { sample: "T2-ILMN", evaluated: true, methods: [{ method: "spades", count: 0 }] },
+    { sample: "T2-ONT", evaluated: false, methods: [] },
+  ]);
+  assert.deepEqual(rnaSupport(data, hits, { sample: "T2-ILMN", method: "reads" }), [
+    { sample: "T2-ILMN", evaluated: false, methods: [] },
+  ]);
+  assert.deepEqual(rnaSupport(data, hits, { sample: "T1-ONT", method: "reads" })[0].methods,
+    [{ method: "reads", count: 2 }]);
 });

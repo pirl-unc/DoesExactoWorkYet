@@ -144,6 +144,8 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
         old = previous_variants[variant["variant_id"]]
         variant["candidate_outcome"] = old["outcome"]
         variant["residue_confirmed"] = old["residue_confirmed"]
+        variant["reconstructed_candidates"] = []
+        variant["exacto_runs"] = []
         for peptide in variant["published_vaccine_peptides"]:
             peptide["matches"] = []
 
@@ -165,13 +167,33 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
         fasta_path = directory / Path(run["outputs"]["primary_structures_fasta"]).name
         # Missing files must fail the analysis, not become negative results.
         calls = exact_calls(rna_path, variants)
+        for variant in variants:
+            variant_calls = [
+                (transcript, call)
+                for transcript, entries in calls.items() for call in entries
+                if call["variant_id"] == variant["variant_id"]
+            ]
+            variant["exacto_runs"].append({
+                "sample": key[0], "arm": key[1],
+                "n_variant_rnas": len({transcript for transcript, _ in variant_calls}),
+            })
         for protein in read_proteins(fasta_path):
             for call in calls.get(protein["transcript"], []):
+                start = call["read_end"] if call["variant_type"] == "DEL" else call["read_start"]
+                if call["read_end"] < protein["orf_start"] or start > protein["orf_end"]:
+                    continue
+                reconstruction_id = f"{key[0]}/{key[1]}/{protein['protein_id']}"
+                reconstructions[reconstruction_id] = protein["sequence"]
+                candidate = {
+                    "sample": key[0], "arm": key[1],
+                    "reconstruction_id": reconstruction_id,
+                    "protein_id": protein["protein_id"], "rna_call_id": call["rna_call_id"],
+                    "variant_amino_acid_start": (max(start, protein["orf_start"]) - protein["orf_start"]) // 3 + 1,
+                }
+                by_id[call["variant_id"]]["reconstructed_candidates"].append(candidate)
                 for peptide in by_id[call["variant_id"]]["published_vaccine_peptides"]:
                     positions = peptide_positions(protein, call, peptide["sequence"])
                     if positions:
-                        reconstruction_id = f"{key[0]}/{key[1]}/{protein['protein_id']}"
-                        reconstructions[reconstruction_id] = protein["sequence"]
                         peptide["matches"].append({
                             "sample": key[0], "arm": key[1],
                             "reconstruction_id": reconstruction_id,

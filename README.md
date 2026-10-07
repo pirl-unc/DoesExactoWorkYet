@@ -50,9 +50,24 @@ The subset reanalysis is saved in
 [`results/vaccine_peptide_analysis.json`](results/vaccine_peptide_analysis.json).
 The website's [per-sequence report](https://pirl-unc.github.io/DoesExactoWorkYet/peptides.html)
 shows all reference peptides, filters by gene/sequence, vaccine, sample and method,
-and highlights each contained peptide inside its reconstructed protein. Missing
+and displays every supporting reconstruction inline beneath the vaccine peptides
+for its variant. Shared sequence anchors align the rows; proteins are trimmed to
+the vaccine region plus up to eight residues on either side, with containment highlighted.
+References without an unambiguous shared stretch remain in separate groups.
+Identical full proteins share a row (differences outside the trimmed window are
+preserved). Per-sample RNA support counts unique input transcript/read identifiers
+within each method for every peptide and reconstructed sequence. Raw reads,
+corrected inputs, and assembled transcripts are reported separately, never summed
+across methods; these counts measure sequence support, not locus coverage.
+Full proteins and RNA call identifiers remain available in the analysis download. Missing
 sample/method outputs are shown as not evaluated. The report is tied to the exact
 scored result so a new run cannot inherit stale containment results.
+The report includes non-matching, target-linked proteins and distinguishes
+sequence disagreement (including incomplete proteins) from no reconstructed
+sequence. Independent Sid dataset RNA counts are shown as mutant/total reads,
+matched to benchmark BAMs by filename, with other RNA libraries kept separate.
+Missing counts, zero coverage, and covered loci with zero mutant reads remain
+different states. RNA allele support does not establish full peptide recovery.
 Its metric is **vaccine sequence contained in reconstruction**: the recorded
 vaccine peptide must appear as a contiguous substring of a reconstructed protein,
 which can extend on either side. Every counted occurrence is tied to an RNA call

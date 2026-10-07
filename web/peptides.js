@@ -1,21 +1,32 @@
 "use strict";
 
 function sequenceRows(report, filters = {}) {
-  const available = report.analysis.artifacts.some((run) =>
-    (!filters.sample || run.sample === filters.sample) &&
-    (!filters.method || run.arm === filters.method));
   const query = (filters.query || "").trim().toLowerCase();
   return report.variants.flatMap((variant) => variant.published_vaccine_peptides.map((peptide) => {
     const matches = peptide.matches.filter((hit) =>
       (!filters.sample || hit.sample === filters.sample) &&
       (!filters.method || hit.arm === filters.method));
-    return { variant, peptide, matches,
-      status: !available ? "not_evaluated" : matches.length ? "contained" : "not_found" };
+    return { variant, peptide, matches, status: sequenceStatus(report, variant, matches, filters) };
   })).filter(({ variant, peptide, status }) =>
-    (!filters.status || filters.status === "all" || filters.status === status) &&
+    (!filters.status || filters.status === "all" || filters.status === status ||
+      (filters.status === "not_found" && ["sequence_disagreement", "no_sequence"].includes(status))) &&
     (!filters.vaccine || peptide.in_vaccines.includes(filters.vaccine)) &&
+    (!filters.sourceRna || sourceRnaState((variant.source_rna_support || []).filter((entry) =>
+      !filters.sample || entry.benchmark_sample === filters.sample)) === filters.sourceRna) &&
     (!query || [variant.gene, variant.protein_change, variant.variant_id,
       peptide.sequence, ...peptide.in_vaccines].join(" ").toLowerCase().includes(query)));
+}
+
+function selectedRun(run, filters) {
+  return (!filters.sample || run.sample === filters.sample) && (!filters.method || run.arm === filters.method);
+}
+
+function sequenceStatus(report, variant, matches, filters = {}) {
+  if (!report.analysis.artifacts.some((run) => selectedRun(run, filters))) return "not_evaluated";
+  if (matches.some((hit) => selectedRun(hit, filters))) return "contained";
+  const hasProtein = (variant.reconstructed_candidates || []).some((run) => selectedRun(run, filters)) ||
+    (variant.exacto_runs || []).some((run) => selectedRun(run, filters) && run.n_proteoforms > 0);
+  return hasProtein ? "sequence_disagreement" : "no_sequence";
 }
 
 function highlightedPieces(sequence, starts, length) {
@@ -45,73 +56,296 @@ const node = (tag, className, text) => {
 };
 const queryNode = (selector) => document.querySelector(selector);
 
-function sequenceEvidence(report, row) {
-  const details = node("details", "sequence-evidence");
-  details.append(node("summary", "", `Inspect ${row.matches.length} supporting reconstruction${row.matches.length === 1 ? "" : "s"}`));
-  const label = node("label", "", "Choose a reconstruction");
-  const select = node("select");
-  select.setAttribute("aria-label", `Reconstruction for ${row.peptide.peptide_id}`);
-  row.matches.forEach((match, index) => {
-    const option = node("option", "", `${match.sample} / ${match.arm} — ${index + 1}`);
-    option.value = String(index);
-    select.append(option);
-  });
-  label.append(select);
-  const evidence = node("div", "sequence-reconstruction");
-  const render = () => {
-    evidence.replaceChildren();
-    const match = row.matches[Number(select.value) || 0];
-    const protein = report.reconstructions[match.reconstruction_id];
-    const start = match.amino_acid_starts[0] - 1;
-    const end = start + row.peptide.sequence.length;
-    evidence.append(node("p", "section-note", `Vaccine sequence at amino acids ${start + 1}–${end} of a ${protein.replace(/\*$/, "").length}-residue reconstruction.`));
-    const context = node("code", "sequence-context");
-    context.append(
-      node("span", "sequence-flank", (start > 18 ? "…" : "") + protein.slice(Math.max(0, start - 18), start)),
-      node("mark", "", protein.slice(start, end)),
-      node("span", "sequence-flank", protein.slice(end, end + 18) + (protein.length > end + 18 ? "…" : "")),
-    );
-    evidence.append(context);
-    const full = node("details", "sequence-full");
-    full.append(node("summary", "", "Full reconstructed sequence"));
-    const sequence = node("code", "sequence-context");
-    for (const piece of highlightedPieces(protein, match.amino_acid_starts, row.peptide.sequence.length)) {
-      sequence.append(node(piece.matched ? "mark" : "span", "", piece.text));
+// Place references by their longest unambiguous shared stretch. This is a
+// display offset, not an inferred gapped alignment or an additional match.
+function sharedOffset(reference, sequence) {
+  const offsets = [];
+  let best = 5;
+  for (let offset = 1 - sequence.length; offset < reference.length; offset++) {
+    let run = 0, longest = 0;
+    for (let i = Math.max(0, offset); i < Math.min(reference.length, offset + sequence.length); i++) {
+      run = reference[i] === sequence[i - offset] ? run + 1 : 0;
+      longest = Math.max(longest, run);
     }
-    full.append(sequence);
-    evidence.append(full, node("p", "sequence-identifiers", `Protein: ${match.protein_id}\nRNA call: ${match.rna_call_id}`));
-  };
-  select.addEventListener("change", render);
-  details.append(label, evidence);
-  details.addEventListener("toggle", () => { if (details.open && !evidence.childElementCount) render(); });
-  return details;
+    if (longest > best) { best = longest; offsets.length = 0; }
+    if (longest === best && best >= 6) offsets.push(offset);
+  }
+  return offsets.length === 1 ? { offset: offsets[0], shared: best } : null;
 }
 
-function sequenceRow(report, row, filters) {
-  const item = node("div", "sequence-row");
-  item.id = row.peptide.peptide_id;
-  const top = node("div", "sequence-row-top");
-  const statusText = { contained: "Contained", not_found: "Not found", not_evaluated: "Not evaluated" };
-  top.append(node("span", `sequence-status ${row.status}`, statusText[row.status]),
-    node("span", "sequence-meta", `${row.peptide.is_mrna_minimal_epitope ? "mRNA minimal epitope" : "Vaccine peptide"} · ${row.peptide.sequence.length} amino acids · ${row.peptide.in_vaccines.join(", ")}`));
-  item.append(top, node("code", "vaccine-sequence", row.peptide.sequence));
-  if (row.status === "contained") {
-    const groups = [...new Set(row.matches.map((hit) => `${hit.sample} / ${hit.arm}`))];
-    item.append(node("p", "sequence-methods", groups.join(" · ")), sequenceEvidence(report, row));
-  } else {
+function referenceGroups(rows) {
+  const remaining = [...rows].sort((a, b) => b.peptide.sequence.length - a.peptide.sequence.length);
+  const groups = [];
+  while (remaining.length) {
+    const entries = [{ row: remaining.shift(), offset: 0 }];
+    while (remaining.length) {
+      let best = null;
+      remaining.forEach((row, index) => entries.forEach((entry) => {
+        const placement = sharedOffset(entry.row.peptide.sequence, row.peptide.sequence);
+        if (placement && (!best || placement.shared > best.shared)) {
+          best = { index, offset: entry.offset + placement.offset, shared: placement.shared };
+        }
+      }));
+      if (!best) break;
+      entries.push({ row: remaining.splice(best.index, 1)[0], offset: best.offset });
+    }
+    const origin = Math.min(...entries.map((entry) => entry.offset));
+    entries.forEach((entry) => { entry.offset -= origin; });
+    groups.push(entries);
+  }
+  return groups;
+}
+
+function sequenceComparison(report, rows, filters = {}, flank = 8) {
+  const groups = referenceGroups(rows).map((references) => {
+    const proteins = new Map();
+    for (const { row, offset } of references) {
+      for (const match of row.matches) {
+        for (const start of match.amino_acid_starts) {
+          const proteinOffset = offset - (start - 1);
+          // A reconstruction matching several vaccine peptides appears once at
+          // each supported placement. Repeated occurrences retain separate rows.
+          const sequence = report.reconstructions[match.reconstruction_id];
+          const key = JSON.stringify([sequence, proteinOffset]);
+          if (!proteins.has(key)) proteins.set(key, {
+            sequence, offset: proteinOffset, observations: new Map(),
+            ranges: [], peptideIds: new Set(),
+          });
+          const protein = proteins.get(key);
+          protein.observations.set(JSON.stringify([match.reconstruction_id, match.rna_call_id]), match);
+          protein.peptideIds.add(row.peptide.peptide_id);
+          protein.ranges.push([start - 1, start - 1 + row.peptide.sequence.length]);
+        }
+      }
+    }
+    const reconstructions = [...proteins.values()].sort((a, b) =>
+      b.observations.size - a.observations.size || a.sequence.localeCompare(b.sequence) || a.offset - b.offset);
+    return { references, reconstructions, start: 0,
+      end: Math.max(...references.map(({ row, offset }) => offset + row.peptide.sequence.length)) };
+  });
+  const shown = new Set(groups.flatMap((group) => group.reconstructions.flatMap((protein) =>
+    [...protein.observations.values()].map((hit) => hit.reconstruction_id))));
+  const unaligned = { references: [], reconstructions: [], start: -16, end: 17, unaligned: true };
+  const placements = new Map();
+  for (const candidate of rows[0].variant?.reconstructed_candidates || []) {
+    if (!selectedRun(candidate, filters) || shown.has(candidate.reconstruction_id)) continue;
+    const sequence = report.reconstructions[candidate.reconstruction_id];
+    if (!placements.has(sequence)) {
+      let best = null;
+      for (const group of groups) for (const entry of group.references) {
+        const position = sharedOffset(entry.row.peptide.sequence, sequence);
+        if (position && (!best || position.shared > best.shared))
+          best = { group, offset: entry.offset + position.offset, shared: position.shared };
+      }
+      placements.set(sequence, best);
+    }
+    const placement = placements.get(sequence);
+    const group = placement?.group || unaligned;
+    const offset = placement ? placement.offset : 1 - candidate.variant_amino_acid_start;
+    let protein = group.reconstructions.find((p) => p.sequence === sequence && p.offset === offset);
+    if (!protein) {
+      protein = { sequence, offset, observations: new Map(), ranges: [], peptideIds: new Set() };
+      group.reconstructions.push(protein);
+    }
+    protein.observations.set(JSON.stringify([candidate.reconstruction_id, candidate.rna_call_id]), candidate);
+  }
+  for (const group of groups) if (group.reconstructions.length) { group.start -= flank; group.end += flank; }
+  if (unaligned.reconstructions.length) groups.push(unaligned);
+  return groups;
+}
+
+function alignmentSlice(sequence, offset, start, end, ranges = []) {
+  const from = Math.max(0, start - offset);
+  const to = Math.min(sequence.length, end - offset);
+  if (to <= from) return null;
+  const pieces = [];
+  let text = "", previous = null;
+  for (let i = from; i < to; i++) {
+    const matched = ranges.some(([a, b]) => i >= a && i < b);
+    if (previous !== null && previous !== matched) { pieces.push({ text, matched: previous }); text = ""; }
+    text += sequence[i];
+    previous = matched;
+  }
+  pieces.push({ text, matched: previous });
+  return { from, to, left: " ".repeat(Math.max(0, offset - start)),
+    right: " ".repeat(Math.max(0, end - offset - sequence.length)), pieces,
+    clippedLeft: from > 0, clippedRight: to < sequence.length };
+}
+
+const statusText = { contained: "Contained", sequence_disagreement: "Sequence disagreement",
+  no_sequence: "No reconstructed sequence", not_evaluated: "Not evaluated" };
+
+function rnaSupport(report, matches, filters = {}) {
+  const samples = [...new Set(report.analysis.artifacts.map((run) => run.sample)
+    .concat(report.analysis.samples_unavailable || []))].sort()
+    .filter((sample) => !filters.sample || sample === filters.sample);
+  return samples.map((sample) => {
+    const methods = [...new Set(report.analysis.artifacts.filter((run) => run.sample === sample &&
+      (!filters.method || run.arm === filters.method)).map((run) => run.arm))].sort();
+    return { sample, evaluated: methods.length > 0, methods: methods.map((method) => {
+      // Different ORFs, calls, and peptide matches from the same input RNA
+      // must not inflate support. Methods reuse inputs, so never sum them.
+      const transcripts = new Set(matches.filter((match) => match.sample === sample && match.arm === method)
+        .map((match) => match.protein_id.replace(/\|orf_\d+-\d+$/, "")));
+      return { method, count: transcripts.size };
+    }) };
+  });
+}
+
+function supportGrid(report, matches, filters, variant = null) {
+  const grid = node("dl", "sequence-support");
+  for (const support of rnaSupport(report, matches, filters)) {
+    const cell = node("div", "sequence-support-sample");
+    cell.append(node("dt", "", support.sample));
+    if (variant) cell.append(node("dd", "sequence-support-verdict", statusText[sequenceStatus(report, variant, matches, { ...filters, sample: support.sample })]));
+    if (!support.evaluated && !variant) cell.append(node("dd", "sequence-support-unavailable", "Not evaluated"));
+    const displayed = support.methods.filter((entry) => entry.count || entry.method === "reads" || support.methods.length === 1);
+    for (const { method, count } of displayed) {
+      const label = method === "reads" ? `raw read${count === 1 ? "" : "s"}`
+        : method === "corrected" ? `corrected RNA${count === 1 ? "" : "s"}` : `${method} RNA${count === 1 ? "" : "s"}`;
+      const value = node("dd", count ? "sequence-support-positive" : "sequence-support-zero");
+      value.append(node("strong", "", String(count)), document.createTextNode(` ${label}`));
+      cell.append(value);
+    }
+    const otherZeros = support.methods.length - displayed.length;
+    if (otherZeros) cell.append(node("dd", "sequence-support-zero", `0 in ${otherZeros} other tested method${otherZeros === 1 ? "" : "s"}`));
+    grid.append(cell);
+  }
+  return grid;
+}
+
+function sourceRnaState(entries) {
+  if (entries.some((entry) => entry.alt_reads > 0)) return "supported";
+  if (!entries.length || entries.some((entry) => entry.alt_reads === null || entry.alt_reads === undefined ||
+    entry.total_reads === null || entry.total_reads === undefined)) return "not_reported";
+  return entries.some((entry) => entry.total_reads > 0) ? "no_alt_reads" : "no_coverage";
+}
+
+function sourceRnaEvidence(report, variant, filters) {
+  const section = node("div", "sequence-source-evidence");
+  section.append(node("h4", "", "Sid dataset: mutant RNA at this locus"), node("p", "sequence-methods",
+    "Published mutant / total RNA reads. This evidence is independent of Exacto and does not establish that a read spans the entire vaccine peptide. Libraries are shown separately, without pooling."));
+  const states = { supported: "Mutant RNA observed", no_alt_reads: "No mutant reads observed",
+    no_coverage: "No coverage", not_reported: "Not reported" };
+  const entries = variant.source_rna_support || [];
+  const samples = rnaSupport(report, [], filters);
+  const grid = node("div", "sequence-source-samples");
+  for (const { sample, evaluated } of samples) {
+    const rows = entries.filter((entry) => entry.benchmark_sample === sample);
+    const state = sourceRnaState(rows);
+    const item = node("div", `sequence-source-sample ${state}`);
+    item.append(node("strong", "", sample), node("span", "", states[state]));
+    for (const row of rows) item.append(node("span", "sequence-source-count", `${row.alt_reads ?? "?"} / ${row.total_reads ?? "?"} reads`));
+    const selected = { ...filters, sample };
+    const runs = (variant.exacto_runs || []).filter((run) => selectedRun(run, selected));
+    const hasProtein = (variant.reconstructed_candidates || []).some((run) => selectedRun(run, selected)) || runs.some((run) => run.n_proteoforms > 0);
+    const hasRna = runs.some((run) => run.n_variant_rnas > 0);
+    item.append(node("span", "sequence-source-exacto", !evaluated ? "Exacto: not evaluated" : hasProtein ? "Exacto: protein produced"
+      : hasRna ? "Exacto: RNA called, no protein" : "Exacto: no variant RNA call or protein"));
+    grid.append(item);
+  }
+  section.append(grid);
+  const other = entries.filter((entry) => !entry.benchmark_sample &&
+    (!filters.sample || entry.timepoint === filters.sample.split("-")[0]));
+  if (other.length) {
+    section.append(node("p", "sequence-methods", "Other RNA libraries in the Sid dataset (separate from the benchmark inputs):"));
+    const table = node("div", "sequence-other-rna");
+    for (const entry of other) {
+      const row = node("div", "sequence-other-rna-row");
+      row.append(node("span", "", entry.sample_label), node("span", "sequence-source-count", `${entry.alt_reads ?? "?"} / ${entry.total_reads ?? "?"}`),
+        node("span", "", states[sourceRnaState([entry])]));
+      table.append(row);
+    }
+    section.append(table);
+  }
+  return section;
+}
+
+function sequenceStrip(slice) {
+  const strip = node("code", "sequence-strip");
+  strip.append(node("span", "sequence-trim", slice.clippedLeft ? "…" : " "), document.createTextNode(slice.left));
+  for (const piece of slice.pieces) strip.append(node(piece.matched ? "mark" : "span", "", piece.text));
+  strip.append(document.createTextNode(slice.right), node("span", "sequence-trim", slice.clippedRight ? "…" : " "));
+  return strip;
+}
+
+function referenceRow(entry, slice, number) {
+  const { row } = entry;
+  const item = node("div", "alignment-row alignment-reference");
+  item.id = `${row.peptide.peptide_id}-part-${number}`;
+  const label = node("div", "alignment-label");
+  label.append(node("strong", "", `P${row.variant.published_vaccine_peptides.indexOf(row.peptide) + 1} · ${row.peptide.in_vaccines.join(", ")}`),
+    node("span", "sequence-meta", `${row.peptide.is_mrna_minimal_epitope ? "Minimal epitope" : "Vaccine peptide"} · ${row.peptide.sequence.length} aa`),
+    node("span", `sequence-status ${row.status}`, statusText[row.status]));
+  item.append(label, sequenceStrip(slice));
+  return item;
+}
+
+function reconstructionRow(report, protein, slice, number, filters) {
+  const item = node("div", "alignment-row alignment-reconstruction");
+  const label = node("div", "alignment-label");
+  label.append(node("strong", "", `Reconstruction R${number}`), node("span", "sequence-meta", `${new Set([...protein.observations.values()].map((hit) => hit.reconstruction_id)).size} protein output${protein.observations.size === 1 ? "" : "s"}`));
+  label.append(node("span", `sequence-status ${protein.ranges.length ? "contained" : "sequence_disagreement"}`,
+    protein.ranges.length ? "Contains vaccine sequence" : "No contained vaccine sequence"));
+  const content = node("div", "alignment-content");
+  content.append(sequenceStrip(slice), node("p", "sequence-coordinates",
+    `Residues ${slice.from + 1}–${Math.min(slice.to, protein.sequence.replace(/\*$/, "").length)} of ${protein.sequence.replace(/\*$/, "").length} aa${slice.to === protein.sequence.length && protein.sequence.endsWith("*") ? " · stop (*)" : ""}`));
+  content.append(supportGrid(report, [...protein.observations.values()], filters));
+  item.append(label, content);
+  return item;
+}
+
+function targetComparison(report, rows, filters, columns) {
+  const fragment = document.createDocumentFragment();
+  const groups = sequenceComparison(report, rows, filters, columns <= 44 ? 4 : 8);
+  const reconstructionIds = new Set(groups.flatMap((group) => group.reconstructions.flatMap((p) => [...p.observations.values()].map((hit) => hit.reconstruction_id))));
+  const sequences = new Set(groups.flatMap((group) => group.reconstructions.map((p) => p.sequence)));
+  fragment.append(node("p", "sequence-methods", `${rows.length} recorded peptide entr${rows.length === 1 ? "y" : "ies"} · ${reconstructionIds.size} target-linked protein outputs · ${sequences.size} distinct full sequence${sequences.size === 1 ? "" : "s"}, all shown below.`));
+  const support = node("div", "sequence-peptide-support");
+  support.append(node("h4", "", "RNA support for each vaccine peptide"));
+  for (const row of rows) {
+    const entry = node("div", "sequence-peptide-support-row");
+    entry.append(node("strong", "", `P${row.variant.published_vaccine_peptides.indexOf(row.peptide) + 1} · ${row.peptide.in_vaccines.join(", ")} · ${row.peptide.sequence.length} aa`), supportGrid(report, row.matches, filters, row.variant));
+    support.append(entry);
+  }
+  // Keep the reference rows immediately above the reconstructed sequences.
+  let previousReconstructions = 0;
+  groups.forEach((group, groupIndex) => {
+    if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "Unaligned candidates: no shared vaccine-sequence anchor. Each row shows the translated mutation with up to 16 residues on either side; these rows are not aligned to the vaccine peptides."));
+    else if (groups.filter((g) => !g.unaligned).length > 1) fragment.append(node("p", "sequence-alignment-note",
+      `Sequence group ${groupIndex + 1}: no unambiguous shared stretch with the other reference group${groups.length > 2 ? "s" : ""}; shown separately.`));
+    const nParts = Math.ceil((group.end - group.start) / columns);
+    for (let start = group.start, part = 1; start < group.end; start += columns, part++) {
+      const end = Math.min(start + columns, group.end);
+      const panel = node("div", "sequence-alignment");
+      if (nParts > 1) panel.append(node("p", "sequence-alignment-note", `Region ${part} of ${nParts}${part < nParts ? " · continues below" : ""}`));
+      for (const entry of group.references) {
+        const slice = alignmentSlice(entry.row.peptide.sequence, entry.offset, start, end);
+        if (slice) panel.append(referenceRow(entry, slice, part));
+      }
+      group.reconstructions.forEach((protein, index) => {
+        const slice = alignmentSlice(protein.sequence, protein.offset, start, end, protein.ranges);
+        if (slice) panel.append(reconstructionRow(report, protein, slice, previousReconstructions + index + 1, filters));
+      });
+      fragment.append(panel);
+    }
+    previousReconstructions += group.reconstructions.length;
+  });
+  fragment.append(support);
+  if (!reconstructionIds.size) {
     const explanations = {
-      peptide: "Translated candidates were produced, but none contains this vaccine sequence.",
-      proteoform: "Translated candidates were produced, but none contains this vaccine sequence.",
+      peptide: "Translated candidates were produced, but none contains these vaccine sequences.",
+      proteoform: "Translated candidates were produced, but none contains these vaccine sequences.",
       rna_only: "The target RNA variant was called, but no mutant protein carrying it was translated.",
       no_call: "No RNA call for the target allele was made in the available outputs.",
       no_reads: "No reads covered this target in the available outputs.",
     };
-    const reason = row.status === "not_evaluated" ? "No completed output for this sample and method selection."
-      : filters.sample || filters.method ? "Not found in the selected reconstructions."
-      : explanations[row.variant.candidate_outcome] || "Not found in the available reconstructions.";
-    item.append(node("p", "sequence-methods", reason));
+    const reason = rows.every((row) => row.status === "not_evaluated") ? "No completed output for this sample and method selection."
+      : filters.sample || filters.method ? "No supporting reconstructions in this selection."
+      : explanations[rows[0].variant.candidate_outcome] || "No supporting reconstructions in the available outputs.";
+    fragment.append(node("p", "sequence-methods", reason));
   }
-  return item;
+  return fragment;
 }
 
 function renderSequenceRows(report) {
@@ -121,6 +355,7 @@ function renderSequenceRows(report) {
     sample: queryNode("#sequence-sample").value,
     method: queryNode("#sequence-method").value,
     vaccine: queryNode("#sequence-vaccine").value,
+    sourceRna: queryNode("#sequence-source-rna").value,
   };
   const rows = sequenceRows(report, filters);
   const groups = new Map();
@@ -130,17 +365,21 @@ function renderSequenceRows(report) {
   });
   queryNode("#sequence-count").textContent = `${rows.length} peptide entries across ${groups.size} target${groups.size === 1 ? "" : "s"} shown. ` +
     `${rows.filter((row) => row.status === "contained").length} contained; ` +
-    `${rows.filter((row) => row.status === "not_found").length} not found; ` +
+    `${rows.filter((row) => row.status === "sequence_disagreement").length} sequence disagreement; ` +
+    `${rows.filter((row) => row.status === "no_sequence").length} no reconstructed sequence; ` +
     `${rows.filter((row) => row.status === "not_evaluated").length} not evaluated in this selection.`;
   const container = queryNode("#sequence-targets");
   container.replaceChildren();
+  const mobile = window.matchMedia("(max-width: 600px)").matches;
+  const columns = Math.max(24, Math.min(72, Math.floor((container.clientWidth - (mobile ? 0 : 196)) / (mobile ? 7.3 : 7.9)) - 2));
   for (const entries of groups.values()) {
     const variant = entries[0].variant;
     const target = node("article", "sequence-target");
     const title = node("h3", "sequence-target-title");
     title.append(node("span", "", variant.gene), node("span", "mono", variant.protein_change || "Protein change not annotated"));
     target.append(title);
-    entries.forEach((row) => target.append(sequenceRow(report, row, filters)));
+    target.append(sourceRnaEvidence(report, variant, filters));
+    target.append(targetComparison(report, entries, filters, columns));
     container.append(target);
   }
   if (!rows.length) container.append(node("p", "empty", "No sequences match these filters. Try another gene, sequence, or recovery status."));
@@ -177,9 +416,14 @@ function populateSequenceReport(report) {
     }
   }
   queryNode("#sequence-controls").hidden = false;
-  for (const selector of ["#sequence-search", "#sequence-status", ...Object.keys(options)]) {
+  for (const selector of ["#sequence-search", "#sequence-status", "#sequence-source-rna", ...Object.keys(options)]) {
     queryNode(selector).addEventListener("input", () => renderSequenceRows(report));
   }
+  let resizeFrame;
+  window.addEventListener("resize", () => {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => renderSequenceRows(report));
+  });
   renderSequenceRows(report);
 }
 
@@ -189,7 +433,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, rnaSupport, sequenceStatus, sourceRnaState };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });
