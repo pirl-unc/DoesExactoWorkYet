@@ -369,18 +369,22 @@ jobs:
           # against a main that already had results on it. results/ is generated
           # wholesale, so replaying this commit over another run's version of the
           # same files conflicts every time -- there is no merge to do, this run's
-          # output simply is the answer. Reset onto whatever main is now, keeping
-          # the generated files in the working tree, and commit that.
+          # output simply is the answer. A mixed reset keeps the generated files
+          # in the working tree but takes the index from current main. A soft
+          # reset kept the old code staged and reverted changes made during a run.
           for attempt in 1 2 3; do
             git fetch origin "${GITHUB_REF_NAME}"
-            git reset --soft "origin/${GITHUB_REF_NAME}"
+            git reset --mixed "origin/${GITHUB_REF_NAME}"
             git add results/
             if git diff --staged --quiet; then
               echo "results unchanged"
+              git restore --worktree -- .
               exit 0
             fi
             git commit -m "results: Exacto ${version} run $(date -u +%Y-%m-%d)"
             if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              # Refresh tracked source files for the final site build below.
+              git restore --worktree -- .
               exit 0
             fi
             echo "push raced with another commit; retrying (${attempt}/3)"
@@ -388,6 +392,11 @@ jobs:
           done
           echo "could not push results after 3 attempts" >&2
           exit 1
+
+      - name: Rebuild site using the published revision
+        # The benchmark may have started before a presentation change merged.
+        # Publish its new results with the current website, not the old checkout.
+        run: python -m pipeline.build_site
 
       # Best effort: enables Pages on a repo where the workflow token is
       # allowed to. Where it is not, Pages is enabled once by hand and this
