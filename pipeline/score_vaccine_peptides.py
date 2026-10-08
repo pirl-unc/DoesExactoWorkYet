@@ -16,7 +16,11 @@ from pathlib import Path
 from .config import RESULTS_DIR, SAMPLES
 from .evaluate import read_tsv
 from .run_exacto import as_graph_operation
-from .vaccine_peptides import results_fingerprint
+from .vaccine_peptides import (
+    PEPTIDE_SCORING_POLICY,
+    peptide_scoring_region,
+    results_fingerprint,
+)
 
 ORF_HEADER = re.compile(r"^(.+)\|orf_(\d+)-(\d+)$")
 
@@ -148,6 +152,7 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
         variant["exacto_runs"] = []
         for peptide in variant["published_vaccine_peptides"]:
             peptide["matches"] = []
+            peptide["scoring_region"] = peptide_scoring_region(peptide["sequence"])
 
     completed = {(run["sample"], run["arm"]): run for run in previous["runs"] if run["status"] == "ok"}
     seen, artifacts, reconstructions = set(), [], {}
@@ -192,7 +197,7 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
                 }
                 by_id[call["variant_id"]]["reconstructed_candidates"].append(candidate)
                 for peptide in by_id[call["variant_id"]]["published_vaccine_peptides"]:
-                    positions = peptide_positions(protein, call, peptide["sequence"])
+                    positions = peptide_positions(protein, call, peptide["scoring_region"]["sequence"])
                     if positions:
                         peptide["matches"].append({
                             "sample": key[0], "arm": key[1],
@@ -228,11 +233,17 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
             "mode": "rescore_saved_outputs",
             "results_sha256": results_fingerprint(previous),
             "metric_label": "Vaccine sequence contained in reconstruction",
+            "peptide_scoring_policy": PEPTIDE_SCORING_POLICY,
             "n_completed_methods": len(seen),
             "samples_available": sorted({sample for sample, _ in seen}),
             "samples_unavailable": sorted({s.name for s in SAMPLES} - {sample for sample, _ in seen}),
             "matching_policy": (
-                "The recorded vaccine sequence must be a contiguous substring "
+                "Complete terminal runs of 1–4 lysines at either end of every "
+                "recorded vaccine peptide are treated as suspected solubility "
+                "additions outside the ORF and excluded from scoring by benchmark "
+                "convention, including minimal epitopes. Internal lysines and "
+                "longer terminal runs are retained. The nonempty remaining sequence "
+                "must be a contiguous substring "
                 "of an exported Exacto protein sequence; the reconstruction may "
                 "extend on either side of the vaccine sequence. It must be "
                 "linked to an RNA call with the target's exact "
@@ -240,7 +251,10 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
                 "call's translated codon/junction or frameshifted tail. Counts "
                 "are any-candidate unions over the available methods and samples; "
                 "all-peptides matched can combine different candidates. "
-                "Predicted pVACtools epitopes are excluded."
+                "Predicted pVACtools epitopes are excluded. Full recorded sequences "
+                "are preserved; scoring_region uses zero-based, end-exclusive "
+                "recorded-peptide coordinates. amino_acid_starts locates the "
+                "scored region in the protein (one-based), not any excluded N-terminal tag."
             ),
             "artifacts": artifacts,
         },

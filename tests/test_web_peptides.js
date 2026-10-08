@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
   sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState,
-  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions } = require("../web/peptides.js");
+  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions, peptideScoringRegion } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -77,7 +77,8 @@ test("every displayed reconstruction contains the highlighted reference peptide"
       const protein = report.reconstructions[match.reconstruction_id];
       assert.ok(protein);
       for (const start of match.amino_acid_starts) {
-        assert.equal(protein.slice(start - 1, start - 1 + peptide.sequence.length), peptide.sequence);
+        const core = peptideScoringRegion(peptide).sequence;
+        assert.equal(protein.slice(start - 1, start - 1 + core.length), core);
       }
     }
   }
@@ -190,7 +191,7 @@ test("VPS72 distinguishes the one-residue difference and identifies which peptid
     b: "EPLKSLRPRKVNTPAGGSQKAREERALLPLELQDDGSDSRKSMRQ",
   };
   const peptides = [
-    { peptide_id: "P1", sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD", start: 4 },
+    { peptide_id: "P1", sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD", start: 5 }, // scored core starts after terminal K
     { peptide_id: "P2", sequence: "ERALLPLEL", start: 24 },
     { peptide_id: "P3", sequence: "GSSQKAREERALLPLELQDDGSDSRKS", start: 16 },
   ];
@@ -246,12 +247,13 @@ test("all supporting sequences and anchored occurrences survive inline grouping"
       const groupIds = new Set(group.reconstructions.flatMap((protein) => [...protein.observations.values()].map((hit) => hit.reconstruction_id)));
       assert.deepEqual(groupedIds, groupIds, `${variant.gene}: window grouping preserves every output`);
       for (const { row, offset } of group.references) {
+        const core = peptideScoringRegion(row.peptide);
         for (const match of row.matches) {
           for (const start of match.amino_acid_starts) {
             assert.ok(group.reconstructions.some((protein) =>
               protein.sequence === report.reconstructions[match.reconstruction_id] &&
-              protein.offset + start - 1 === offset &&
-              protein.ranges.some(([a, b]) => a === start - 1 && b === start - 1 + row.peptide.sequence.length)));
+              protein.offset + start - 1 === offset + core.start &&
+              protein.ranges.some(([a, b]) => a === start - 1 && b === start - 1 + core.sequence.length)));
           }
         }
       }
@@ -365,33 +367,50 @@ test('suspected synthesis tags mark only the three terminal residues at the alig
   }
 });
 
-test('tag suspicion does not extend to arbitrary lysine runs or mRNA-only references', () => {
-  for (const [sequence, in_vaccines] of [
-    ['SFSGPGMSGMALMEVNLLSGKKK', ['mRNA']],
-    ['AAAKKKAAAA', ['JLF V3']],
-    ['AAAKKK', ['JLF V3']],
-    ['KKKAAA', ['JLF V3']],
-  ]) {
-    assert.equal(terminalTagPositions({ offset: 0, row: { peptide: { sequence, in_vaccines } } }).size, 0);
+test('terminal K runs of one to four are excluded for every vaccine label, but internal and longer runs remain', () => {
+  for (const n of [0, 1, 2, 3, 4]) for (const c of [0, 1, 2, 3, 4]) {
+    const peptide = { sequence: 'K'.repeat(n) + 'AAKQAA' + 'K'.repeat(c), in_vaccines: ['mRNA'] };
+    const entry = { offset: 8, row: { peptide } };
+    assert.equal(peptideScoringRegion(peptide).sequence, 'AAKQAA');
+    assert.deepEqual([...terminalTagPositions(entry).keys()],
+      [...Array.from({length:n}, (_,i) => 8+i), ...Array.from({length:c}, (_,i) => 8+n+6+i)]);
   }
+  for (const sequence of ['AAAKKKAAAA', 'KKKKKAAAKKKKK'])
+    assert.equal(terminalTagPositions({ offset: 0, row: { peptide: { sequence } } }).size, 0);
 });
 
-test('CD109 vaccine mismatches highlight KKK versus FMV on both rows, even in W1', () => {
+test('CD109 terminal KKK versus FMV is excluded while missing core residues still count', () => {
   const { data, add } = annotatedFixture();
   add('short|orf_0-59', 'MSGMALMEVNLLSGFMVPSEA', 1);
   const rows = sequenceRows(data), [group] = prepareComparisons(data, rows);
   const entry = group.references[0], window = group.windows[0];
   const diff = vaccineComparison(window, entry);
   assert.equal(diff.missing, 6); // absent prefix is coverage, not a substitution
-  assert.deepEqual(diff.substitutions.map(x => [x.position, x.reference, x.residue]),
-    [[21, 'K', 'F'], [22, 'K', 'M'], [23, 'K', 'V']]);
+  assert.deepEqual(diff.substitutions, []);
   const highlights = vaccineDifferences(group);
-  assert.equal(highlights.windows.get(window).size, 3);
+  assert.equal(highlights.windows.get(window).size, 0);
   assert.deepEqual([...highlights.references.get(entry).keys()], [...highlights.windows.get(window).keys()]);
   assert.equal(group.comparisons.get(window).substitutions.length, 0);
   // A protein starting at the mutation has only four local anchor residues;
   // this intentionally does not infer a vaccine-row target position.
   assert.equal(referenceEvents(entry, group.windows, group.events).size, 0);
+});
+
+test('a reconstruction with neither terminal tag is fully contained, aligned and not a top-window disagreement', () => {
+  const { data, variant, add } = annotatedFixture();
+  variant.published_vaccine_peptides[0].sequence = 'KKACDMNPQKKKK';
+  add('core|orf_0-20', 'ACDMNPQ', 3, true);
+  const rows = sequenceRows(data), [group] = prepareComparisons(data, rows);
+  const window = group.windows[0], entry = group.references[0];
+  assert.equal(window.offset, entry.offset + 2);
+  const diff = vaccineComparison(window, entry);
+  assert.equal(diff.missing, 0);
+  assert.deepEqual(diff.substitutions, []);
+  assert.equal(windowSlice(window, group.start, group.end).pieces.filter(p => p.matched).map(p => p.text).join(''), 'ACDMNPQ');
+  assert.equal(topWindows(data, [group], rows)[0].leaders[0].peptides[0].status, 'contained');
+  assert.equal(topWindows(data, [group], rows)[0].disagreement, false);
+  assert.equal(rows[0].status, 'contained');
+  assert.deepEqual([...referenceEvents(entry, group.windows, group.events).keys()], [entry.offset + 4]);
 });
 
 test('target codon uses RNA-call coordinates, independently of the vaccine mismatch', () => {
@@ -432,8 +451,8 @@ test('frameshift tails survive cropping without claiming novel ORF boundaries', 
 test('top windows rank RNA inputs, not vaccine containment or row order, and retain ties', () => {
   const { data, add, sequence } = annotatedFixture();
   add('match|orf_0-68', sequence, 7, true);
-  add('mismatch1|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 7);
-  add('mismatch2|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 7);
+  add('mismatch1|orf_0-68', 'SFSGPGMSGMALAEVNLLSGFMV', 7);
+  add('mismatch2|orf_0-68', 'SFSGPGMSGMALAEVNLLSGFMV', 7);
   add('match|orf_3-71', sequence, 7, true); // same input, another ORF: still one RNA
   add('corrected|orf_0-68', sequence, 7, true, 'corrected');
   let rows = sequenceRows(data), groups = prepareComparisons(data, rows);

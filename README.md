@@ -64,8 +64,8 @@ Peptide and window support share sample columns. Full-protein counts, lengths, v
 labels, and complete change lists remain available in the peptide/protein details.
 Per-sample RNA support
 combines unique input transcript/read identifiers within each method across all
-members of the window group. Per-peptide support retains the original containment
-checks. Raw reads,
+members of the window group. Per-peptide support uses containment of the scored
+vaccine region, excluding suspected terminal lysine tags. Raw reads,
 corrected inputs, and assembled transcripts are reported separately, never summed
 across methods; these counts measure sequence support, not locus coverage.
 Full proteins and RNA call identifiers remain available in the analysis download. Missing
@@ -99,23 +99,32 @@ Exacto itself emits unranked candidates; this report ranks displayed windows by
 distinct input RNAs without using vaccine agreement. The top-window filter finds
 covered-position disagreements, including leaders that contain another peptide;
 details distinguish incomplete, unaligned, and allele-unconfirmed sequences.
-The recorded CD109 peptide ends in KKK, which may be a synthetic modification but
-is not documented as such by its source. Full recorded sequences remain the
-scoring reference; no terminal residues are silently removed.
-Its metric is **vaccine sequence contained in reconstruction**: the recorded
-vaccine peptide must appear as a contiguous substring of a reconstructed protein,
+By benchmark convention, **complete terminal runs of K, KK, KKK or KKKK at either
+end of every vaccine peptide are suspected solubility additions outside the ORF**
+and excluded from containment, mismatch and missing-coverage scoring. This includes
+all vaccine labels and mRNA minimal epitopes. Internal lysines and terminal runs
+longer than four remain scored. The rule is an evaluation convention, not a
+confirmed per-peptide synthesis annotation. Purple marks the excluded residues;
+full recorded sequences remain visible and are preserved in the reference FASTA.
+Both subset and analysis JSON export `scoring_region`: the retained sequence,
+zero-based/end-exclusive coordinates within the recorded peptide, and excluded tags.
+Match `amino_acid_starts` are one-based locations of the scored region in the protein.
+An empty scored region never matches.
+Its metric is **vaccine sequence contained in reconstruction (terminal K tags
+excluded)**: the full remaining region must appear as a contiguous substring of a reconstructed protein,
 which can extend on either side. Every counted occurrence is tied to an RNA call
 at the target's exact locus and allele, and overlaps its translated codon/junction
 or frameshifted tail. The analysis reads the full exported protein FASTAs, since
 the main results JSON retains only three candidate examples per target/method.
 
-Re-scoring run 51 (Exacto 0.5.0a1) found **15/36 targets** with at least one
-recorded vaccine sequence contained in a reconstruction: **37/78 peptide entries**.
-All 15 also matched a non-minimal vaccine peptide. The subset's broader candidate
-recovery was 22/36, with the expected residue in 17/19 recovered missense targets.
-These are unions over 22 completed methods; T2-ONT input preparation failed and
-its methods are unavailable. This reanalysis uses the saved translations and
-does not rerun alignment, assembly, or Exacto.
+Re-scoring [run 37664740743](https://github.com/pirl-unc/DoesExactoWorkYet/actions/runs/37664740743)
+(Exacto 0.5.0a1) under this policy found **25/36 targets** with at least one scored
+vaccine sequence contained in a reconstruction: **57/78 peptide entries**.
+All 25 also matched a non-minimal vaccine peptide. These are unions over all 29
+completed methods, including T2-ONT. Full recorded-sequence scoring of the same
+outputs had recovered 23/36 targets and 52/78 entries; the added targets are
+CD109 and PTH1R. This reanalysis uses the saved translations and does not rerun
+alignment, assembly, or Exacto. The full-panel amino-acid check remains 31/33.
 
 The full benchmark workflow regenerates this report from the current run's
 archived proteins and RNA calls before publishing. If those outputs cannot be
@@ -125,13 +134,13 @@ the main benchmark diagnostics.
 To reproduce it while the GitHub artifacts remain available:
 
 ```bash
-mkdir -p work/run-51
-git show 01475a2:results/exacto_results.json > work/run-51/exacto_results.json
-gh run download 37536966270 --repo pirl-unc/DoesExactoWorkYet \
-  --pattern 'exacto-outputs-*' --dir work/run-51/outputs
+mkdir -p work/terminal-tags
+git show 015dabc:results/exacto_results.json > work/terminal-tags/exacto_results.json
+gh run download 37664740743 --repo pirl-unc/DoesExactoWorkYet \
+  --pattern 'exacto-outputs-*' --dir work/terminal-tags/outputs
 python -m pipeline.score_vaccine_peptides \
-  --results work/run-51/exacto_results.json --outputs-dir work/run-51/outputs \
-  --run-url https://github.com/pirl-unc/DoesExactoWorkYet/actions/runs/37536966270 \
+  --results work/terminal-tags/exacto_results.json --outputs-dir work/terminal-tags/outputs \
+  --run-url https://github.com/pirl-unc/DoesExactoWorkYet/actions/runs/37664740743 \
   --exacto-version 0.5.0a1
 ```
 

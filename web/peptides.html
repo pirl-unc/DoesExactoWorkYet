@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261008-tags">
+<link rel="stylesheet" href="style.css?v=20261008-tag-scoring">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -32,16 +32,18 @@
       <p>P rows are recorded vaccine peptides; W rows group proteins identical within the comparison
         window. The default window is 45 aa and expands for longer references. All sequences remain visible;
         wide alignments scroll horizontally. Long regions continue in blocks.</p>
-      <p>Green marks full vaccine containment. Rose marks differences between a vaccine peptide and
+      <p>Green marks containment of the vaccine sequence after terminal tags are excluded. Rose marks differences between a vaccine peptide and
         a reconstruction at overlapping positions. Click a W label to compare the vaccine rows against it
         (initially W1); W-row marks always compare against the vaccine peptides. Hover for residue numbers.
         Amber marks other differences from the first W row in each
         aligned group. S17G means S in the reference window and G at position 17 in this window.
         Positions refer to the window, not the full protein. Missing ends are coverage differences.
         Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
-      <p>Purple with a dotted edge marks suspected CS Bio solubility tags: the terminal KKK in the
-        recorded CD109, PTH1R and CUL9 peptides. These are unconfirmed synthesis additions, not inferred
-        from every lysine run. Hover retains the mismatch detail; all residues still count in scoring.</p>
+      <p>Purple with a dotted edge marks terminal K, KK, KKK or KKKK, treated as suspected solubility
+        additions outside the ORF. By benchmark convention these runs are excluded at either end of
+        every vaccine peptide, including mRNA minimal epitopes. They count as neither mismatches nor
+        missing coverage. Internal lysines and complete terminal runs longer than four remain scored.
+        This rule does not establish which residues were added during synthesis.</p>
       <p>Blue underlines mark the translated target codon from the RNA call. For a deletion this is
         the codon at/after its junction; for a frameshift, the dotted blue tail means downstream of
         the event, not verified novelty at every residue. Dotted target marks indicate differing
@@ -57,7 +59,7 @@
       <p>RNA counts: r raw reads; c corrected; a assembly; a1 assembly-ms1; ap permissive assembly;
         au unspliced assembly; i isONform; s SPAdes. Zero means no support in tested methods;
         unlisted tested methods also have zero support. Methods can reuse reads: do not add their counts.
-        W counts combine distinct inputs per window; P counts retain full-peptide containment checks.</p>
+        W counts combine distinct inputs per window; P counts require containment of the full scored region.</p>
       <p>Sid counts are independent mutant / total reads at the locus: green means mutant reads;
         amber means covered with zero mutant reads; 0 / 0 means no coverage; — means not reported.
         Locus support does not establish full peptide recovery. Libraries stay separate.</p>
@@ -82,7 +84,7 @@
     <div class="sequence-legend" aria-label="Sequence and read-count legend">
       <span><mark>ACD</mark> vaccine contained</span>
       <span><b class="sequence-vaccine-difference">G</b> differs from vaccine</span>
-      <span><b class="sequence-suspected-tag">KKK</b> suspected solubility tag</span>
+      <span><b class="sequence-suspected-tag">KKK</b> suspected tag · excluded</span>
       <span><b class="sequence-difference">G</b> differs from W1</span>
       <span><b class="sequence-event sequence-event-mutation">M</b> target codon</span>
       <span>★ top RNA support (ties kept)</span>
@@ -102,16 +104,17 @@
     <details class="sequence-details sequence-reading-key">
       <summary>Suspected terminal solubility tags</summary>
       <p>The <a href="https://gitlab.com/slowkow/osteosarc.com/-/blob/main/scripts/vaccines/source_data/vaccine_variants.tsv">source vaccine table</a>
-        records terminal KKK in CD109, PTH1R and CUL9 without identifying an added tag. A solubility modification is
-        plausible, not confirmed. Some reconstructed proteins contain the full 20-aa prefix
-        SFSGPGMSGMALMEVNLLSG of CD109 and continue FMV instead of KKK; others also lack the N-terminal part.
-        The score retains the complete recorded peptide until the intended biological sequence is documented.</p>
+        preserves complete vaccine sequences. The report excludes complete runs of one to four lysines
+        at either terminus as suspected solubility tags. For example, CD109 is scored against its 20-aa
+        core SFSGPGMSGMALMEVNLLSG; the recorded KKK and a reconstruction’s continuation FMV do not count
+        as a disagreement. Missing any of that core still prevents recovery. Original sequences remain
+        visible and in the reference FASTA; JSON downloads include the scored region and excluded positions.</p>
     </details>
     <p><a href="vaccine_peptide_subset.fasta" download>Reference peptides (FASTA)</a> ·
       <a href="vaccine_peptide_subset.json" download>Reference annotations (JSON)</a> ·
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261008-tags"></script>
+<script src="peptides.js?v=20261008-tag-scoring"></script>
 </body>
 </html>

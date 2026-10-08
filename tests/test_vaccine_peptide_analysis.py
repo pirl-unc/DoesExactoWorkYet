@@ -7,7 +7,11 @@ import pytest
 
 from pipeline import build_site
 from pipeline.score_vaccine_peptides import analyze, peptide_positions, protein_record
-from pipeline.vaccine_peptides import results_fingerprint
+from pipeline.vaccine_peptides import (
+    PEPTIDE_SCORING_POLICY,
+    peptide_scoring_region,
+    results_fingerprint,
+)
 
 
 def call(**overrides):
@@ -87,6 +91,38 @@ def test_sequence_match_requires_same_transcript_and_exact_genomic_allele(tmp_pa
         assert match["rna_call_id"] == "42"
 
 
+@pytest.mark.parametrize("n_tag", ["", "K", "KK", "KKK", "KKKK"])
+@pytest.mark.parametrize("c_tag", ["", "K", "KK", "KKK", "KKKK"])
+def test_terminal_tags_are_excluded_but_core_and_allele_link_are_required(tmp_path, n_tag, c_tag):
+    subset, previous = archive(tmp_path)
+    peptide = subset["variants"][0]["published_vaccine_peptides"][0]
+    peptide["sequence"] = n_tag + "AKQ" + c_tag
+    result = analyze(subset, previous, tmp_path, run_url="run", version="0.5.0a1")
+    scored = result["variants"][0]["published_vaccine_peptides"][0]
+    assert scored["sequence"] == peptide["sequence"]
+    assert scored["scoring_region"]["sequence"] == "AKQ"  # internal K remains required
+    assert scored["scoring_region"]["start"] == len(n_tag)
+    assert scored["scoring_region"]["end"] == len(n_tag) + 3
+    assert scored["matches"][0]["amino_acid_starts"] == [2]  # core position, not tag position
+    assert scored["matches"][0]["rna_call_id"] == "42"
+    assert result["summary"]["n_peptide_entries_matched"] == 1
+    assert result["analysis"]["peptide_scoring_policy"] == PEPTIDE_SCORING_POLICY
+
+
+@pytest.mark.parametrize("sequence", ["KANQKK", "KAKQTTGKK", "KQ", "KKKK"])
+def test_tags_do_not_rescue_core_mismatches_missing_core_or_unlinked_core(tmp_path, sequence):
+    subset, previous = archive(tmp_path)
+    subset["variants"][0]["published_vaccine_peptides"][0]["sequence"] = sequence
+    result = analyze(subset, previous, tmp_path, run_url="run", version="0.5.0a1")
+    assert result["summary"]["n_peptide_entries_matched"] == 0
+
+
+def test_internal_and_longer_lysine_runs_are_not_partially_stripped():
+    assert peptide_scoring_region("AKKKQA")["sequence"] == "AKKKQA"
+    assert peptide_scoring_region("KKKKKAKQKKKKK")["sequence"] == "KKKKKAKQKKKKK"
+    assert peptide_scoring_region("KKKK")["sequence"] == ""
+
+
 @pytest.mark.parametrize("problem", ["missing_file", "missing_run", "different_inputs", "different_reads"])
 def test_incomplete_or_mismatched_archive_is_not_scored_as_a_miss(tmp_path, problem):
     subset, previous = archive(tmp_path)
@@ -104,7 +140,9 @@ def test_incomplete_or_mismatched_archive_is_not_scored_as_a_miss(tmp_path, prob
 
 def test_site_hides_sequence_report_from_a_different_run_or_catalogue(tmp_path, monkeypatch):
     results = {"runs": [{"sample": "T1-ONT", "status": "ok"}]}
-    report = {"source": {"input_id": "panel"}, "analysis": {"results_sha256": results_fingerprint(results)}}
+    report = {"source": {"input_id": "panel"}, "analysis": {
+        "results_sha256": results_fingerprint(results), "peptide_scoring_policy": PEPTIDE_SCORING_POLICY,
+    }}
     (tmp_path / "vaccine_peptide_analysis.json").write_text(json.dumps(report))
     monkeypatch.setattr(build_site, "RESULTS_DIR", tmp_path)
     catalogue = {"source": {"input_id": "panel"}}
@@ -112,6 +150,9 @@ def test_site_hides_sequence_report_from_a_different_run_or_catalogue(tmp_path, 
     assert build_site.current_peptide_report(catalogue, {"runs": []}) is None
     assert build_site.current_peptide_report({"source": {"input_id": "other"}}, results) is None
     assert build_site.current_peptide_report(catalogue, None) is None
+    del report["analysis"]["peptide_scoring_policy"]
+    (tmp_path / "vaccine_peptide_analysis.json").write_text(json.dumps(report))
+    assert build_site.current_peptide_report(catalogue, results) is None
 
 
 def test_unmatched_proteins_and_rna_without_translation_remain_reported(tmp_path):
