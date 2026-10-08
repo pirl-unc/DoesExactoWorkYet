@@ -79,6 +79,29 @@ Benchmark-matched Sid counts and Exacto protein/RNA-only/no-call outcomes stay v
 below the sequences; other source libraries are available in a separate disclosure.
 Missing counts, zero coverage, and covered loci with zero mutant reads remain
 different states. RNA allele support does not establish full peptide recovery.
+The report separates 2+ mutant-read evidence from single-read evidence, observed
+zero, and unknown counts. This uses the maximum of Sid’s count and distinct
+Exacto raw-read allele-call inputs per benchmark library at any timepoint, never
+a sum across libraries or methods. Assembly and corrected counts do not raise
+this tier; per-sample evidence retains both underlying counts. The main
+page retains the overall score and shows recovery within each evidence group;
+amino-acid failures name the expected and observed residues inline.
+
+Blue underlines locate each translated target codon using the archived RNA-call
+position. Deletion markers mean the codon at/after the junction. A dotted tail
+means downstream of a frameshift, not confirmed novel sequence throughout; fusion
+breakpoints and novel-ORF boundaries are not annotated in this panel. Reference
+markers require an exact local anchor with an unambiguous projected position.
+Rose marks vaccine-versus-reconstruction differences on both rows, independently
+of the amber comparison against W1. Missing ends are coverage, not substitutions.
+Stars mark every RNA-support leader (including ties) per sample and method.
+Exacto itself emits unranked candidates; this report ranks displayed windows by
+distinct input RNAs without using vaccine agreement. The top-window filter finds
+covered-position disagreements, including leaders that contain another peptide;
+details distinguish incomplete, unaligned, and allele-unconfirmed sequences.
+The recorded CD109 peptide ends in KKK, which may be a synthetic modification but
+is not documented as such by its source. Full recorded sequences remain the
+scoring reference; no terminal residues are silently removed.
 Its metric is **vaccine sequence contained in reconstruction**: the recorded
 vaccine peptide must appear as a contiguous substring of a reconstructed protein,
 which can extend on either side. Every counted occurrence is tied to an RNA call

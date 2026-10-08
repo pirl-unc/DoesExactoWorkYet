@@ -195,3 +195,35 @@ test("an empty later page stops polling that jobs snapshot", async () => {
   assert.equal(node.children.find((child) => child.className === "live-jobs").children.length, 100);
   assert.equal(requests.length, 3);
 });
+
+test('amino-acid failures are named beside the score and show the actual failed residue', () => {
+  const data = result(3, 2, { reads: { outcome: 'proteoform' } });
+  data.variants = [
+    { gene: 'ABI3BP', protein_change: 'p.Arg472Met', rna_support: { category: 'multiple' }, recovery: {
+      outcome: 'proteoform', residue_confirmed: false, expected: { alt_aa: 'M' }, samples: {
+        T2: { arms: { reads: { proteoforms: [{ context: 'AAWBB', context_start: 10,
+          mutant_residue_indices: [11], mutant_residues: 'W' }] } } },
+      },
+    } },
+    { gene: 'CONTROL', rna_support: { category: 'single' }, recovery: { outcome: 'peptide', residue_confirmed: true } },
+    { gene: 'NO_PROTEIN', rna_support: { category: 'zero' }, recovery: { outcome: 'rna_only', residue_confirmed: false } },
+  ];
+  const nodes = render(data, ['renderVerdict', 'renderEvidenceBreakdown']);
+  assert.match(nodes['#verdict'].textContent, /1 amino-acid failures: ABI3BP/);
+  assert.doesNotMatch(nodes['#residue-failures'].textContent, /CONTROL|NO_PROTEIN/);
+  assert.match(nodes['#residue-failures'].textContent, /Expected M; observed W/);
+  const sequence = nodes['#residue-failures'].children[1].children.find(x => x.tag === 'code');
+  assert.equal(sequence.children[2].className, 'sequence-vaccine-difference');
+  assert.equal(sequence.children[2].textContent, 'W');
+  assert.match(nodes['#rna-breakdown'].textContent, /2\+ mutant RNA reads11\/10\/1/);
+  assert.match(nodes['#rna-breakdown'].textContent, /Single-read evidence11\/11\/1/);
+});
+
+test('RNA support groups do not score failed or missing outputs as failed recovery', () => {
+  const data = result(0, 0);
+  data.variants[0].rna_support = { category: 'multiple' };
+  data.variants[0].recovery.outcome = 'no_reads';
+  const nodes = render(data, ['renderEvidenceBreakdown']);
+  assert.match(nodes['#rna-breakdown'].textContent, /2\+ mutant RNA reads1——/);
+  assert.doesNotMatch(nodes['#rna-breakdown'].textContent, /0\/1/);
+});

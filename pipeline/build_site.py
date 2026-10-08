@@ -53,6 +53,45 @@ def current_peptide_report(catalogue: dict, results: dict | None) -> dict | None
     return report
 
 
+def source_rna_evidence(variant: dict) -> list[dict]:
+    samples = {sample.bam_url.rsplit("/", 1)[-1]: sample.name for sample in SAMPLES}
+    return [
+        {**entry, "benchmark_sample": samples.get((entry.get("bam_file") or "").rsplit("/", 1)[-1])}
+        for entry in variant.get("assay_support", [])
+        if entry.get("tissue") == "tumor"
+        and assays.ASSAY_META.get(entry.get("assay_type"), {}).get("kind") == "rna"
+    ]
+
+
+def rna_support_tier(evidence: list[dict], recovery: dict | None = None) -> dict:
+    """Maximum observed mutant count, never pooled across libraries or methods."""
+    def classify(entries):
+        counts = [entry["alt_reads"] for entry in entries
+                  if isinstance(entry.get("alt_reads"), int) and entry["alt_reads"] >= 0]
+        maximum = max(counts, default=None)
+        return {"max_alt_reads": maximum, "category": "unknown" if maximum is None else
+                "multiple" if maximum >= 2 else "single" if maximum == 1 else "zero"}
+
+    by_sample = {}
+    for sample in SAMPLES:
+        sid = classify([entry for entry in evidence if entry.get("benchmark_sample") == sample.name])
+        raw = (recovery or {}).get("samples", {}).get(sample.name, {}).get("arms", {}).get("reads", {})
+        calls = raw.get("rna_variant_calls")
+        # Only the raw-read arm is one input RNA per transcript model. Corrected
+        # and assembled inputs reuse those reads and must not raise this tier.
+        exacto_count = len({call["transcript_model_id"] for call in calls}) if calls is not None else None
+        by_sample[sample.name] = {
+            **classify([{"alt_reads": sid["max_alt_reads"]}, {"alt_reads": exacto_count}]),
+            "sid_alt_reads": sid["max_alt_reads"], "exacto_raw_rnas": exacto_count,
+        }
+    return {
+        **classify([{"alt_reads": counts["max_alt_reads"]} for counts in by_sample.values()]),
+        "by_sample": by_sample,
+        "missing_samples": [name for name, counts in by_sample.items() if counts["category"] == "unknown"],
+        "basis": "Maximum of Sid mutant reads and distinct Exacto raw-read allele-call inputs per benchmark library; never summed",
+    }
+
+
 def peptide_report_with_rna_evidence(report: dict, catalogue: dict, results: dict | None = None) -> dict:
     """Attach source counts without pooling libraries or inferring missing counts.
 
@@ -60,7 +99,6 @@ def peptide_report_with_rna_evidence(report: dict, catalogue: dict, results: dic
     Match benchmark samples by the actual BAM basename, not timepoint alone.
     """
     by_id = {variant["variant_id"]: variant for variant in catalogue["variants"]}
-    samples = {sample.bam_url.rsplit("/", 1)[-1]: sample.name for sample in SAMPLES}
     report = json.loads(json.dumps(report))
     scored = {variant["variant_id"]: variant for variant in (results or {}).get("variants", [])}
     for variant in report["variants"]:
@@ -73,12 +111,8 @@ def peptide_report_with_rna_evidence(report: dict, catalogue: dict, results: dic
                 for sample, values in scored.get(variant["variant_id"], {}).get("samples", {}).items()
                 for arm, entry in values.get("arms", {}).items()
             ]
-        variant["source_rna_support"] = [
-            {**entry, "benchmark_sample": samples.get((entry.get("bam_file") or "").rsplit("/", 1)[-1])}
-            for entry in by_id[variant["variant_id"]].get("assay_support", [])
-            if entry.get("tissue") == "tumor"
-            and assays.ASSAY_META.get(entry.get("assay_type"), {}).get("kind") == "rna"
-        ]
+        variant["source_rna_support"] = source_rna_evidence(by_id[variant["variant_id"]])
+        variant["rna_support"] = rna_support_tier(variant["source_rna_support"], scored.get(variant["variant_id"]))
     return report
 
 
@@ -286,6 +320,7 @@ def build_payload() -> dict:
                 "assay_matrix": assays.matrix(variant),
                 "germline_matrix": assays.germline(variant),
                 "recovery": recovery,
+                "rna_support": rna_support_tier(source_rna_evidence(variant), recovery),
             }
         )
 

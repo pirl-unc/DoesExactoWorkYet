@@ -3,7 +3,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
-  sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState } = require("../web/peptides.js");
+  sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState,
+  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -337,4 +338,128 @@ test("RNA support counts input RNAs once per sample and method, without counting
   ]);
   assert.deepEqual(rnaSupport(data, hits, { sample: "T1-ONT", method: "reads" })[0].methods,
     [{ method: "reads", count: 2 }]);
+});
+
+function annotatedFixture() {
+  const sequence = 'SFSGPGMSGMALMEVNLLSGKKK';
+  const variant = { variant_id: 'CD109', gene: 'CD109', ref: 'G', alt: 'T', protein_change: 'p.Arg1310Met',
+    reconstructed_candidates: [], published_vaccine_peptides: [{ peptide_id: 'p1', sequence, in_vaccines: ['V3'], matches: [] }] };
+  const data = { analysis: { artifacts: [{ sample: 'T1', arm: 'reads' }, { sample: 'T1', arm: 'corrected' }] },
+    variants: [variant], reconstructions: {} };
+  function add(id, sequence, position, matched = false, arm = 'reads') {
+    const candidate = { sample: 'T1', arm, reconstruction_id: `${arm}/${id}`, protein_id: id,
+      rna_call_id: id, variant_amino_acid_start: position };
+    variant.reconstructed_candidates.push(candidate);
+    data.reconstructions[candidate.reconstruction_id] = sequence;
+    if (matched) variant.published_vaccine_peptides[0].matches.push({ ...candidate, amino_acid_starts: [1] });
+  }
+  return { data, variant, add, sequence };
+}
+
+test('CD109 vaccine mismatches highlight KKK versus FMV on both rows, even in W1', () => {
+  const { data, add } = annotatedFixture();
+  add('short|orf_0-59', 'MSGMALMEVNLLSGFMVPSEA', 1);
+  const rows = sequenceRows(data), [group] = prepareComparisons(data, rows);
+  const entry = group.references[0], window = group.windows[0];
+  const diff = vaccineComparison(window, entry);
+  assert.equal(diff.missing, 6); // absent prefix is coverage, not a substitution
+  assert.deepEqual(diff.substitutions.map(x => [x.position, x.reference, x.residue]),
+    [[21, 'K', 'F'], [22, 'K', 'M'], [23, 'K', 'V']]);
+  const highlights = vaccineDifferences(group);
+  assert.equal(highlights.windows.get(window).size, 3);
+  assert.deepEqual([...highlights.references.get(entry).keys()], [...highlights.windows.get(window).keys()]);
+  assert.equal(group.comparisons.get(window).substitutions.length, 0);
+  // A protein starting at the mutation has only four local anchor residues;
+  // this intentionally does not infer a vaccine-row target position.
+  assert.equal(referenceEvents(entry, group.windows, group.events).size, 0);
+});
+
+test('target codon uses RNA-call coordinates, independently of the vaccine mismatch', () => {
+  const { data, add } = annotatedFixture();
+  add('full|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 7);
+  const rows = sequenceRows(data), [group] = prepareComparisons(data, rows);
+  const event = group.events.get(group.windows[0]);
+  assert.equal(event.size, 1);
+  assert.equal(event.get(6).kind, 'mutation');
+  assert.equal(group.vaccineDifferences.windows.get(group.windows[0]).has(6), false);
+  assert.deepEqual([...referenceEvents(group.references[0], group.windows, group.events).keys()], [6]);
+});
+
+test('grouped target locations preserve ambiguity and do not invent a reference annotation', () => {
+  const { data, add, sequence } = annotatedFixture();
+  add('a|orf_0-68', sequence, 7, true);
+  add('b|orf_0-68', sequence, 9, true);
+  const [group] = prepareComparisons(data, sequenceRows(data));
+  const events = group.events.get(group.windows[0]);
+  assert.deepEqual([...events.keys()].sort((a,b) => a-b), [6, 8]);
+  assert.ok([...events.values()].every(x => x.kind === 'ambiguous'));
+  assert.equal(referenceEvents(group.references[0], group.windows, group.events).size, 0);
+});
+
+test('frameshift tails survive cropping without claiming novel ORF boundaries', () => {
+  const { data, variant, add } = annotatedFixture();
+  variant.ref = 'AG'; variant.alt = 'A';
+  add('a|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 1);
+  const [group] = prepareComparisons(data, sequenceRows(data));
+  const window = group.windows[0];
+  const cropped = { ...window, sequence: window.sequence.slice(4), offset: window.offset + 4 };
+  const events = windowEvents(cropped, variant);
+  assert.equal(events.get(0).kind, 'mutation');
+  assert.equal(events.get(4).kind, 'tail');
+  assert.match(events.get(4).title, /not annotated/);
+});
+
+test('top windows rank RNA inputs, not vaccine containment or row order, and retain ties', () => {
+  const { data, add, sequence } = annotatedFixture();
+  add('match|orf_0-68', sequence, 7, true);
+  add('mismatch1|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 7);
+  add('mismatch2|orf_0-68', 'SFSGPGMSGMALMEVNLLSGFMV', 7);
+  add('match|orf_3-71', sequence, 7, true); // same input, another ORF: still one RNA
+  add('corrected|orf_0-68', sequence, 7, true, 'corrected');
+  let rows = sequenceRows(data), groups = prepareComparisons(data, rows);
+  let top = topWindows(data, groups, rows);
+  const raw = top.find(x => x.method === 'reads'), corrected = top.find(x => x.method === 'corrected');
+  assert.equal(raw.count, 2);
+  assert.equal(raw.leaders.length, 1);
+  assert.notEqual(raw.leaders[0].window.number, 1);
+  assert.equal(raw.disagreement, true);
+  assert.equal(corrected.count, 1);
+  assert.equal(corrected.disagreement, false);
+  add('match2|orf_0-68', sequence, 7, true);
+  rows = sequenceRows(data); groups = prepareComparisons(data, rows);
+  top = topWindows(data, groups, rows, { method: 'reads' });
+  assert.equal(top.length, 1);
+  assert.equal(top[0].leaders.length, 2);
+  assert.deepEqual(top[0].leaders.map(x => x.peptides[0].status).sort(), ['contained', 'disagreement']);
+});
+
+test('top-window missing coverage, unaligned output and no output stay separate from disagreement', () => {
+  const { data, add } = annotatedFixture();
+  add('short|orf_0-50', 'MSGMALMEVNLLSGKKK', 1);
+  add('unrelated|orf_0-29', 'AAAAAAAAAA', 3, false, 'corrected');
+  data.analysis.artifacts.push({ sample: 'T2', arm: 'reads' });
+  const rows = sequenceRows(data), groups = prepareComparisons(data, rows);
+  const tops = topWindows(data, groups, rows);
+  assert.equal(tops[0].leaders[0].peptides[0].status, 'incomplete');
+  assert.equal(tops[1].leaders[0].peptides[0].status, 'unaligned');
+  assert.deepEqual(tops[2].leaders, []);
+  assert.ok(tops.every(x => !x.disagreement));
+});
+
+test('RNA-linked containment cannot leak into a leader from a different method', () => {
+  const { data, add, sequence } = annotatedFixture();
+  add('raw|orf_0-68', sequence, 7, false);
+  add('corrected|orf_0-68', sequence, 7, true, 'corrected');
+  const rows = sequenceRows(data), groups = prepareComparisons(data, rows);
+  const tops = topWindows(data, groups, rows);
+  assert.equal(tops[0].leaders[0].peptides[0].status, 'unconfirmed');
+  assert.equal(tops[1].leaders[0].peptides[0].status, 'contained');
+});
+
+test('RNA evidence tiers follow sample selection and remain independent of method', () => {
+  const { data, variant } = annotatedFixture();
+  variant.rna_support = { category: 'multiple', by_sample: { T1: { category: 'single' }, T2: { category: 'multiple' } } };
+  assert.equal(sequenceRows(data, { rnaTier: 'multiple' }).length, 1);
+  assert.equal(sequenceRows(data, { rnaTier: 'multiple', sample: 'T1' }).length, 0);
+  assert.equal(sequenceRows(data, { rnaTier: 'single', sample: 'T1', method: 'corrected' }).length, 1);
 });

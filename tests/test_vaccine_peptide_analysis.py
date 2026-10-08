@@ -146,3 +146,39 @@ def test_source_rna_counts_match_the_actual_bam_and_do_not_pool_libraries():
     assert evidence[0]["alt_reads"] == 4
     assert evidence[1]["benchmark_sample"] is None
     assert "source_rna_support" not in report["variants"][0]
+
+
+def test_rna_support_tiers_use_maximum_without_pooling_or_imputing_missing_samples():
+    rows = [
+        {"benchmark_sample": "T1-ONT", "alt_reads": 1},
+        {"benchmark_sample": "T2-ONT", "alt_reads": 1},
+        {"benchmark_sample": "T2-ONT", "alt_reads": 1},
+        {"benchmark_sample": None, "alt_reads": 100},
+    ]
+    tier = build_site.rna_support_tier(rows)
+    assert tier["category"] == "single"
+    assert tier["max_alt_reads"] == 1
+    assert tier["by_sample"]["T2-ONT"]["category"] == "single"
+    assert "T1-PacBio" in tier["missing_samples"]
+    rows.append({"benchmark_sample": "T3-ONT", "alt_reads": 2})
+    assert build_site.rna_support_tier(rows)["category"] == "multiple"
+    assert build_site.rna_support_tier([])["category"] == "unknown"
+    assert build_site.rna_support_tier([{"benchmark_sample": "T1-ONT", "alt_reads": None}])["category"] == "unknown"
+    assert build_site.rna_support_tier([{"benchmark_sample": "T1-ONT", "alt_reads": 0}])["category"] == "zero"
+
+
+def test_raw_rna_evidence_promotes_a_tier_without_double_counting_calls_or_assemblies():
+    evidence = [{"benchmark_sample": "T2-ONT", "alt_reads": 1}]
+    calls = [{"transcript_model_id": "read-a"}, {"transcript_model_id": "read-a"}]
+    recovery = {"samples": {"T1-PacBio": {"arms": {
+        "reads": {"rna_variant_calls": calls},
+        "corrected": {"rna_variant_calls": [{"transcript_model_id": str(i)} for i in range(20)]},
+    }}}}
+    assert build_site.rna_support_tier(evidence, recovery)["category"] == "single"
+    calls.append({"transcript_model_id": "read-b"})
+    tier = build_site.rna_support_tier(evidence, recovery)
+    assert tier["category"] == "multiple"
+    assert tier["max_alt_reads"] == 2
+    assert tier["by_sample"]["T1-PacBio"]["sid_alt_reads"] is None
+    assert tier["by_sample"]["T1-PacBio"]["exacto_raw_rnas"] == 2
+    assert tier["by_sample"]["T2-ONT"]["category"] == "single"

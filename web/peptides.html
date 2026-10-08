@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261008-alignment">
+<link rel="stylesheet" href="style.css?v=20261008-events">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -32,10 +32,23 @@
       <p>P rows are recorded vaccine peptides; W rows group proteins identical within the comparison
         window. The default window is 45 aa and expands for longer references. All sequences remain visible;
         wide alignments scroll horizontally. Long regions continue in blocks.</p>
-      <p>Green marks full vaccine containment. Amber marks differences from the first W row in each
+      <p>Green marks full vaccine containment. Rose marks differences between a vaccine peptide and
+        a reconstruction at overlapping positions. Click a W label to compare the vaccine rows against it
+        (initially W1); W-row marks always compare against the vaccine peptides. Hover for residue numbers.
+        Amber marks other differences from the first W row in each
         aligned group. S17G means S in the reference window and G at position 17 in this window.
         Positions refer to the window, not the full protein. Missing ends are coverage differences.
         Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
+      <p>Blue underlines mark the translated target codon from the RNA call. For a deletion this is
+        the codon at/after its junction; for a frameshift, the dotted blue tail means downstream of
+        the event, not verified novelty at every residue. Dotted target marks indicate differing
+        locations among grouped outputs. Vaccine-row marks require an unambiguous exact local anchor.
+        The current panel has no annotated fusion breakpoints or novel-ORF boundaries; these are not inferred.</p>
+      <p>★ marks the window(s) with the most distinct RNA inputs within each sample and method,
+        including all ties. Exacto emits unranked candidates: this is a report support rule, not its
+        confidence score. “Top ≠ vaccine” means at least one leader differs from at least one displayed
+        vaccine peptide at a covered position, even if another peptide is contained. Missing ends and
+        unaligned outputs are reported separately in the details. W1 is a display reference, not a rank.</p>
       <p>Match: ✓ contained; ≠ protein produced but vaccine sequence absent or incomplete;
         ∅ no reconstructed protein; — not evaluated. W rows name the peptides they contain.</p>
       <p>RNA counts: r raw reads; c corrected; a assembly; a1 assembly-ms1; ap permissive assembly;
@@ -45,6 +58,11 @@
       <p>Sid counts are independent mutant / total reads at the locus: green means mutant reads;
         amber means covered with zero mutant reads; 0 / 0 means no coverage; — means not reported.
         Locus support does not establish full peptide recovery. Libraries stay separate.</p>
+      <p>RNA support groups use the larger of Sid’s mutant-read count and Exacto’s distinct raw-read
+        allele calls in each benchmark library:
+        2+ in any library, single-read evidence, observed zero, or unknown. Sample filtering uses that
+        sample's library; method filtering does not change these independent evidence groups. Missing libraries remain unknown.
+        Two reads are a support threshold, not a guarantee of complete vaccine-sequence recovery.</p>
     </details>
     <div class="sequence-controls" id="sequence-controls" hidden>
       <label class="sequence-search">Search targets or sequences
@@ -55,10 +73,16 @@
       <label>Method <select id="sequence-method"><option value="">All available methods</option></select></label>
       <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
       <label>Sid RNA evidence <select id="sequence-source-rna"><option value="">All source evidence</option><option value="supported">Mutant RNA observed</option><option value="no_alt_reads">Covered, no mutant reads</option><option value="no_coverage">No coverage</option><option value="not_reported">Not reported</option></select></label>
+      <label>Top RNA windows <select id="sequence-top"><option value="">All targets</option><option value="disagreement">Differ from vaccine</option></select></label>
+      <label>RNA support <select id="sequence-rna-tier"><option value="">All evidence</option><option value="multiple">2+ mutant reads</option><option value="single">Single-read evidence</option><option value="zero">0 mutant reads observed</option><option value="unknown">Counts unavailable</option></select></label>
     </div>
     <div class="sequence-legend" aria-label="Sequence and read-count legend">
       <span><mark>ACD</mark> vaccine contained</span>
-      <span><b class="sequence-difference">G</b> changed residue</span>
+      <span><b class="sequence-vaccine-difference">G</b> differs from vaccine</span>
+      <span><b class="sequence-difference">G</b> differs from W1</span>
+      <span><b class="sequence-event sequence-event-mutation">M</b> target codon</span>
+      <span>★ top RNA support (ties kept)</span>
+      <span>Click W to compare vaccine rows</span>
       <span><b>7r</b> raw reads · <b>2c</b> corrected · <b>1s</b> SPAdes</span>
       <span>✓ match · ≠ disagreement · ∅ no protein · — unavailable</span>
     </div>
@@ -71,11 +95,19 @@
       Longer vaccine peptides and mRNA minimal epitopes retain separate entries.
       Matching uses the full exported protein sequences and requires the target RNA
       allele at the peptide’s translated position, or its frameshifted tail.</p>
+    <details class="sequence-details sequence-reading-key">
+      <summary>CD109’s terminal KKK</summary>
+      <p>The <a href="https://gitlab.com/slowkow/osteosarc.com/-/blob/main/scripts/vaccines/source_data/vaccine_variants.tsv">source vaccine table</a>
+        records SFSGPGMSGMALMEVNLLSGKKK but does not identify an added tag. A solubility modification is
+        plausible, not confirmed. Some reconstructed proteins contain the full 20-aa prefix
+        SFSGPGMSGMALMEVNLLSG and continue FMV instead of KKK; others also lack the N-terminal part.
+        The score retains the complete recorded peptide until the intended biological sequence is documented.</p>
+    </details>
     <p><a href="vaccine_peptide_subset.fasta" download>Reference peptides (FASTA)</a> ·
       <a href="vaccine_peptide_subset.json" download>Reference annotations (JSON)</a> ·
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261008-alignment"></script>
+<script src="peptides.js?v=20261008-events"></script>
 </body>
 </html>

@@ -13,6 +13,8 @@ function sequenceRows(report, filters = {}) {
     (!filters.vaccine || peptide.in_vaccines.includes(filters.vaccine)) &&
     (!filters.sourceRna || sourceRnaState((variant.source_rna_support || []).filter((entry) =>
       !filters.sample || entry.benchmark_sample === filters.sample)) === filters.sourceRna) &&
+    (!filters.rnaTier || ((filters.sample ? variant.rna_support?.by_sample?.[filters.sample]?.category :
+      variant.rna_support?.category) || "unknown") === filters.rnaTier) &&
     (!query || [variant.gene, variant.protein_change, variant.variant_id,
       peptide.sequence, ...peptide.in_vaccines].join(" ").toLowerCase().includes(query)));
 }
@@ -235,6 +237,124 @@ function windowSlice(window, start, end) {
   return slice;
 }
 
+// Display comparisons are ungapped and only call differences in covered columns.
+// Containment still comes from the archived, allele-linked full-protein check.
+function vaccineComparison(window, entry) {
+  const { peptide, variant } = entry.row;
+  const label = `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`;
+  const substitutions = [], positions = new Map();
+  let missing = 0;
+  for (let i = 0; i < peptide.sequence.length; i++) {
+    const column = entry.offset + i, reference = peptide.sequence[i];
+    const residue = window.sequence[column - window.offset];
+    if (residue === undefined) { missing++; continue; }
+    if (reference !== residue) {
+      const change = { column, position: i + 1, reference, residue };
+      substitutions.push(change);
+      positions.set(column, `${label} ${reference}${i + 1} → W${window.number} ${residue} (vaccine comparison)`);
+    }
+  }
+  return { label, substitutions, positions, missing };
+}
+
+function vaccineDifferences(group) {
+  const windows = new Map(), references = new Map(group.references.map((entry) => [entry, new Map()]));
+  for (const window of group.windows) {
+    const positions = new Map();
+    for (const entry of group.references) {
+      for (const [column, description] of vaccineComparison(window, entry).positions) {
+        positions.set(column, [positions.get(column), description].filter(Boolean).join("; "));
+        if (window === group.windows[0]) references.get(entry).set(column, description);
+      }
+    }
+    windows.set(window, positions);
+  }
+  return { windows, references };
+}
+
+function windowEvents(window, variant) {
+  const candidates = new Map((variant.reconstructed_candidates || []).map((candidate) =>
+    [JSON.stringify([candidate.reconstruction_id, candidate.rna_call_id]), candidate]));
+  const locations = new Set();
+  for (const { protein } of window.members) for (const key of protein.observations.keys()) {
+    const start = candidates.get(key)?.variant_amino_acid_start;
+    if (Number.isInteger(start) && start > 0) locations.add(protein.offset + start - 1);
+  }
+  const frameshift = Boolean(variant.ref && variant.alt && (variant.alt.length - variant.ref.length) % 3);
+  const deletion = Boolean(variant.ref && variant.alt && variant.ref.length > variant.alt.length);
+  const label = frameshift ? "First translated codon at the target frameshift" : deletion
+    ? "First translated codon at/after the target deletion junction" : "Target mutation codon";
+  const positions = new Map();
+  for (const column of locations) positions.set(column, {
+    kind: locations.size > 1 ? "ambiguous" : "mutation",
+    title: `${label} · ${variant.protein_change || variant.variant_id}. RNA-call position in this translation` +
+      (locations.size > 1 ? "; grouped outputs place the event at different positions" : ""),
+  });
+  // A tail is a positional aid, not a claim that every residue is novel or that
+  // the frame remains shifted after other events. Never invent novel-ORF bounds.
+  if (frameshift && locations.size === 1) {
+    const start = [...locations][0];
+    for (let column = Math.max(start + 1, window.offset); column < window.offset + window.sequence.length; column++)
+      positions.set(column, { kind: "tail", title: "Downstream of the target frameshift; novelty and frame-restoration boundaries are not annotated" });
+  }
+  return positions;
+}
+
+function referenceEvents(entry, windows, events) {
+  const positions = new Set(), sequence = entry.row.peptide.sequence;
+  for (const window of windows) for (const [column, event] of events.get(window)) {
+    if (event.kind !== "mutation") continue;
+    const index = column - entry.offset;
+    if (index < 0 || index >= sequence.length) continue;
+    const from = Math.max(entry.offset, window.offset, column - 3);
+    const end = Math.min(entry.offset + sequence.length, window.offset + window.sequence.length, column + 4);
+    if (end - from >= 6 && sequence.slice(from - entry.offset, end - entry.offset) ===
+        window.sequence.slice(from - window.offset, end - window.offset)) positions.add(column);
+  }
+  // Require agreement across exact local anchors; never guess from peptide
+  // midpoint, canonical protein numbering, or minimal_epitope_offset.
+  return positions.size === 1 ? new Map([[[...positions][0], { kind: "mutation",
+    title: "Target codon projected from RNA-call coordinates through an exact local sequence anchor" }]]) : new Map();
+}
+
+function prepareComparisons(report, rows, filters = {}) {
+  const groups = sequenceComparison(report, rows, filters);
+  let number = 1;
+  for (const group of groups) {
+    group.windows = reconstructionWindows(group, group.start, group.end, number);
+    number += group.windows.length;
+    group.comparisons = group.unaligned ? null : windowDifferences(group.windows, group.start, group.end);
+    group.vaccineDifferences = vaccineDifferences(group);
+    group.events = new Map(group.windows.map((window) => [window, windowEvents(window, rows[0].variant)]));
+  }
+  return groups;
+}
+
+function topWindows(report, groups, rows, filters = {}) {
+  const windows = groups.flatMap((group) => group.windows.map((window) => ({ window, group })));
+  return report.analysis.artifacts.filter((run) => selectedRun(run, filters)).map((run) => {
+    const counts = windows.map(({ window }) => rnaSupport(report, [...window.observations.values()],
+      { sample: run.sample, method: run.arm })[0]?.methods[0]?.count || 0);
+    const count = Math.max(0, ...counts);
+    const leaders = windows.filter((_, i) => count > 0 && counts[i] === count).map(({ window, group }) => {
+      const peptides = rows.map(({ peptide }) => {
+        const ids = new Set([...window.observations.values()].filter((hit) => selectedRun(hit, { sample: run.sample, method: run.arm }))
+          .map((hit) => JSON.stringify([hit.reconstruction_id, hit.rna_call_id])));
+        const contained = peptide.matches.some((hit) => selectedRun(hit, { sample: run.sample, method: run.arm }) &&
+          ids.has(JSON.stringify([hit.reconstruction_id, hit.rna_call_id])) && window.peptideIds.has(peptide.peptide_id));
+        const entry = group.references.find((entry) => entry.row.peptide === peptide);
+        const comparison = entry ? vaccineComparison(window, entry) : null;
+        const status = contained ? "contained" : !comparison ? "unaligned" : comparison.substitutions.length
+          ? "disagreement" : comparison.missing ? "incomplete" : "unconfirmed";
+        return { peptide, status, comparison };
+      });
+      return { window, peptides };
+    });
+    return { sample: run.sample, method: run.arm, count, leaders,
+      disagreement: leaders.some((leader) => leader.peptides.some((peptide) => peptide.status === "disagreement")) };
+  });
+}
+
 const statusText = { contained: "Contained", sequence_disagreement: "Sequence disagreement",
   no_sequence: "No reconstructed sequence", not_evaluated: "Not evaluated" };
 
@@ -259,7 +379,7 @@ const methodCodes = { reads: "r", corrected: "c", assembly: "a", "assembly-ms1":
   "assembly-permissive": "ap", "assembly-unspliced": "au", isonform: "i", spades: "s" };
 const statusSymbols = { contained: "✓", sequence_disagreement: "≠", no_sequence: "∅", not_evaluated: "—" };
 
-function supportCells(report, matches, filters, variant = null) {
+function supportCells(report, matches, filters, variant = null, leaders = []) {
   const cells = [];
   for (const support of rnaSupport(report, matches, filters)) {
     const cell = node("td", "alignment-reads");
@@ -278,6 +398,12 @@ function supportCells(report, matches, filters, variant = null) {
       for (const { method, count } of displayed) {
         const value = node("span", count ? "support-count positive" : "support-count");
         value.append(node("strong", "", String(count)), node("span", "support-method", methodCodes[method] || method));
+        const leader = leaders.find((run) => run.sample === support.sample && run.method === method);
+        if (leader) {
+          value.classList.add("support-leader");
+          value.append(node("span", "support-star", "★"));
+          value.title = `${support.sample} ${method}: ${leader.leaders.length > 1 ? "Tied for most" : "Most"} distinct RNA inputs (${count}) among displayed windows; not an Exacto confidence rank`;
+        }
         cell.append(value);
       }
     }
@@ -353,19 +479,22 @@ function sourceRnaEvidence(report, variant, filters) {
   return section;
 }
 
-function sequenceStrip(slice, window = null, comparison = null) {
+function sequenceStrip(slice, window = null, comparison = null, vaccine = new Map(), events = new Map()) {
   const strip = node("code", "sequence-strip");
   strip.append(node("span", "sequence-trim", slice.clippedLeft ? "…" : " "), document.createTextNode(slice.left));
   let column = (window?.offset || 0) + slice.from;
   for (const piece of slice.pieces) {
     const segment = node(piece.matched ? "mark" : "span", "");
     for (const residue of piece.text) {
-      const difference = comparison?.positions.get(column++);
-      if (difference) {
-        const aminoAcid = node("span", "sequence-difference", residue);
-        aminoAcid.title = difference;
+      const difference = comparison?.positions.get(column), mismatch = vaccine.get(column), event = events.get(column);
+      if (difference || mismatch || event) {
+        const classes = [mismatch ? "sequence-vaccine-difference" : difference ? "sequence-difference" : "",
+          event ? `sequence-event sequence-event-${event.kind}` : ""].filter(Boolean).join(" ");
+        const aminoAcid = node("span", classes, residue);
+        aminoAcid.title = [mismatch, difference, event?.title].filter(Boolean).join("; ");
         segment.append(aminoAcid);
       } else segment.append(document.createTextNode(residue));
+      column++;
     }
     strip.append(segment);
   }
@@ -390,7 +519,7 @@ function sequenceRuler(start, end, origin) {
   return node("code", "sequence-ruler", ` ${columns.join("")} \n ${ticks.join("")} `);
 }
 
-function referenceRow(report, entry, slice, part, filters) {
+function referenceRow(report, entry, slice, part, filters, group) {
   const { row } = entry;
   const item = node("tr", "alignment-reference");
   item.id = `${row.peptide.peptide_id}-part-${part}`;
@@ -398,7 +527,11 @@ function referenceRow(report, entry, slice, part, filters) {
   label.scope = "row";
   label.title = `${row.peptide.in_vaccines.join(", ")} · ${row.peptide.sequence.length} aa · ${row.peptide.is_mrna_minimal_epitope ? "Minimal epitope" : "Vaccine peptide"}`;
   const sequence = node("td", "alignment-sequence");
-  sequence.append(sequenceStrip(slice));
+  const update = () => sequence.replaceChildren(sequenceStrip(slice, entry, null,
+    group.referenceWindow ? vaccineComparison(group.referenceWindow, entry).positions : new Map(),
+    referenceEvents(entry, group.windows, group.events)));
+  group.referenceDisplays.push(update);
+  update();
   const match = node("td", `alignment-match ${row.status}`, statusSymbols[row.status]);
   match.title = statusText[row.status];
   match.setAttribute("aria-label", statusText[row.status]);
@@ -420,13 +553,20 @@ function differenceDescription(comparison) {
   return changes.join(", ");
 }
 
-function reconstructionRow(report, window, slice, filters, rows, comparison) {
+function reconstructionRow(report, window, slice, filters, rows, comparison, group, top) {
   const item = node("tr", "alignment-reconstruction");
-  const label = node("th", "alignment-label", `W${window.number}`);
+  const label = node("th", "alignment-label");
   label.scope = "row";
   label.title = windowMetadata(window);
+  const compare = node("button", "window-compare", `W${window.number}`);
+  compare.type = "button";
+  compare.title = `Compare vaccine rows with W${window.number}`;
+  compare.setAttribute("aria-pressed", String(group.referenceWindow === window));
+  compare.addEventListener("click", () => group.selectWindow(window));
+  group.compareButtons.push({ window, button: compare });
+  label.append(compare);
   const sequence = node("td", "alignment-sequence");
-  sequence.append(sequenceStrip(slice, window, comparison));
+  sequence.append(sequenceStrip(slice, window, comparison, group.vaccineDifferences.windows.get(window), group.events.get(window)));
   const contained = rows.filter(({ peptide }) => window.peptideIds.has(peptide.peptide_id)).map(({ variant, peptide }) =>
     `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`);
   const match = node("td", `alignment-match ${contained.length ? "contained" : "sequence_disagreement"}`, contained.join(" ") || "≠");
@@ -444,23 +584,27 @@ function reconstructionRow(report, window, slice, filters, rows, comparison) {
       if (missing || additional) changes.append(node("span", "coverage-badge", "coverage"));
     }
   } else changes.append(node("span", "support-empty", "—"));
-  item.append(label, sequence, match, changes, ...supportCells(report, [...window.observations.values()], filters));
+  item.append(label, sequence, match, changes, ...supportCells(report, [...window.observations.values()], filters, null,
+    top.filter((run) => run.leaders.some((leader) => leader.window === window))));
   return item;
 }
 
-function targetComparison(report, rows, filters, columns) {
+function targetComparison(report, rows, filters, columns, groups, top) {
   const fragment = document.createDocumentFragment();
-  const groups = sequenceComparison(report, rows, filters);
   const samples = rnaSupport(report, [], filters);
-  let nextWindow = 1;
-  for (const group of groups) {
-    group.windows = reconstructionWindows(group, group.start, group.end, nextWindow);
-    group.comparisons = group.unaligned ? null : windowDifferences(group.windows, group.start, group.end);
-    nextWindow += group.windows.length;
-  }
   const reconstructionIds = new Set(groups.flatMap((group) => group.reconstructions.flatMap((p) => [...p.observations.values()].map((hit) => hit.reconstruction_id))));
   // Reference and reconstruction support share the same sample columns.
   groups.forEach((group, groupIndex) => {
+    group.referenceWindow = group.windows[0];
+    group.referenceDisplays = [];
+    group.referenceCaptions = [];
+    group.compareButtons = [];
+    group.selectWindow = (window) => {
+      group.referenceWindow = window;
+      group.referenceDisplays.forEach(update => update());
+      group.referenceCaptions.forEach(caption => { caption.textContent = `P vs W${window.number}`; });
+      group.compareButtons.forEach(item => item.button.setAttribute("aria-pressed", String(item.window === window)));
+    };
     if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "Unaligned candidates · mutation-centered windows; no shared vaccine anchor."));
     else if (groups.filter((g) => !g.unaligned).length > 1) fragment.append(node("p", "sequence-alignment-note", `Alignment group ${groupIndex + 1}`));
     const nParts = Math.ceil((group.end - group.start) / columns);
@@ -472,6 +616,11 @@ function targetComparison(report, rows, filters, columns) {
       panel.setAttribute("aria-label", `${rows[0].variant.gene} sequence alignment${nParts > 1 ? `, region ${part}` : ""}`);
       const table = node("table", "sequence-alignment");
       const caption = node("caption", "sequence-alignment-note", `${group.end - group.start} aa${nParts > 1 ? ` · region ${part}/${nParts}` : ""}`);
+      if (group.references.length && group.windows.length) {
+        const comparing = node("span", "", `P vs W${group.referenceWindow.number}`);
+        group.referenceCaptions.push(comparing);
+        caption.append(document.createTextNode(" · "), comparing);
+      }
       const head = node("thead"), header = node("tr");
       header.append(node("th", "", "Seq"), node("th", "", "Sequence"), node("th", "", "Match"),
         node("th", "", group.unaligned || !group.windows.length ? "Changes" : `Δ vs W${group.windows[0].number}`));
@@ -487,11 +636,11 @@ function targetComparison(report, rows, filters, columns) {
       const body = node("tbody");
       for (const entry of group.references) {
         const slice = alignmentSlice(entry.row.peptide.sequence, entry.offset, start, end);
-        if (slice) body.append(referenceRow(report, entry, slice, part, filters));
+        if (slice) body.append(referenceRow(report, entry, slice, part, filters, group));
       }
       for (const window of group.windows) {
         const slice = windowSlice(window, start, end);
-        if (slice) body.append(reconstructionRow(report, window, slice, filters, rows, group.comparisons?.get(window)));
+        if (slice) body.append(reconstructionRow(report, window, slice, filters, rows, group.comparisons?.get(window), group, top));
       }
       table.append(caption, head, body);
       panel.append(table);
@@ -511,6 +660,24 @@ function targetComparison(report, rows, filters, columns) {
       (comparison && comparison.reference !== window.number ? `. vs W${comparison.reference}: ${differenceDescription(comparison)}` : "")));
   }
   details.append(metadata);
+  const leaderTable = node("table", "sequence-top-details");
+  const leaderHead = node("tr");
+  ["Top RNA windows", "Inputs", "Vaccine comparison"].forEach((label) => leaderHead.append(node("th", "", label)));
+  leaderTable.append(leaderHead);
+  for (const run of top.filter((run) => run.count)) {
+    for (const leader of run.leaders) {
+      const row = node("tr");
+      const descriptions = leader.peptides.map(({ peptide, status, comparison }) => {
+        const label = `P${rows[0].variant.published_vaccine_peptides.indexOf(peptide) + 1}`;
+        const changes = comparison?.substitutions.map(({ position, reference, residue }) => `${reference}${position}${residue}`).join(", ");
+        return `${label}: ${status}${changes ? ` (${changes})` : ""}${comparison?.missing ? `; ${comparison.missing} aa not covered` : ""}`;
+      });
+      row.append(node("td", "", `${run.sample} ${run.method} · W${leader.window.number}${run.leaders.length > 1 ? " (tie)" : ""}`),
+        node("td", "", String(run.count)), node("td", "", descriptions.join(" · ")));
+      leaderTable.append(row);
+    }
+  }
+  if (top.some((run) => run.count)) details.append(leaderTable);
   fragment.append(details);
   if (!reconstructionIds.size) {
     const explanations = {
@@ -536,6 +703,7 @@ function renderSequenceRows(report) {
     method: queryNode("#sequence-method").value,
     vaccine: queryNode("#sequence-vaccine").value,
     sourceRna: queryNode("#sequence-source-rna").value,
+    rnaTier: queryNode("#sequence-rna-tier").value,
   };
   const rows = sequenceRows(report, filters);
   const groups = new Map();
@@ -543,21 +711,36 @@ function renderSequenceRows(report) {
     if (!groups.has(row.variant.variant_id)) groups.set(row.variant.variant_id, []);
     groups.get(row.variant.variant_id).push(row);
   });
-  queryNode("#sequence-count").textContent = `${rows.length} peptides across ${groups.size} target${groups.size === 1 ? "" : "s"} shown`;
   const container = queryNode("#sequence-targets");
   container.replaceChildren();
+  let shown = 0, peptidesShown = 0, topDisagreements = 0;
   const columns = Math.max(45, Math.min(72, Math.floor((container.clientWidth - 650) / 9.6) - 2));
   for (const entries of groups.values()) {
     const variant = entries[0].variant;
+    const comparisons = prepareComparisons(report, entries, filters);
+    const top = topWindows(report, comparisons, entries, filters);
+    const disagreements = top.filter((run) => run.disagreement);
+    if (queryNode("#sequence-top").value === "disagreement" && !disagreements.length) continue;
+    shown++;
+    peptidesShown += entries.length;
+    topDisagreements += disagreements.length > 0;
     const target = node("article", "sequence-target");
     const title = node("h3", "sequence-target-title");
     title.append(node("span", "", variant.gene), node("span", "mono", variant.protein_change || "Protein change not annotated"));
+    const tier = filters.sample ? variant.rna_support?.by_sample?.[filters.sample] : variant.rna_support;
+    if (tier?.category === "single") title.append(node("span", "badge warn", "1 RNA/library"));
+    if (disagreements.length) {
+      const badge = node("span", "top-disagreement-badge", "Top ≠ vaccine");
+      badge.title = `${disagreements.map((run) => `${run.sample} ${run.method}${run.leaders.length > 1 ? " (tied leaders)" : ""}`).join("; ")}. At least one most-supported window differs at a covered vaccine position. See starred counts and peptide & protein details.`;
+      title.append(badge);
+    }
     target.append(title);
-    target.append(targetComparison(report, entries, filters, columns));
+    target.append(targetComparison(report, entries, filters, columns, comparisons, top));
     target.append(sourceRnaEvidence(report, variant, filters));
     container.append(target);
   }
-  if (!rows.length) container.append(node("p", "empty", "No sequences match these filters. Try another gene, sequence, or recovery status."));
+  queryNode("#sequence-count").textContent = `${peptidesShown} peptides across ${shown} targets shown · ${topDisagreements} with a top-supported window differing from a vaccine peptide`;
+  if (!shown) container.append(node("p", "empty", "No sequences match these filters. Try another gene, sequence, or recovery status."));
 }
 
 function populateSequenceReport(report) {
@@ -568,6 +751,13 @@ function populateSequenceReport(report) {
   const { summary, analysis } = report;
   queryNode("#sequence-summary").textContent = `${summary.n_variants_any_peptide_matched}/${summary.n_variants} targets have a vaccine sequence contained in a reconstruction. ` +
     `${summary.n_peptide_entries_matched}/${summary.n_peptide_entries} recorded peptide entries recovered across all available samples and methods.`;
+  const stronger = report.variants.filter(variant => variant.rna_support?.category === "multiple");
+  const weaker = report.variants.filter(variant => variant.rna_support?.category === "single");
+  const recovered = variants => variants.filter(variant => variant.published_vaccine_peptides.some(peptide => peptide.matches.length)).length;
+  if (stronger.length) queryNode("#sequence-summary").append(document.createTextNode(
+    ` With 2+ mutant RNA reads in a tested library: ${recovered(stronger)}/${stronger.length} targets recovered.`));
+  if (weaker.length) queryNode("#sequence-summary").append(document.createTextNode(
+    ` Single-read evidence: ${recovered(weaker)}/${weaker.length}.`));
   const link = node("a", "", `Exacto ${analysis.exacto_version} · benchmark run`);
   link.href = analysis.run_url;
   queryNode("#sequence-provenance").append(link, node("span", "", ` · ${analysis.n_completed_methods} completed methods.`));
@@ -593,7 +783,7 @@ function populateSequenceReport(report) {
     }
   }
   queryNode("#sequence-controls").hidden = false;
-  for (const selector of ["#sequence-search", "#sequence-status", "#sequence-source-rna", ...Object.keys(options)]) {
+  for (const selector of ["#sequence-search", "#sequence-status", "#sequence-source-rna", "#sequence-top", "#sequence-rna-tier", ...Object.keys(options)]) {
     queryNode(selector).addEventListener("input", () => renderSequenceRows(report));
   }
   let resizeFrame;
@@ -610,7 +800,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState, vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });
