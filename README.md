@@ -80,8 +80,10 @@ below the sequences; other source libraries are available in a separate disclosu
 Missing counts, zero coverage, and covered loci with zero mutant reads remain
 different states. RNA allele support does not establish full peptide recovery.
 The report separates 2+ mutant-read evidence from single-read evidence, observed
-zero, and unknown counts. This uses the maximum Sid count in a benchmark-matched
-RNA library at any timepoint, never a sum across libraries or methods. The main
+zero, and unknown counts. This uses the maximum of Sid’s count and distinct
+Exacto raw-read allele-call inputs per benchmark library at any timepoint, never
+a sum across libraries or methods. Assembly and corrected counts do not raise
+this tier; per-sample evidence retains both underlying counts. The main
 page retains the overall score and shows recovery within each evidence group;
 amino-acid failures name the expected and observed residues inline.
 

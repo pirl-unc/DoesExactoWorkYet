@@ -58,9 +58,10 @@
       <p>Sid counts are independent mutant / total reads at the locus: green means mutant reads;
         amber means covered with zero mutant reads; 0 / 0 means no coverage; — means not reported.
         Locus support does not establish full peptide recovery. Libraries stay separate.</p>
-      <p>RNA support groups use the maximum Sid mutant-read count in a benchmark-matched library:
+      <p>RNA support groups use the larger of Sid’s mutant-read count and Exacto’s distinct raw-read
+        allele calls in each benchmark library:
         2+ in any library, single-read evidence, observed zero, or unknown. Sample filtering uses that
-        sample's library; methods do not change independent Sid counts. Missing libraries remain unknown.
+        sample's library; method filtering does not change these independent evidence groups. Missing libraries remain unknown.
         Two reads are a support threshold, not a guarantee of complete vaccine-sequence recovery.</p>
     </details>
     <div class="sequence-controls" id="sequence-controls" hidden>

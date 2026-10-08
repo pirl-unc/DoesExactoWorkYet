@@ -55,8 +55,9 @@
     <div id="residue-failures" hidden></div>
     <h3>Recovery by RNA support</h3>
     <div id="rna-breakdown"></div>
-    <p class="section-note">2+ means at least two mutant reads in one benchmark-matched Sid RNA library at any
-      timepoint. Single-read evidence means a maximum of one in the reported libraries; unreported libraries
+    <p class="section-note">2+ means at least two mutant reads in one benchmark library at any
+      timepoint. We use the larger of Sid’s count and Exacto’s distinct raw-read allele calls per library.
+      Single-read evidence means a maximum of one in the reported libraries; unreported libraries
       remain unknown. Counts are never added across libraries, timepoints or Exacto methods.
       Protein fractions use evaluated targets; amino-acid fractions use recovered, checkable proteins.
       Stronger locus support does not guarantee the coding span needed for a complete peptide.</p>

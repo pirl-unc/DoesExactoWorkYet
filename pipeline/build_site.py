@@ -63,7 +63,7 @@ def source_rna_evidence(variant: dict) -> list[dict]:
     ]
 
 
-def rna_support_tier(evidence: list[dict]) -> dict:
+def rna_support_tier(evidence: list[dict], recovery: dict | None = None) -> dict:
     """Maximum observed mutant count, never pooled across libraries or methods."""
     def classify(entries):
         counts = [entry["alt_reads"] for entry in entries
@@ -72,14 +72,23 @@ def rna_support_tier(evidence: list[dict]) -> dict:
         return {"max_alt_reads": maximum, "category": "unknown" if maximum is None else
                 "multiple" if maximum >= 2 else "single" if maximum == 1 else "zero"}
 
-    by_sample = {sample.name: classify([entry for entry in evidence
-                                      if entry.get("benchmark_sample") == sample.name])
-                 for sample in SAMPLES}
+    by_sample = {}
+    for sample in SAMPLES:
+        sid = classify([entry for entry in evidence if entry.get("benchmark_sample") == sample.name])
+        raw = (recovery or {}).get("samples", {}).get(sample.name, {}).get("arms", {}).get("reads", {})
+        calls = raw.get("rna_variant_calls")
+        # Only the raw-read arm is one input RNA per transcript model. Corrected
+        # and assembled inputs reuse those reads and must not raise this tier.
+        exacto_count = len({call["transcript_model_id"] for call in calls}) if calls is not None else None
+        by_sample[sample.name] = {
+            **classify([{"alt_reads": sid["max_alt_reads"]}, {"alt_reads": exacto_count}]),
+            "sid_alt_reads": sid["max_alt_reads"], "exacto_raw_rnas": exacto_count,
+        }
     return {
-        **classify([entry for entry in evidence if entry.get("benchmark_sample")]),
+        **classify([{"alt_reads": counts["max_alt_reads"]} for counts in by_sample.values()]),
         "by_sample": by_sample,
         "missing_samples": [name for name, counts in by_sample.items() if counts["category"] == "unknown"],
-        "basis": "Sid mutant reads in benchmark-matched tumor RNA libraries; maximum, not sum",
+        "basis": "Maximum of Sid mutant reads and distinct Exacto raw-read allele-call inputs per benchmark library; never summed",
     }
 
 
@@ -103,7 +112,7 @@ def peptide_report_with_rna_evidence(report: dict, catalogue: dict, results: dic
                 for arm, entry in values.get("arms", {}).items()
             ]
         variant["source_rna_support"] = source_rna_evidence(by_id[variant["variant_id"]])
-        variant["rna_support"] = rna_support_tier(variant["source_rna_support"])
+        variant["rna_support"] = rna_support_tier(variant["source_rna_support"], scored.get(variant["variant_id"]))
     return report
 
 
@@ -311,7 +320,7 @@ def build_payload() -> dict:
                 "assay_matrix": assays.matrix(variant),
                 "germline_matrix": assays.germline(variant),
                 "recovery": recovery,
-                "rna_support": rna_support_tier(source_rna_evidence(variant)),
+                "rna_support": rna_support_tier(source_rna_evidence(variant), recovery),
             }
         )
 

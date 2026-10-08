@@ -264,7 +264,7 @@ function renderEvidenceBreakdown() {
   container.innerHTML = "";
   if (!DATA.has_exacto_run) return;
   const table = el("table", "rna-breakdown-table"), header = el("tr");
-  ["Sid RNA support", "Targets", "Protein recovered", "Right amino acid"].forEach(text => header.append(el("th", null, text)));
+  ["RNA support", "Targets", "Protein recovered", "Right amino acid"].forEach(text => header.append(el("th", null, text)));
   table.append(header);
   for (const category of ["multiple", "single", "zero", "unknown"]) {
     const variants = DATA.variants.filter(v => (v.rna_support?.category || "unknown") === category);
