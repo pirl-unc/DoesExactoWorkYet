@@ -133,6 +133,7 @@ a:hover { text-decoration-thickness: 2px; }
 .sequence-strip mark, .sequence-legend mark { color: var(--ok); background: var(--ok-soft); font-weight: 650; padding: .15rem 0; }
 .sequence-difference { color: var(--bg-raised); background: var(--warn); font-weight: 800; padding-block: .15rem; outline: 1px solid var(--warn); border-radius: 2px; }
 .sequence-vaccine-difference { color: #fff; background: #a23559; font-weight: 800; padding-block: .15rem; outline: 1px solid #a23559; border-radius: 2px; }
+.sequence-suspected-tag { color: #fff; background: #7150a2; font-weight: 700; padding-block: .15rem; border-bottom: 2px dotted currentColor; border-radius: 2px; }
 .sequence-event { text-decoration: underline solid #2381cd 4px; text-underline-offset: .3em; }
 .sequence-event-tail, .sequence-event-ambiguous { text-decoration-style: dotted; text-decoration-thickness: 3px; }
 .window-compare { font: inherit; color: inherit; background: transparent; border: 0; border-bottom: 1px dotted currentColor; cursor: pointer; padding: .1rem 0; }

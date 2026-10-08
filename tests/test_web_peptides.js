@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
   sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState,
-  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows } = require("../web/peptides.js");
+  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -355,6 +355,26 @@ function annotatedFixture() {
   }
   return { data, variant, add, sequence };
 }
+
+test('suspected synthesis tags mark only the three terminal residues at the aligned offset', () => {
+  for (const sequence of ['SFSGPGMSGMALMEVNLLSGKKK', 'SFMLRAVSFFVKDAVLYSGAKKK', 'RMLDYYEEISAGDEGEFRQSKKK']) {
+    const entry = { offset: 12, row: { peptide: { sequence, in_vaccines: ['JLF V3'] } } };
+    const tags = terminalTagPositions(entry);
+    assert.deepEqual([...tags.keys()], [32, 33, 34]);
+    assert.ok([...tags.values()].every(description => /unconfirmed/.test(description)));
+  }
+});
+
+test('tag suspicion does not extend to arbitrary lysine runs or mRNA-only references', () => {
+  for (const [sequence, in_vaccines] of [
+    ['SFSGPGMSGMALMEVNLLSGKKK', ['mRNA']],
+    ['AAAKKKAAAA', ['JLF V3']],
+    ['AAAKKK', ['JLF V3']],
+    ['KKKAAA', ['JLF V3']],
+  ]) {
+    assert.equal(terminalTagPositions({ offset: 0, row: { peptide: { sequence, in_vaccines } } }).size, 0);
+  }
+});
 
 test('CD109 vaccine mismatches highlight KKK versus FMV on both rows, even in W1', () => {
   const { data, add } = annotatedFixture();

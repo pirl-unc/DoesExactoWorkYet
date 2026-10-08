@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261008-events">
+<link rel="stylesheet" href="style.css?v=20261008-tags">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -39,6 +39,9 @@
         aligned group. S17G means S in the reference window and G at position 17 in this window.
         Positions refer to the window, not the full protein. Missing ends are coverage differences.
         Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
+      <p>Purple with a dotted edge marks suspected CS Bio solubility tags: the terminal KKK in the
+        recorded CD109, PTH1R and CUL9 peptides. These are unconfirmed synthesis additions, not inferred
+        from every lysine run. Hover retains the mismatch detail; all residues still count in scoring.</p>
       <p>Blue underlines mark the translated target codon from the RNA call. For a deletion this is
         the codon at/after its junction; for a frameshift, the dotted blue tail means downstream of
         the event, not verified novelty at every residue. Dotted target marks indicate differing
@@ -79,6 +82,7 @@
     <div class="sequence-legend" aria-label="Sequence and read-count legend">
       <span><mark>ACD</mark> vaccine contained</span>
       <span><b class="sequence-vaccine-difference">G</b> differs from vaccine</span>
+      <span><b class="sequence-suspected-tag">KKK</b> suspected solubility tag</span>
       <span><b class="sequence-difference">G</b> differs from W1</span>
       <span><b class="sequence-event sequence-event-mutation">M</b> target codon</span>
       <span>★ top RNA support (ties kept)</span>
@@ -96,11 +100,11 @@
       Matching uses the full exported protein sequences and requires the target RNA
       allele at the peptide’s translated position, or its frameshifted tail.</p>
     <details class="sequence-details sequence-reading-key">
-      <summary>CD109’s terminal KKK</summary>
+      <summary>Suspected terminal solubility tags</summary>
       <p>The <a href="https://gitlab.com/slowkow/osteosarc.com/-/blob/main/scripts/vaccines/source_data/vaccine_variants.tsv">source vaccine table</a>
-        records SFSGPGMSGMALMEVNLLSGKKK but does not identify an added tag. A solubility modification is
+        records terminal KKK in CD109, PTH1R and CUL9 without identifying an added tag. A solubility modification is
         plausible, not confirmed. Some reconstructed proteins contain the full 20-aa prefix
-        SFSGPGMSGMALMEVNLLSG and continue FMV instead of KKK; others also lack the N-terminal part.
+        SFSGPGMSGMALMEVNLLSG of CD109 and continue FMV instead of KKK; others also lack the N-terminal part.
         The score retains the complete recorded peptide until the intended biological sequence is documented.</p>
     </details>
     <p><a href="vaccine_peptide_subset.fasta" download>Reference peptides (FASTA)</a> ·
@@ -108,6 +112,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261008-events"></script>
+<script src="peptides.js?v=20261008-tags"></script>
 </body>
 </html>
