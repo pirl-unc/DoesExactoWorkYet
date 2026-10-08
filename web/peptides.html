@@ -5,16 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261008-differences">
+<link rel="stylesheet" href="style.css?v=20261008-alignment">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
   <div class="wrap">
     <p><a href="index.html">Does Exacto work yet?</a></p>
     <h1>Vaccine peptide recovery</h1>
-    <p class="lede">Does the vaccine sequence appear inside a reconstructed protein?
-      The reconstruction can extend on either side. Every amino acid of the vaccine
-      peptide must be present, in order, without gaps.</p>
+    <p class="lede">Recorded vaccine peptides alongside reconstructed proteins and their RNA support.</p>
     <p id="sequence-summary" class="sequence-summary" aria-live="polite">Loading the sequence analysis…</p>
     <p id="sequence-provenance" class="section-note"></p>
   </div>
@@ -29,26 +27,25 @@
   <div id="sequence-availability" class="sequence-availability" hidden></div>
   <section aria-labelledby="sequence-list-title">
     <h2 id="sequence-list-title">Per-sequence report</h2>
-    <p class="section-note">Vaccine peptides for the same variant line up above reconstructed
-      sequences in a 45-amino-acid window centered on the aligned vaccine region. The window expands
-      when needed to include all aligned vaccine peptides. Green highlights mark confirmed containment.
-      “Sequence disagreement” means a protein was produced but the full vaccine sequence is absent or incomplete. “No reconstructed sequence” means Exacto produced no target-linked protein in the selected runs.</p>
-    <p class="section-note">Rows are positioned by shared sequence, without inserting alignment gaps.
-      References without an unambiguous shared stretch appear separately. Long regions continue
-      in additional blocks. Proteins with identical sequence and coverage within the whole comparison
-      window share one row, even if they differ outside it. Missing ends and stop markers remain distinct.
-      Full-protein counts and lengths preserve provenance; ellipses mean at least one member continues
-      beyond the displayed region. Screen size changes line wrapping, not sequence grouping.</p>
-    <p class="section-note">Solid amber boxes mark residues that differ from the comparison reference
-      (the first window in each aligned group). Each change is also listed below its sequence.
-      Changes use 1-based window positions, not full-protein positions.
-      “Contains P1, P2” identifies the specific recorded peptides recovered.</p>
-    <p class="section-note">Window RNA support combines distinct input RNAs producing the same window
-      sequence, counted once per sample and method. The per-peptide support below retains the full
-      vaccine-containment checks. Raw reads, corrected RNAs, and
-      assembled RNAs are counted separately by sample and method; they can reuse the same reads,
-      so the counts must not be added together. These are sequence-support counts, not total
-      RNA coverage at the mutation. Full proteins and supporting RNA call IDs are in the analysis download.</p>
+    <details class="sequence-details sequence-reading-key">
+      <summary>How to read this report</summary>
+      <p>P rows are recorded vaccine peptides; W rows group proteins identical within the comparison
+        window. The default window is 45 aa and expands for longer references. All sequences remain visible;
+        wide alignments scroll horizontally. Long regions continue in blocks.</p>
+      <p>Green marks full vaccine containment. Amber marks differences from the first W row in each
+        aligned group. S17G means S in the reference window and G at position 17 in this window.
+        Positions refer to the window, not the full protein. Missing ends are coverage differences.
+        Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
+      <p>Match: ✓ contained; ≠ protein produced but vaccine sequence absent or incomplete;
+        ∅ no reconstructed protein; — not evaluated. W rows name the peptides they contain.</p>
+      <p>RNA counts: r raw reads; c corrected; a assembly; a1 assembly-ms1; ap permissive assembly;
+        au unspliced assembly; i isONform; s SPAdes. Zero means no support in tested methods;
+        unlisted tested methods also have zero support. Methods can reuse reads: do not add their counts.
+        W counts combine distinct inputs per window; P counts retain full-peptide containment checks.</p>
+      <p>Sid counts are independent mutant / total reads at the locus: green means mutant reads;
+        amber means covered with zero mutant reads; 0 / 0 means no coverage; — means not reported.
+        Locus support does not establish full peptide recovery. Libraries stay separate.</p>
+    </details>
     <div class="sequence-controls" id="sequence-controls" hidden>
       <label class="sequence-search">Search targets or sequences
         <input type="search" id="sequence-search" placeholder="Gene, mutation, or amino-acid sequence">
@@ -59,12 +56,11 @@
       <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
       <label>Sid RNA evidence <select id="sequence-source-rna"><option value="">All source evidence</option><option value="supported">Mutant RNA observed</option><option value="no_alt_reads">Covered, no mutant reads</option><option value="no_coverage">No coverage</option><option value="not_reported">Not reported</option></select></label>
     </div>
-    <div class="sequence-rna-legend" aria-label="Sid RNA read-count legend">
-      <strong>Sid RNA: mutant / total reads</strong>
-      <span><span class="sequence-source-count supported">3 / 20</span> mutant reads</span>
-      <span><span class="sequence-source-count no_alt_reads">0 / 20</span> covered, no mutant reads</span>
-      <span><span class="sequence-source-count no_coverage">0 / 0</span> no coverage</span>
-      <span><span class="sequence-source-count not_reported">—</span> not reported</span>
+    <div class="sequence-legend" aria-label="Sequence and read-count legend">
+      <span><mark>ACD</mark> vaccine contained</span>
+      <span><b class="sequence-difference">G</b> changed residue</span>
+      <span><b>7r</b> raw reads · <b>2c</b> corrected · <b>1s</b> SPAdes</span>
+      <span>✓ match · ≠ disagreement · ∅ no protein · — unavailable</span>
     </div>
     <p id="sequence-count" class="section-note" aria-live="polite"></p>
     <div id="sequence-targets"></div>
@@ -80,6 +76,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261008-differences"></script>
+<script src="peptides.js?v=20261008-alignment"></script>
 </body>
 </html>
