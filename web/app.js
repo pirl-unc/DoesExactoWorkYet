@@ -244,6 +244,68 @@ function renderVerdict() {
       `${recovered} of ${testable} covered vaccine mutations came back as a translated ` +
       `mutant protein sequence${residues}${version}`),
   );
+  const failures = DATA.variants.filter(residueFailure);
+  if (failures.length) {
+    const link = el("a", "residue-failure-link", `${failures.length} amino-acid failures: ${failures.map(v => v.gene).join(", ")}`);
+    link.href = "#residue-failures";
+    node.append(link);
+  }
+}
+
+function residueFailure(variant) {
+  return variant.recovery?.residue_confirmed === false && RECOVERED.has(variant.recovery?.outcome);
+}
+
+const rnaTierLabels = { multiple: "2+ mutant RNA reads", single: "Single-read evidence",
+  zero: "0 mutant reads observed", unknown: "RNA counts unavailable" };
+
+function renderEvidenceBreakdown() {
+  const container = $("#rna-breakdown");
+  container.innerHTML = "";
+  if (!DATA.has_exacto_run) return;
+  const table = el("table", "rna-breakdown-table"), header = el("tr");
+  ["Sid RNA support", "Targets", "Protein recovered", "Right amino acid"].forEach(text => header.append(el("th", null, text)));
+  table.append(header);
+  for (const category of ["multiple", "single", "zero", "unknown"]) {
+    const variants = DATA.variants.filter(v => (v.rna_support?.category || "unknown") === category);
+    if (!variants.length) continue;
+    const recovered = variants.filter(v => RECOVERED.has(v.recovery?.outcome));
+    const evaluated = variants.filter(v => RECOVERED.has(v.recovery?.outcome) ||
+      Object.values(v.recovery?.samples || {}).some(sample => Object.keys(sample.arms || {}).length));
+    const checkable = recovered.filter(v => typeof v.recovery.residue_confirmed === "boolean");
+    const row = el("tr");
+    row.append(el("th", null, rnaTierLabels[category]), el("td", null, variants.length),
+      el("td", null, evaluated.length ? `${recovered.length}/${evaluated.length}` : "—"),
+      el("td", checkable.some(v => !v.recovery.residue_confirmed) ? "residue-failure" : null,
+        checkable.length ? `${checkable.filter(v => v.recovery.residue_confirmed).length}/${checkable.length}` : "—"));
+    table.append(row);
+  }
+  container.append(table);
+  const failures = $("#residue-failures");
+  failures.innerHTML = "";
+  const failed = DATA.variants.filter(residueFailure);
+  failures.hidden = !failed.length;
+  if (!failed.length) return;
+  failures.append(el("h3", null, "Expected amino acid not recovered"));
+  for (const variant of failed) {
+    const entry = el("div", "residue-failure-example");
+    entry.append(el("strong", null, `${variant.gene} ${variant.protein_change}`));
+    const examples = Object.entries(variant.recovery.samples || {}).flatMap(([sample, values]) =>
+      Object.entries(values.arms || {}).flatMap(([method, arm]) =>
+        (arm.proteoforms || []).map(form => ({ sample, method, form }))));
+    const seen = new Set();
+    for (const { sample, method, form } of examples) {
+      const key = JSON.stringify([form.context, form.mutant_residue_indices]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entry.append(el("span", "residue-failure", `Expected ${variant.recovery.expected?.alt_aa || "?"}; observed ${form.mutant_residues || "?"}`));
+      const sequence = el("code", "failure-sequence");
+      [...(form.context || "")].forEach((residue, i) => sequence.append(
+        el("span", (form.mutant_residue_indices || []).includes(i + (form.context_start || 1) - 1) ? "sequence-vaccine-difference" : null, residue)));
+      entry.append(sequence, el("span", "locus", `${sample} · ${method}`));
+    }
+    failures.append(entry);
+  }
 }
 
 function renderVaccineSequenceSummary() {
@@ -510,11 +572,15 @@ function visibleVariants() {
   const query = $("#filter").value.trim().toLowerCase();
   const onlyRecovered = $("#only-recovered").checked;
   const onlyElispot = $("#only-elispot").checked;
+  const onlyFailures = $("#only-residue-failures").checked;
+  const tier = $("#rna-tier").value;
 
   return DATA.variants
     .filter((variant) => {
       if (onlyRecovered && !RECOVERED.has(outcomeOf(variant, null))) return false;
       if (onlyElispot && variant.elispot.status !== "positive") return false;
+      if (onlyFailures && !residueFailure(variant)) return false;
+      if (tier && (variant.rna_support?.category || "unknown") !== tier) return false;
       if (!query) return true;
       const haystack = [
         variant.gene, variant.protein_change, variant.vaccine_label,
@@ -759,7 +825,9 @@ function renderTable() {
   for (const variant of rows) {
     const row = el("tr", "row");
 
-    row.append(el("td", "gene sticky-col", variant.gene));
+    const gene = el("td", "gene sticky-col", variant.gene);
+    if (variant.rna_support?.category === "single") gene.append(el("span", "badge warn rna-tier-badge", "1 RNA/library"));
+    row.append(gene);
     row.append(el("td", "change sticky-col", variant.protein_change || variant.vaccine_label || "—"));
     row.append(el("td", "locus", `${variant.chrom}:${variant.pos?.toLocaleString() ?? "unresolved"}`));
 
@@ -786,8 +854,8 @@ function renderTable() {
 
     const outcome = el("td", "sticky-right");
     outcome.append(sampleCells(variant));
-    if (variant.recovery?.residue_confirmed === false) {
-      const warn = el("span", "badge warn", "wrong residue");
+    if (residueFailure(variant)) {
+      const warn = el("span", "badge bad", "expected aa absent");
       warn.style.marginLeft = ".35rem";
       warn.title = "A mutant proteoform came back, but not carrying the annotated change";
       outcome.append(warn);
@@ -1697,6 +1765,8 @@ function wireControls() {
   $("#filter").addEventListener("input", renderTable);
   $("#only-recovered").addEventListener("change", renderTable);
   $("#only-elispot").addEventListener("change", renderTable);
+  $("#only-residue-failures").addEventListener("change", renderTable);
+  $("#rna-tier").addEventListener("change", renderTable);
 
   document.querySelectorAll("#variant-table thead th[data-sort]").forEach((header) => {
     header.addEventListener("click", () => {
@@ -1730,6 +1800,7 @@ async function main() {
     renderVerdict();
     renderTiles();
     renderVaccineSequenceSummary();
+    renderEvidenceBreakdown();
     renderLegend();
     renderHistory();
     renderHead();

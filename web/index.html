@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Does Exacto Work Yet?</title>
 <meta name="description" content="An automated end-to-end test of Exacto on the ONT long-read RNA-seq from Sid Sijbrandij's osteosarcoma: can it recover the mutant proteins that went into his personalised cancer vaccines?">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261008-events">
 </head>
 <body>
 
@@ -52,6 +52,14 @@
     </p>
     <div id="tiles" class="tiles"></div>
     <div id="vaccine-sequence-summary" class="sequence-callout" hidden></div>
+    <div id="residue-failures" hidden></div>
+    <h3>Recovery by RNA support</h3>
+    <div id="rna-breakdown"></div>
+    <p class="section-note">2+ means at least two mutant reads in one benchmark-matched Sid RNA library at any
+      timepoint. Single-read evidence means a maximum of one in the reported libraries; unreported libraries
+      remain unknown. Counts are never added across libraries, timepoints or Exacto methods.
+      Protein fractions use evaluated targets; amino-acid fractions use recovered, checkable proteins.
+      Stronger locus support does not guarantee the coding span needed for a complete peptide.</p>
     <div id="legend" class="legend"></div>
     <div id="history-block" class="history-block" hidden>
       <h3>Track record</h3>
@@ -71,6 +79,8 @@
       <input type="search" id="filter" placeholder="Filter by gene, protein change, locus…" aria-label="Filter variants">
       <label class="check"><input type="checkbox" id="only-recovered"> only recovered</label>
       <label class="check"><input type="checkbox" id="only-elispot"> only ELISPOT-positive</label>
+      <label class="check"><input type="checkbox" id="only-residue-failures"> amino-acid failures</label>
+      <label>RNA support <select id="rna-tier"><option value="">All evidence</option><option value="multiple">2+ mutant reads</option><option value="single">Single-read evidence</option><option value="zero">0 mutant reads observed</option><option value="unknown">Counts unavailable</option></select></label>
     </div>
 
     <p class="section-note">
@@ -360,6 +370,6 @@
   </p>
 </footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=20261008-events"></script>
 </body>
 </html>

@@ -132,6 +132,23 @@ a:hover { text-decoration-thickness: 2px; }
 .sequence-alignment .alignment-ruler td { padding-block: .05rem .3rem; border: 0; }
 .sequence-strip mark, .sequence-legend mark { color: var(--ok); background: var(--ok-soft); font-weight: 650; padding: .15rem 0; }
 .sequence-difference { color: var(--bg-raised); background: var(--warn); font-weight: 800; padding-block: .15rem; outline: 1px solid var(--warn); border-radius: 2px; }
+.sequence-vaccine-difference { color: #fff; background: #a23559; font-weight: 800; padding-block: .15rem; outline: 1px solid #a23559; border-radius: 2px; }
+.sequence-event { text-decoration: underline solid #2381cd 4px; text-underline-offset: .3em; }
+.sequence-event-tail, .sequence-event-ambiguous { text-decoration-style: dotted; text-decoration-thickness: 3px; }
+.window-compare { font: inherit; color: inherit; background: transparent; border: 0; border-bottom: 1px dotted currentColor; cursor: pointer; padding: .1rem 0; }
+.window-compare[aria-pressed="true"] { border-bottom: 2px solid currentColor; }
+.support-star { font-size: .7rem; align-self: flex-start; color: var(--ink); }
+.support-leader strong { font-weight: 800; }
+.top-disagreement-badge { font-family: var(--sans); font-size: .85rem; font-weight: 600; color: #a23559; }
+.sequence-top-details { font-size: .9rem; width: 100%; }
+.sequence-top-details th, .sequence-top-details td { padding: .4rem .5rem; text-align: left; vertical-align: top; }
+.residue-failure-link { display: block; color: var(--bad); font-size: 1rem; margin-top: .6rem; }
+.residue-failure { color: var(--bad); font-weight: 650; }
+.residue-failure-example { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.2rem; border-left: 3px solid var(--bad); padding: .6rem 1rem; margin-bottom: .5rem; }
+.failure-sequence { font-family: var(--mono); font-size: 16px; overflow-wrap: anywhere; }
+.rna-breakdown-table { width: auto; font-variant-numeric: tabular-nums; }
+.rna-breakdown-table th, .rna-breakdown-table td { text-align: left; padding: .45rem 1rem .45rem 0; }
+.rna-tier-badge { display: block; font-weight: 500; width: fit-content; }
 .sequence-trim { color: var(--ink-faint); }
 .sequence-alignment .alignment-match { min-width: 5.5rem; font-size: .9rem; }
 .alignment-match.contained { color: var(--ok); font-weight: 600; }
@@ -159,6 +176,7 @@ a:hover { text-decoration-thickness: 2px; }
 .sequence-legend { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.3rem; font-size: .9rem; color: var(--ink-soft); margin: .65rem 0; }
 .sequence-legend mark { font-family: var(--mono); }
 .sequence-legend .sequence-difference { padding-inline: .2rem; }
+.sequence-legend .sequence-vaccine-difference { padding-inline: .2rem; }
 .sequence-report :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 600px) {
   .sequence-controls > label { flex: 1 1 45%; min-width: 0; }

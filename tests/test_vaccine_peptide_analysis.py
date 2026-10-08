@@ -146,3 +146,22 @@ def test_source_rna_counts_match_the_actual_bam_and_do_not_pool_libraries():
     assert evidence[0]["alt_reads"] == 4
     assert evidence[1]["benchmark_sample"] is None
     assert "source_rna_support" not in report["variants"][0]
+
+
+def test_rna_support_tiers_use_maximum_without_pooling_or_imputing_missing_samples():
+    rows = [
+        {"benchmark_sample": "T1-ONT", "alt_reads": 1},
+        {"benchmark_sample": "T2-ONT", "alt_reads": 1},
+        {"benchmark_sample": "T2-ONT", "alt_reads": 1},
+        {"benchmark_sample": None, "alt_reads": 100},
+    ]
+    tier = build_site.rna_support_tier(rows)
+    assert tier["category"] == "single"
+    assert tier["max_alt_reads"] == 1
+    assert tier["by_sample"]["T2-ONT"]["category"] == "single"
+    assert "T1-PacBio" in tier["missing_samples"]
+    rows.append({"benchmark_sample": "T3-ONT", "alt_reads": 2})
+    assert build_site.rna_support_tier(rows)["category"] == "multiple"
+    assert build_site.rna_support_tier([])["category"] == "unknown"
+    assert build_site.rna_support_tier([{"benchmark_sample": "T1-ONT", "alt_reads": None}])["category"] == "unknown"
+    assert build_site.rna_support_tier([{"benchmark_sample": "T1-ONT", "alt_reads": 0}])["category"] == "zero"
