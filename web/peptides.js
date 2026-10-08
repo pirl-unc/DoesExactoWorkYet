@@ -257,6 +257,26 @@ function vaccineComparison(window, entry) {
   return { label, substitutions, positions, missing };
 }
 
+// Suspected synthesis additions, not confirmed annotations. Keep this explicit:
+// natural terminal/internal lysines and arbitrary K-rich peptides are not tags.
+const suspectedCsBioPeptides = new Set([
+  "SFSGPGMSGMALMEVNLLSGKKK", // CD109
+  "SFMLRAVSFFVKDAVLYSGAKKK", // PTH1R
+  "RMLDYYEEISAGDEGEFRQSKKK", // CUL9
+]);
+
+function terminalTagPositions(entry) {
+  const { peptide } = entry.row;
+  const positions = new Map();
+  if (!suspectedCsBioPeptides.has(peptide.sequence) ||
+      !peptide.in_vaccines.some(vaccine => vaccine.startsWith("JLF "))) return positions;
+  for (let i = peptide.sequence.length - 3; i < peptide.sequence.length; i++) {
+    positions.set(entry.offset + i,
+      "Suspected CS Bio solubility tag: C-terminal KKK (unconfirmed). Retained in recorded-sequence scoring.");
+  }
+  return positions;
+}
+
 function vaccineDifferences(group) {
   const windows = new Map(), references = new Map(group.references.map((entry) => [entry, new Map()]));
   for (const window of group.windows) {
@@ -479,19 +499,19 @@ function sourceRnaEvidence(report, variant, filters) {
   return section;
 }
 
-function sequenceStrip(slice, window = null, comparison = null, vaccine = new Map(), events = new Map()) {
+function sequenceStrip(slice, window = null, comparison = null, vaccine = new Map(), events = new Map(), tags = new Map()) {
   const strip = node("code", "sequence-strip");
   strip.append(node("span", "sequence-trim", slice.clippedLeft ? "…" : " "), document.createTextNode(slice.left));
   let column = (window?.offset || 0) + slice.from;
   for (const piece of slice.pieces) {
     const segment = node(piece.matched ? "mark" : "span", "");
     for (const residue of piece.text) {
-      const difference = comparison?.positions.get(column), mismatch = vaccine.get(column), event = events.get(column);
-      if (difference || mismatch || event) {
-        const classes = [mismatch ? "sequence-vaccine-difference" : difference ? "sequence-difference" : "",
+      const difference = comparison?.positions.get(column), mismatch = vaccine.get(column), event = events.get(column), tag = tags.get(column);
+      if (difference || mismatch || event || tag) {
+        const classes = [tag ? "sequence-suspected-tag" : mismatch ? "sequence-vaccine-difference" : difference ? "sequence-difference" : "",
           event ? `sequence-event sequence-event-${event.kind}` : ""].filter(Boolean).join(" ");
         const aminoAcid = node("span", classes, residue);
-        aminoAcid.title = [mismatch, difference, event?.title].filter(Boolean).join("; ");
+        aminoAcid.title = [tag, mismatch, difference, event?.title].filter(Boolean).join("; ");
         segment.append(aminoAcid);
       } else segment.append(document.createTextNode(residue));
       column++;
@@ -529,7 +549,7 @@ function referenceRow(report, entry, slice, part, filters, group) {
   const sequence = node("td", "alignment-sequence");
   const update = () => sequence.replaceChildren(sequenceStrip(slice, entry, null,
     group.referenceWindow ? vaccineComparison(group.referenceWindow, entry).positions : new Map(),
-    referenceEvents(entry, group.windows, group.events)));
+    referenceEvents(entry, group.windows, group.events), terminalTagPositions(entry)));
   group.referenceDisplays.push(update);
   update();
   const match = node("td", `alignment-match ${row.status}`, statusSymbols[row.status]);
@@ -800,7 +820,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState, vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState, vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });
