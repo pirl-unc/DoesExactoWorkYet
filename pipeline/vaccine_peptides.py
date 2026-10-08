@@ -6,6 +6,28 @@ import hashlib
 import json
 from pathlib import Path
 
+PEPTIDE_SCORING_POLICY = "terminal_lysine_1_to_4_v1"
+
+
+def peptide_scoring_region(sequence: str) -> dict:
+    """Exclude complete terminal K runs of length 1–4 by benchmark convention.
+
+    Coordinates are zero-based, end-exclusive within the recorded peptide.
+    This is a suspected-modification rule, not a verified synthesis annotation.
+    Internal lysines and terminal runs longer than four are retained.
+    """
+    leading = len(sequence) - len(sequence.lstrip("K"))
+    trailing = len(sequence) - len(sequence.rstrip("K"))
+    start = leading if 1 <= leading <= 4 else 0
+    end = len(sequence) - trailing if 1 <= trailing <= 4 else len(sequence)
+    end = max(start, end)  # all-tag peptides have an empty, never-matchable core
+    tags = []
+    if start:
+        tags.append({"terminus": "N", "start": 0, "end": start, "sequence": sequence[:start]})
+    if end < len(sequence):
+        tags.append({"terminus": "C", "start": end, "end": len(sequence), "sequence": sequence[end:]})
+    return {"sequence": sequence[start:end], "start": start, "end": end, "terminal_tags": tags}
+
 
 def results_fingerprint(results: dict) -> str:
     """Bind a sequence reanalysis to the exact scored run, not just its panel."""
@@ -20,6 +42,7 @@ def build_vaccine_peptide_subset(catalogue: dict) -> dict:
             {
                 "peptide_id": f"{variant['variant_id']}.peptide-{index}",
                 **peptide,
+                "scoring_region": peptide_scoring_region(peptide["sequence"]),
             }
             for index, peptide in enumerate(
                 variant.get("published_vaccine_peptides", []), start=1
@@ -57,6 +80,7 @@ def build_vaccine_peptide_subset(catalogue: dict) -> dict:
             "do not include pVACtools predictions or peptides without vaccine "
             "membership. Membership does not establish expression or RNA recovery."
         ),
+        "peptide_scoring_policy": PEPTIDE_SCORING_POLICY,
         "n_catalogue_variants": catalogue["n_variants"],
         "n_variants": len(variants),
         "n_peptides": len(peptides),

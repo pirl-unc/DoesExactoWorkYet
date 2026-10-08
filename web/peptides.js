@@ -75,6 +75,21 @@ function sharedOffset(reference, sequence) {
   return offsets.length === 1 ? { offset: offsets[0], shared: best } : null;
 }
 
+// Mirror the benchmark convention; reports also export this region explicitly.
+// Only complete terminal runs of 1–4 K are omitted, never internal lysines.
+function peptideScoringRegion(peptide) {
+  if (peptide.scoring_region) return peptide.scoring_region;
+  const sequence = peptide.sequence;
+  const leading = sequence.match(/^K+/)?.[0].length || 0;
+  const trailing = sequence.match(/K+$/)?.[0].length || 0;
+  const start = leading >= 1 && leading <= 4 ? leading : 0;
+  const end = Math.max(start, trailing >= 1 && trailing <= 4 ? sequence.length - trailing : sequence.length);
+  const terminal_tags = [];
+  if (start) terminal_tags.push({ terminus: "N", start: 0, end: start, sequence: sequence.slice(0, start) });
+  if (end < sequence.length) terminal_tags.push({ terminus: "C", start: end, end: sequence.length, sequence: sequence.slice(end) });
+  return { sequence: sequence.slice(start, end), start, end, terminal_tags };
+}
+
 function referenceGroups(rows) {
   const remaining = [...rows].sort((a, b) => b.peptide.sequence.length - a.peptide.sequence.length);
   const groups = [];
@@ -83,9 +98,10 @@ function referenceGroups(rows) {
     while (remaining.length) {
       let best = null;
       remaining.forEach((row, index) => entries.forEach((entry) => {
-        const placement = sharedOffset(entry.row.peptide.sequence, row.peptide.sequence);
+        const reference = peptideScoringRegion(entry.row.peptide), region = peptideScoringRegion(row.peptide);
+        const placement = sharedOffset(reference.sequence, region.sequence);
         if (placement && (!best || placement.shared > best.shared)) {
-          best = { index, offset: entry.offset + placement.offset, shared: placement.shared };
+          best = { index, offset: entry.offset + reference.start + placement.offset - region.start, shared: placement.shared };
         }
       }));
       if (!best) break;
@@ -102,9 +118,10 @@ function sequenceComparison(report, rows, filters = {}, windowSize = 45) {
   const groups = referenceGroups(rows).map((references) => {
     const proteins = new Map();
     for (const { row, offset } of references) {
+      const region = peptideScoringRegion(row.peptide);
       for (const match of row.matches) {
         for (const start of match.amino_acid_starts) {
-          const proteinOffset = offset - (start - 1);
+          const proteinOffset = offset + region.start - (start - 1);
           // A reconstruction matching several vaccine peptides appears once at
           // each supported placement. Repeated occurrences retain separate rows.
           const sequence = report.reconstructions[match.reconstruction_id];
@@ -116,7 +133,7 @@ function sequenceComparison(report, rows, filters = {}, windowSize = 45) {
           const protein = proteins.get(key);
           protein.observations.set(JSON.stringify([match.reconstruction_id, match.rna_call_id]), match);
           protein.peptideIds.add(row.peptide.peptide_id);
-          protein.ranges.push([start - 1, start - 1 + row.peptide.sequence.length]);
+          protein.ranges.push([start - 1, start - 1 + region.sequence.length]);
         }
       }
     }
@@ -136,9 +153,10 @@ function sequenceComparison(report, rows, filters = {}, windowSize = 45) {
     if (!placements.has(sequence)) {
       let best = null;
       for (const group of groups) for (const entry of group.references) {
-        const position = sharedOffset(entry.row.peptide.sequence, sequence);
+        const region = peptideScoringRegion(entry.row.peptide);
+        const position = sharedOffset(region.sequence, sequence);
         if (position && (!best || position.shared > best.shared))
-          best = { group, offset: entry.offset + position.offset, shared: position.shared };
+          best = { group, offset: entry.offset + region.start + position.offset, shared: position.shared };
       }
       placements.set(sequence, best);
     }
@@ -243,8 +261,9 @@ function vaccineComparison(window, entry) {
   const { peptide, variant } = entry.row;
   const label = `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`;
   const substitutions = [], positions = new Map();
+  const region = peptideScoringRegion(peptide);
   let missing = 0;
-  for (let i = 0; i < peptide.sequence.length; i++) {
+  for (let i = region.start; i < region.end; i++) {
     const column = entry.offset + i, reference = peptide.sequence[i];
     const residue = window.sequence[column - window.offset];
     if (residue === undefined) { missing++; continue; }
@@ -257,23 +276,12 @@ function vaccineComparison(window, entry) {
   return { label, substitutions, positions, missing };
 }
 
-// Suspected synthesis additions, not confirmed annotations. Keep this explicit:
-// natural terminal/internal lysines and arbitrary K-rich peptides are not tags.
-const suspectedCsBioPeptides = new Set([
-  "SFSGPGMSGMALMEVNLLSGKKK", // CD109
-  "SFMLRAVSFFVKDAVLYSGAKKK", // PTH1R
-  "RMLDYYEEISAGDEGEFRQSKKK", // CUL9
-]);
-
 function terminalTagPositions(entry) {
-  const { peptide } = entry.row;
   const positions = new Map();
-  if (!suspectedCsBioPeptides.has(peptide.sequence) ||
-      !peptide.in_vaccines.some(vaccine => vaccine.startsWith("JLF "))) return positions;
-  for (let i = peptide.sequence.length - 3; i < peptide.sequence.length; i++) {
-    positions.set(entry.offset + i,
-      "Suspected CS Bio solubility tag: C-terminal KKK (unconfirmed). Retained in recorded-sequence scoring.");
-  }
+  for (const tag of peptideScoringRegion(entry.row.peptide).terminal_tags)
+    for (let i = tag.start; i < tag.end; i++)
+      positions.set(entry.offset + i,
+        `Suspected solubility tag: ${tag.terminus}-terminal ${tag.sequence}. Excluded from recovery, mismatch and coverage scoring by benchmark convention; synthesis annotation unconfirmed.`);
   return positions;
 }
 
@@ -322,12 +330,13 @@ function windowEvents(window, variant) {
 
 function referenceEvents(entry, windows, events) {
   const positions = new Set(), sequence = entry.row.peptide.sequence;
+  const region = peptideScoringRegion(entry.row.peptide);
   for (const window of windows) for (const [column, event] of events.get(window)) {
     if (event.kind !== "mutation") continue;
     const index = column - entry.offset;
-    if (index < 0 || index >= sequence.length) continue;
-    const from = Math.max(entry.offset, window.offset, column - 3);
-    const end = Math.min(entry.offset + sequence.length, window.offset + window.sequence.length, column + 4);
+    if (index < region.start || index >= region.end) continue;
+    const from = Math.max(entry.offset + region.start, window.offset, column - 3);
+    const end = Math.min(entry.offset + region.end, window.offset + window.sequence.length, column + 4);
     if (end - from >= 6 && sequence.slice(from - entry.offset, end - entry.offset) ===
         window.sequence.slice(from - window.offset, end - window.offset)) positions.add(column);
   }
@@ -770,7 +779,7 @@ function populateSequenceReport(report) {
   }
   const { summary, analysis } = report;
   queryNode("#sequence-summary").textContent = `${summary.n_variants_any_peptide_matched}/${summary.n_variants} targets have a vaccine sequence contained in a reconstruction. ` +
-    `${summary.n_peptide_entries_matched}/${summary.n_peptide_entries} recorded peptide entries recovered across all available samples and methods.`;
+    `${summary.n_peptide_entries_matched}/${summary.n_peptide_entries} recorded peptide entries recovered across all available samples and methods; terminal K tags excluded.`;
   const stronger = report.variants.filter(variant => variant.rna_support?.category === "multiple");
   const weaker = report.variants.filter(variant => variant.rna_support?.category === "single");
   const recovered = variants => variants.filter(variant => variant.published_vaccine_peptides.some(peptide => peptide.matches.length)).length;
@@ -820,7 +829,7 @@ async function main() {
   populateSequenceReport(await response.json());
 }
 
-if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState, vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions };
+if (typeof module !== "undefined") module.exports = { sequenceRows, highlightedPieces, sharedOffset, referenceGroups, sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState, vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions, peptideScoringRegion };
 if (typeof document !== "undefined") main().catch((error) => {
   queryNode("#sequence-summary").textContent = `The sequence report could not be loaded (${error.message}). Reload the page to try again.`;
 });

@@ -25,7 +25,7 @@ from .config import (
 )
 from .extract_reads import stats_path
 from .sources import configuration, data_sources, reproduction
-from .vaccine_peptides import results_fingerprint
+from .vaccine_peptides import PEPTIDE_SCORING_POLICY, results_fingerprint
 
 WEB_DIR = REPO_ROOT / "web"
 HISTORY_PATH = RESULTS_DIR / "history.json"
@@ -48,7 +48,8 @@ def current_peptide_report(catalogue: dict, results: dict | None) -> dict | None
     report = load(RESULTS_DIR / "vaccine_peptide_analysis.json")
     if (not report or not results
             or report.get("source", {}).get("input_id") != catalogue.get("source", {}).get("input_id")
-            or report.get("analysis", {}).get("results_sha256") != results_fingerprint(results)):
+            or report.get("analysis", {}).get("results_sha256") != results_fingerprint(results)
+            or report.get("analysis", {}).get("peptide_scoring_policy") != PEPTIDE_SCORING_POLICY):
         return None
     return report
 
