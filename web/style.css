@@ -126,8 +126,15 @@ a:hover { text-decoration-thickness: 2px; }
 .alignment-reference .alignment-label { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: .15rem .5rem; }
 .sequence-strip { display: block; font-family: var(--mono); font-size: 13px; line-height: 1.9; white-space: pre; letter-spacing: 0; overflow-x: auto; margin: 0; color: var(--ink-soft); }
 .sequence-strip mark { color: var(--ok); background: var(--ok-soft); font-weight: 700; padding-block: .2rem; }
-.sequence-difference { color: var(--ink); background: var(--warn-soft); font-weight: 750; text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.sequence-difference-note { color: var(--ink); font-size: .85rem; margin: .3rem 0 .5rem; }
+.sequence-difference { color: var(--bg-raised); background: var(--warn); font-weight: 800; padding-block: .2rem; outline: 1px solid var(--warn); border-radius: 2px; }
+.sequence-comparison-reference { font-size: .75rem; font-weight: 600; color: var(--ink-soft); border: 1px solid var(--rule-strong); border-radius: 3px; padding: .1rem .4rem; }
+.sequence-difference-note { color: var(--ink); background: var(--warn-soft); border-left: 4px solid var(--warn); padding: .65rem .8rem; margin: .45rem 0 .7rem; }
+.sequence-difference-heading { display: block; font-size: .9rem; }
+.sequence-change-list { display: flex; flex-wrap: wrap; gap: .4rem .5rem; list-style: none; padding: 0; margin: .45rem 0 0; }
+.sequence-change-chip { display: inline-flex; align-items: baseline; gap: .6rem; border: 1px solid var(--warn); border-radius: 4px; background: var(--bg-raised); padding: .2rem .5rem; }
+.sequence-change-position { font-size: .8rem; color: var(--ink-soft); }
+.sequence-change-letters { font-family: var(--mono); font-size: 1.1rem; font-weight: 750; color: var(--ink); }
+.sequence-coverage-change { display: block; font-size: .85rem; margin-top: .25rem; }
 .sequence-trim { color: var(--ink-faint); }
 .sequence-coordinates { font-size: .72rem; color: var(--ink-soft); margin: .25rem 0 .5rem; }
 .sequence-window-note { font-size: .8rem; color: var(--ink); margin: 0 0 .3rem; }

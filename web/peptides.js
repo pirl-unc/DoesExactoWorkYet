@@ -376,15 +376,29 @@ function reconstructionRow(report, window, slice, filters, rows, comparison) {
     `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`);
   label.append(node("span", `sequence-status ${contained.length ? "contained" : "sequence_disagreement"}`,
     contained.length ? `Contains ${contained.join(", ")}${contained.length < rows.length ? " only" : ""}` : "No contained vaccine sequence"));
+  if (comparison && number === comparison.reference) label.append(node("span", "sequence-comparison-reference", "Comparison reference"));
   const content = node("div", "alignment-content");
   content.append(sequenceStrip(slice, window, comparison));
   if (comparison && number !== comparison.reference) {
     const { substitutions, missing, additional } = comparison;
-    const changes = substitutions.slice(0, 8).map(({ position, reference, residue }) => `${position}: ${reference} → ${residue}`);
-    if (substitutions.length > 8) changes.push(`+${substitutions.length - 8} more residue differences`);
-    if (missing) changes.push(`${missing} fewer covered positions`);
-    if (additional) changes.push(`${additional} additional covered positions`);
-    content.append(node("p", "sequence-difference-note", `vs W${comparison.reference} · ${changes.join(" · ")}`));
+    const changes = node("div", "sequence-difference-note");
+    changes.append(node("strong", "sequence-difference-heading", substitutions.length
+      ? `${substitutions.length} residue change${substitutions.length === 1 ? "" : "s"} vs W${comparison.reference}`
+      : `Coverage differs from W${comparison.reference}`));
+    if (substitutions.length) {
+      const list = node("ul", "sequence-change-list");
+      for (const { position, reference, residue } of substitutions) {
+        const change = node("li", "sequence-change-chip");
+        change.title = `Window position ${position}: W${comparison.reference} ${reference} → W${number} ${residue}`;
+        change.append(node("span", "sequence-change-position", `Position ${position}`),
+          node("span", "sequence-change-letters", `${reference} → ${residue}`));
+        list.append(change);
+      }
+      changes.append(list);
+    }
+    if (missing) changes.append(node("span", "sequence-coverage-change", `${missing} fewer covered positions`));
+    if (additional) changes.append(node("span", "sequence-coverage-change", `${additional} additional covered positions`));
+    content.append(changes);
   }
   const lengthText = lengths.length <= 6 ? lengths.join(", ") : `${lengths[0]}–${lengths[lengths.length - 1]} (${lengths.length} lengths)`;
   content.append(node("p", "sequence-coordinates",
