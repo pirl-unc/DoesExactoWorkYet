@@ -57,8 +57,12 @@ peptides. Confirmed containment is highlighted.
 References without an unambiguous shared stretch remain in separate groups.
 Identical sequences with the same coverage within the full comparison window share
 one row, ignoring differences outside it. Missing ends and stops remain distinct.
-Grouping is independent of screen width; narrow screens wrap the same groups into
-blocks. Each row retains full-protein counts and lengths. Per-sample RNA support
+Grouping is independent of screen width; long regions continue in blocks and narrow
+screens scroll the alignment horizontally. Sequences use a shared position ruler,
+with changed residues boxed in amber and compact changes relative to the first window.
+Peptide and window support share sample columns. Full-protein counts, lengths, vaccine
+labels, and complete change lists remain available in the peptide/protein details.
+Per-sample RNA support
 combines unique input transcript/read identifiers within each method across all
 members of the window group. Per-peptide support retains the original containment
 checks. Raw reads,
@@ -71,6 +75,8 @@ The report includes non-matching, target-linked proteins and distinguishes
 sequence disagreement (including incomplete proteins) from no reconstructed
 sequence. Independent Sid dataset RNA counts are shown as mutant/total reads,
 matched to benchmark BAMs by filename, with other RNA libraries kept separate.
+Benchmark-matched Sid counts and Exacto protein/RNA-only/no-call outcomes stay visible
+below the sequences; other source libraries are available in a separate disclosure.
 Missing counts, zero coverage, and covered loci with zero mutant reads remain
 different states. RNA allele support does not establish full peptide recovery.
 Its metric is **vaccine sequence contained in reconstruction**: the recorded
