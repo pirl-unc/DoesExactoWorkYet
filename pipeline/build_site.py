@@ -25,7 +25,12 @@ from .config import (
 )
 from .extract_reads import stats_path
 from .sources import configuration, data_sources, reproduction
-from .vaccine_peptides import PEPTIDE_SCORING_POLICY, results_fingerprint
+from .vaccine_peptides import (
+    PEPTIDE_SCORING_POLICY,
+    context_fingerprint,
+    results_fingerprint,
+    score_primary_windows,
+)
 
 WEB_DIR = REPO_ROOT / "web"
 HISTORY_PATH = RESULTS_DIR / "history.json"
@@ -49,7 +54,8 @@ def current_peptide_report(catalogue: dict, results: dict | None) -> dict | None
     if (not report or not results
             or report.get("source", {}).get("input_id") != catalogue.get("source", {}).get("input_id")
             or report.get("analysis", {}).get("results_sha256") != results_fingerprint(results)
-            or report.get("analysis", {}).get("peptide_scoring_policy") != PEPTIDE_SCORING_POLICY):
+            or report.get("analysis", {}).get("peptide_scoring_policy") != PEPTIDE_SCORING_POLICY
+            or report.get("analysis", {}).get("peptide_context_sha256") != context_fingerprint()):
         return None
     return report
 
@@ -287,6 +293,8 @@ def build_payload() -> dict:
         )
     raw_results = load(RESULTS_DIR / "exacto_results.json")
     peptide_report = current_peptide_report(variants_payload, raw_results)
+    if peptide_report:
+        peptide_report["primary_window_report"] = score_primary_windows(peptide_report)
     exacto_payload = migrate_payload(raw_results)
     source = variants_payload.get("source", {})
     mismatched_result = bool(source.get("input_id") and exacto_payload and (
@@ -426,6 +434,7 @@ def build_payload() -> dict:
         "history": history,
         "vaccine_sequence_report": {
             "summary": peptide_report["summary"],
+            "primary": peptide_report.get("primary_window_report"),
             "analysis": {
                 key: value for key, value in peptide_report["analysis"].items()
                 if key != "artifacts"
@@ -447,6 +456,7 @@ def main() -> None:
             load(RESULTS_DIR / "vaccine_variants.json"),
             load(RESULTS_DIR / "exacto_results.json"),
         )
+        report["primary_window_report"] = payload["vaccine_sequence_report"]["primary"]
         (SITE_DIR / "vaccine_peptide_analysis.json").write_text(json.dumps(report, indent=2) + "\n")
     else:
         (SITE_DIR / "vaccine_peptide_analysis.json").write_text(json.dumps({

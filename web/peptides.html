@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261008-tag-scoring">
+<link rel="stylesheet" href="style.css?v=20261009-primary">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -14,6 +14,11 @@
     <h1>Vaccine peptide recovery</h1>
     <p class="lede">Recorded vaccine peptides alongside reconstructed proteins and their RNA support.</p>
     <p id="sequence-summary" class="sequence-summary" aria-live="polite">Loading the sequence analysis…</p>
+    <table id="sequence-recovery-levels" class="recovery-levels" hidden>
+      <caption>Top sequence recovery by RNA support</caption>
+      <thead><tr><th scope="col">RNA inputs</th><th scope="col">Recovered</th><th scope="col">Other top results</th></tr></thead>
+      <tbody></tbody>
+    </table>
     <p id="sequence-provenance" class="section-note"></p>
   </div>
 </header>
@@ -34,26 +39,29 @@
         wide alignments scroll horizontally. Long regions continue in blocks.</p>
       <p>Green marks containment of the vaccine sequence after terminal tags are excluded. Rose marks differences between a vaccine peptide and
         a reconstruction at overlapping positions. Click a W label to compare the vaccine rows against it
-        (initially W1); W-row marks always compare against the vaccine peptides. Hover for residue numbers.
+        (initially the top window, where available); W-row marks always compare against the vaccine peptides. Hover for residue numbers.
         Amber marks other differences from the first W row in each
         aligned group. S17G means S in the reference window and G at position 17 in this window.
         Positions refer to the window, not the full protein. Missing ends are coverage differences.
         Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
-      <p>Purple with a dotted edge marks terminal K, KK, KKK or KKKK, treated as suspected solubility
-        additions outside the ORF. By benchmark convention these runs are excluded at either end of
-        every vaccine peptide, including mRNA minimal epitopes. They count as neither mismatches nor
-        missing coverage. Internal lysines and complete terminal runs longer than four remain scored.
-        This rule does not establish which residues were added during synthesis.</p>
+      <p>Purple marks suspected terminal solubility additions supported by independent reference-protein
+        context. Native lysines, parent-supported lysines, encoded mRNA peptides and uncertain cases
+        remain scored. A terminal K by itself is not a tag. Excluded residues count as neither mismatches
+        nor missing coverage; their synthesis origin remains unconfirmed.</p>
       <p>Blue underlines mark the translated target codon from the RNA call. For a deletion this is
         the codon at/after its junction; for a frameshift, the dotted blue tail means downstream of
         the event, not verified novelty at every residue. Dotted target marks indicate differing
         locations among grouped outputs. Vaccine-row marks require an unambiguous exact local anchor.
         The current panel has no annotated fusion breakpoints or novel-ORF boundaries; these are not inferred.</p>
-      <p>★ marks the window(s) with the most distinct RNA inputs within each sample and method,
-        including all ties. Exacto emits unranked candidates: this is a report support rule, not its
-        confidence score. “Top ≠ vaccine” means at least one leader differs from at least one displayed
-        vaccine peptide at a covered position, even if another peptide is contained. Missing ends and
-        unaligned outputs are reported separately in the details. W1 is a display reference, not a rank.</p>
+      <p><b>Top</b> is the window with the largest raw or corrected RNA count in any one sample/method;
+        counts are never pooled. All ties remain visible. Recovery requires every tied leader to contain
+        at least one vaccine peptide. Mixed ties contain both recovering and non-recovering leaders;
+        they are not counted as recovered. “Differs” means a covered-position mismatch; “partial” means
+        missing sequence, and “unaligned” means no shared sequence anchor. A recovered leader can still
+        disagree with a different peptide; the “Top ≠ vaccine” filter includes those cases.
+        Missing ends stay separate from disagreements. Assembly-only outputs are diagnostic, not read-ranked.
+        Lower-support windows never change the primary score. ★ retains the best count within each
+        sample/method for diagnosis. Exacto outputs are unranked; this is the report’s support rule.</p>
       <p>Match: ✓ contained; ≠ protein produced but vaccine sequence absent or incomplete;
         ∅ no reconstructed protein; — not evaluated. W rows name the peptides they contain.</p>
       <p>RNA counts: r raw reads; c corrected; a assembly; a1 assembly-ms1; ap permissive assembly;
@@ -84,10 +92,10 @@
     <div class="sequence-legend" aria-label="Sequence and read-count legend">
       <span><mark>ACD</mark> vaccine contained</span>
       <span><b class="sequence-vaccine-difference">G</b> differs from vaccine</span>
-      <span><b class="sequence-suspected-tag">KKK</b> suspected tag · excluded</span>
+      <span><b class="sequence-suspected-tag">KK</b> suspected tag · excluded</span>
       <span><b class="sequence-difference">G</b> differs from W1</span>
       <span><b class="sequence-event sequence-event-mutation">M</b> target codon</span>
-      <span>★ top RNA support (ties kept)</span>
+      <span><b>top</b> primary sequence · ★ best within sample/method</span>
       <span>Click W to compare vaccine rows</span>
       <span><b>7r</b> raw reads · <b>2c</b> corrected · <b>1s</b> SPAdes</span>
       <span>✓ match · ≠ disagreement · ∅ no protein · — unavailable</span>
@@ -97,6 +105,7 @@
   </section>
   <section aria-labelledby="sequence-download-title">
     <h2 id="sequence-download-title">References and evidence</h2>
+    <details class="sequence-details"><summary>All-output diagnostic totals</summary><p id="sequence-diagnostic-summary"></p></details>
     <p class="section-note">References are recorded sequences explicitly linked to a vaccine.
       Longer vaccine peptides and mRNA minimal epitopes retain separate entries.
       Matching uses the full exported protein sequences and requires the target RNA
@@ -104,17 +113,18 @@
     <details class="sequence-details sequence-reading-key">
       <summary>Suspected terminal solubility tags</summary>
       <p>The <a href="https://gitlab.com/slowkow/osteosarc.com/-/blob/main/scripts/vaccines/source_data/vaccine_variants.tsv">source vaccine table</a>
-        preserves complete vaccine sequences. The report excludes complete runs of one to four lysines
-        at either terminus as suspected solubility tags. For example, CD109 is scored against its 20-aa
-        core SFSGPGMSGMALMEVNLLSG; the recorded KKK and a reconstruction’s continuation FMV do not count
-        as a disagreement. Missing any of that core still prevents recovery. Original sequences remain
-        visible and in the reference FASTA; JSON downloads include the scored region and excluded positions.</p>
+        preserves complete vaccine sequences. Exclusions require independent same-gene GENCODE protein
+        context supporting an added terminal tail. Native and parent-supported residues remain scored,
+        including the leading K in ZNF436’s KSFGRSCHL and VPS72’s KSLRPRKVNTPAGSSQKAREERALLPLELQD.
+        <a href="https://github.com/pirl-unc/DoesExactoWorkYet/blob/main/data/vaccine_peptide_context.json">Reference and parent evidence</a>
+        is recorded separately from Exacto’s outputs. Original sequences remain visible and in FASTA;
+        JSON downloads include the scored region and excluded positions.</p>
     </details>
     <p><a href="vaccine_peptide_subset.fasta" download>Reference peptides (FASTA)</a> ·
       <a href="vaccine_peptide_subset.json" download>Reference annotations (JSON)</a> ·
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261008-tag-scoring"></script>
+<script src="peptides.js?v=20261009-primary"></script>
 </body>
 </html>

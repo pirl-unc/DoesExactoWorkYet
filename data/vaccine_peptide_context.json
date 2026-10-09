@@ -1,0 +1,1477 @@
+{
+  "input_id": "af299e74992360e7892c7effbe163bcec7d61d044981807b2dc100bca55d845d",
+  "source_url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.pc_translations.fa.gz",
+  "protein_subset_sha256": "51beae8c11871537fa29f2e09fe13a193631d4c34c0609952571b37a6d3d649a",
+  "policy": "Same-gene reference core matches are exact except for the annotated missense substitution. Coordinates are zero-based. Parent matches retain the complete recorded peptide.",
+  "entries": [
+    {
+      "variant_id": "ZNF436-chr1-23362762",
+      "sequence": "KSFGRSCHL",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000313582.4",
+          "core_start": 201,
+          "reference_core": "SFGRSSHL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000363736.3",
+          "core_start": 201,
+          "reference_core": "SFGRSSHL",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "RTHTGERPYDCNECGKSFGRSCHLIQHQTIH",
+          "offset": 15,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        },
+        {
+          "sequence": "GKSFGRSCHLIQHQTI",
+          "offset": 1,
+          "in_vaccines": [
+            "CeGaT"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "VPS72-chr1-151185547",
+      "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000357887.5",
+          "core_start": 94,
+          "reference_core": "SLRPRKVNTPAGSSQKAREEKALLPLELQD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000346464.4",
+          "core_start": 94,
+          "reference_core": "SLRPRKVNTPAGSSQKAREEKALLPLELQD",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "PIP5K1A-chr1-151242178",
+      "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "CENPL-chr1-173811223",
+      "sequence": "SSRPEDYFIGATHLQKRLESVRK",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000348527.2",
+          "core_start": 13,
+          "reference_core": "SSRPEDYFIGATPLQKRLESVR",
+          "n_flank": "",
+          "c_flank": "K"
+        },
+        {
+          "protein_id": "ENSP00000507473.1",
+          "core_start": 13,
+          "reference_core": "SSRPEDYFIGATPLQKRLESVR",
+          "n_flank": "",
+          "c_flank": "K"
+        },
+        {
+          "protein_id": "ENSP00000323543.7",
+          "core_start": 13,
+          "reference_core": "SSRPEDYFIGATPLQKRLESVR",
+          "n_flank": "",
+          "c_flank": "K"
+        },
+        {
+          "protein_id": "ENSP00000356683.3",
+          "core_start": 13,
+          "reference_core": "SSRPEDYFIGATPLQKRLESVR",
+          "n_flank": "",
+          "c_flank": "K"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "DYNC1H1-chr14-101980529",
+      "sequence": "KRFHATISF",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000506420.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505734.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505467.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506446.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505519.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495528.2",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505294.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000504911.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505589.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506124.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506688.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505201.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505821.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505483.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495022.2",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506344.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000504863.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506166.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495944.2",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495220.2",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505523.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506521.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505744.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505667.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505332.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000348965.4",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506816.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506208.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505938.1",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495884.2",
+          "core_start": 308,
+          "reference_core": "RFHATVSF",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "VLLTLDILKHGKRFHATISFDTDTGLKQAL",
+          "offset": 11,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        },
+        {
+          "sequence": "GKRFHATISFDTDTGLKQALETKK",
+          "offset": 1,
+          "in_vaccines": [
+            "JLF V3",
+            "JLF V2"
+          ]
+        },
+        {
+          "sequence": "KHGKRFHATISFDTDTGL",
+          "offset": 3,
+          "in_vaccines": [
+            "CeGaT"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "DYNC1H1-chr14-101980529",
+      "sequence": "GKRFHATISFDTDTGLKQALETKK",
+      "in_vaccines": [
+        "JLF V3",
+        "JLF V2"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000506420.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505734.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505467.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506446.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505519.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000495528.2",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505294.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000504911.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505589.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506124.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506688.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505201.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505821.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505483.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000495022.2",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506344.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000504863.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506166.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000495944.2",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000495220.2",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505523.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506521.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505744.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505667.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505332.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000348965.4",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506816.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000506208.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000505938.1",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        },
+        {
+          "protein_id": "ENSP00000495884.2",
+          "core_start": 306,
+          "reference_core": "GKRFHATVSFDTDTGLKQALET",
+          "n_flank": "",
+          "c_flank": "VN"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "DYNC1H1-chr14-101980529",
+      "sequence": "KHGKRFHATISFDTDTGL",
+      "in_vaccines": [
+        "CeGaT"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000506420.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505734.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505467.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506446.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505519.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495528.2",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505294.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000504911.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505589.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506124.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506688.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505201.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505821.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505483.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495022.2",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506344.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000504863.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506166.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495944.2",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495220.2",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505523.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506521.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505744.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505667.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505332.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000348965.4",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506816.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506208.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000505938.1",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000495884.2",
+          "core_start": 305,
+          "reference_core": "HGKRFHATVSFDTDTGL",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "VLLTLDILKHGKRFHATISFDTDTGLKQAL",
+          "offset": 8,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "SPG11-chr15-44660435",
+      "sequence": "KLIDDQDVSI",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000508295.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000261866.7",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000453246.2",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507268.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000508319.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507025.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507782.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506968.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000508334.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507166.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000445278.2",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000396110.2",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000453599.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000506948.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000508089.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507557.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000507493.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000508340.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000508031.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000453848.1",
+          "core_start": 140,
+          "reference_core": "LIDDQDISI",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "ATILYSCSREALQKLIDDQDVSISLLSLRIL",
+          "offset": 13,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "MYO9A-chr15-71994488",
+      "sequence": "KKFDWIVFRINHALLNSKVLEHNTK",
+      "in_vaccines": [
+        "JLF V2"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000348349.5",
+          "core_start": 506,
+          "reference_core": "FDWIVFRINHALLNSKDLEHNT",
+          "n_flank": "AL",
+          "c_flank": "K"
+        },
+        {
+          "protein_id": "ENSP00000456192.1",
+          "core_start": 506,
+          "reference_core": "FDWIVFRINHALLNSKDLEHNT",
+          "n_flank": "AL",
+          "c_flank": "K"
+        },
+        {
+          "protein_id": "ENSP00000454446.1",
+          "core_start": 101,
+          "reference_core": "FDWIVFRINHALLNSKDLEHNT",
+          "n_flank": "AL",
+          "c_flank": "K"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "EPG5-chr18-45925851",
+      "sequence": "KELPLYLWQPSTSEIAVIRDWKK",
+      "in_vaccines": [
+        "JLF V2"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000512657.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000512658.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000466990.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000466403.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000467464.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000282041.4",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000512660.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000512659.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000512656.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        },
+        {
+          "protein_id": "ENSP00000512661.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRDW",
+          "n_flank": "K",
+          "c_flank": "LL"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "EPG5-chr18-45925851",
+      "sequence": "KELPLYLWQPSTSEIAVIRD",
+      "in_vaccines": [
+        "JLF V1"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000512657.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000512658.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000466990.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000466403.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000467464.2",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000282041.4",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000512660.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000512659.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000512656.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000512661.1",
+          "core_start": 858,
+          "reference_core": "ELPLYLWQPSASEIAVIRD",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "KELPLYLWQPSTSEIAVIRDWKK",
+          "offset": 0,
+          "in_vaccines": [
+            "JLF V2"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "EPG5-chr18-45925851",
+      "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
+      "in_vaccines": [
+        "CeGaT"
+      ],
+      "reference_matches": [],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "MAP2-chr2-209694768",
+      "sequence": "KTVRIYQGRVVPFTKALMIKFEE",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [],
+      "parent_matches": [
+        {
+          "sequence": "DSQLEDRAHCHHLFKTVRIYQGRVVPFTKALMIKFEEIWPQTFH",
+          "offset": 14,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        },
+        {
+          "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
+          "offset": 0,
+          "in_vaccines": [
+            "JLF V2",
+            "JLF V1"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "MAP2-chr2-209694768",
+      "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
+      "in_vaccines": [
+        "JLF V2",
+        "JLF V1"
+      ],
+      "reference_matches": [],
+      "parent_matches": [
+        {
+          "sequence": "DSQLEDRAHCHHLFKTVRIYQGRVVPFTKALMIKFEEIWPQTFH",
+          "offset": 14,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "PTH1R-chr3-46898732",
+      "sequence": "SFMLRAVSFFVKDAVLYSGAKKK",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000402723.1",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        },
+        {
+          "protein_id": "ENSP00000411424.1",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        },
+        {
+          "protein_id": "ENSP00000400977.2",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        },
+        {
+          "protein_id": "ENSP00000413774.2",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        },
+        {
+          "protein_id": "ENSP00000321999.4",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        },
+        {
+          "protein_id": "ENSP00000389811.1",
+          "core_start": 228,
+          "reference_core": "SFMLRAVSIFVKDAVLYSGA",
+          "n_flank": "",
+          "c_flank": "TLD"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "KDM3B-chr5-138391529",
+      "sequence": "HENLFLQPPKLSREESSNPFLAFVEK",
+      "in_vaccines": [
+        "JLF V2",
+        "JLF V1"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000326563.5",
+          "core_start": 617,
+          "reference_core": "HENLFLQPPKLSREEPSNPFLAFVE",
+          "n_flank": "",
+          "c_flank": "K"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "CUL9-chr6-43186384",
+      "sequence": "RMLDYYEEISAGDEGEFRQSKKK",
+      "in_vaccines": [
+        "JLF V2"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000361730.2",
+          "core_start": 389,
+          "reference_core": "RMLDDYEEISAGDEGEFRQS",
+          "n_flank": "",
+          "c_flank": "NNG"
+        },
+        {
+          "protein_id": "ENSP00000252050.4",
+          "core_start": 389,
+          "reference_core": "RMLDDYEEISAGDEGEFRQS",
+          "n_flank": "",
+          "c_flank": "NNG"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "CD109-chr6-73818405",
+      "sequence": "SFSGPGMSGMALMEVNLLSGKKK",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000404475.2",
+          "core_start": 1226,
+          "reference_core": "SFSGPGRSGMALMEVNLLSG",
+          "n_flank": "",
+          "c_flank": "FMV"
+        },
+        {
+          "protein_id": "ENSP00000388062.2",
+          "core_start": 1286,
+          "reference_core": "SFSGPGRSGMALMEVNLLSG",
+          "n_flank": "",
+          "c_flank": "FMV"
+        },
+        {
+          "protein_id": "ENSP00000287097.4",
+          "core_start": 1303,
+          "reference_core": "SFSGPGRSGMALMEVNLLSG",
+          "n_flank": "",
+          "c_flank": "FMV"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "CDC40-chr6-110228838",
+      "sequence": "HSMPAVTLSPNGKSLACQSMDNQKK",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000357928.1",
+          "core_start": 461,
+          "reference_core": "HSMPAVTLSPNGKWLACQSMDNQ",
+          "n_flank": "",
+          "c_flank": "IL"
+        },
+        {
+          "protein_id": "ENSP00000357926.1",
+          "core_start": 461,
+          "reference_core": "HSMPAVTLSPNGKWLACQSMDNQ",
+          "n_flank": "",
+          "c_flank": "IL"
+        },
+        {
+          "protein_id": "ENSP00000304370.1",
+          "core_start": 461,
+          "reference_core": "HSMPAVTLSPNGKWLACQSMDNQ",
+          "n_flank": "",
+          "c_flank": "IL"
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "EXOC4-chr7-133274996",
+      "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
+      "in_vaccines": [
+        "JLF V3",
+        "JLF V2"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000376868.2",
+          "core_start": 25,
+          "reference_core": "SVIRTLSTSDDVEDRENEKGR",
+          "n_flank": "LI",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000253861.4",
+          "core_start": 25,
+          "reference_core": "SVIRTLSTSDDVEDRENEKGR",
+          "n_flank": "LI",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": []
+    },
+    {
+      "variant_id": "BMP1-chr8-22192067",
+      "sequence": "KIILNFTTL",
+      "in_vaccines": [
+        "mRNA"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000428332.1",
+          "core_start": 359,
+          "reference_core": "IILNFTSL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000306121.8",
+          "core_start": 359,
+          "reference_core": "IILNFTSL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000305714.5",
+          "core_start": 359,
+          "reference_core": "IILNFTSL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000428665.1",
+          "core_start": 359,
+          "reference_core": "IILNFTSL",
+          "n_flank": "K",
+          "c_flank": ""
+        },
+        {
+          "protein_id": "ENSP00000430406.1",
+          "core_start": 359,
+          "reference_core": "IILNFTSL",
+          "n_flank": "K",
+          "c_flank": ""
+        }
+      ],
+      "parent_matches": [
+        {
+          "sequence": "YSAHMHCVWRISVTPGEKIILNFTTLDLYRSRL",
+          "offset": 17,
+          "in_vaccines": [
+            "mRNA"
+          ]
+        },
+        {
+          "sequence": "RISVTPGEKIILNFTTLDLYRSR",
+          "offset": 8,
+          "in_vaccines": [
+            "JLF V3"
+          ]
+        }
+      ]
+    },
+    {
+      "variant_id": "SMC5-chr9-70298024",
+      "sequence": "DRQKRIGNTRKMIEDLQNELK",
+      "in_vaccines": [
+        "JLF V3"
+      ],
+      "reference_matches": [
+        {
+          "protein_id": "ENSP00000354957.5",
+          "core_start": 367,
+          "reference_core": "DRQRRIGNTRKMIEDLQNEL",
+          "n_flank": "",
+          "c_flank": "K"
+        }
+      ],
+      "parent_matches": []
+    }
+  ]
+}

@@ -18,8 +18,11 @@ from .evaluate import read_tsv
 from .run_exacto import as_graph_operation
 from .vaccine_peptides import (
     PEPTIDE_SCORING_POLICY,
+    context_fingerprint,
+    peptide_context,
     peptide_scoring_region,
     results_fingerprint,
+    score_primary_windows,
 )
 
 ORF_HEADER = re.compile(r"^(.+)\|orf_(\d+)-(\d+)$")
@@ -152,7 +155,8 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
         variant["exacto_runs"] = []
         for peptide in variant["published_vaccine_peptides"]:
             peptide["matches"] = []
-            peptide["scoring_region"] = peptide_scoring_region(peptide["sequence"])
+            peptide["scoring_region"] = peptide_scoring_region(peptide["sequence"], peptide_context(
+                variant["variant_id"], peptide["sequence"], subset["source"]["input_id"]))
 
     completed = {(run["sample"], run["arm"]): run for run in previous["runs"] if run["status"] == "ok"}
     seen, artifacts, reconstructions = set(), [], {}
@@ -234,15 +238,16 @@ def analyze(subset: dict, previous: dict, outputs_dir: Path, *, run_url: str, ve
             "results_sha256": results_fingerprint(previous),
             "metric_label": "Vaccine sequence contained in reconstruction",
             "peptide_scoring_policy": PEPTIDE_SCORING_POLICY,
+            "peptide_context_sha256": context_fingerprint(),
             "n_completed_methods": len(seen),
             "samples_available": sorted({sample for sample, _ in seen}),
             "samples_unavailable": sorted({s.name for s in SAMPLES} - {sample for sample, _ in seen}),
             "matching_policy": (
-                "Complete terminal runs of 1–4 lysines at either end of every "
-                "recorded vaccine peptide are treated as suspected solubility "
-                "additions outside the ORF and excluded from scoring by benchmark "
-                "convention, including minimal epitopes. Internal lysines and "
-                "longer terminal runs are retained. The nonempty remaining sequence "
+                "Terminal K runs of 1–4 are excluded only where independent "
+                "same-gene GENCODE protein context supports a non-native addition. "
+                "Native lysines, longer-parent-supported lysines, encoded mRNA "
+                "sequences and uncertain cases remain scored. Exacto output is "
+                "never used to decide exclusions. The nonempty remaining sequence "
                 "must be a contiguous substring "
                 "of an exported Exacto protein sequence; the reconstruction may "
                 "extend on either side of the vaccine sequence. It must be "
@@ -285,6 +290,7 @@ def main() -> None:
         json.loads(args.subset.read_text()), json.loads(args.results.read_text()),
         args.outputs_dir, run_url=args.run_url, version=args.exacto_version,
     )
+    result["primary_window_report"] = score_primary_windows(result)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result["summary"], indent=2))

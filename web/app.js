@@ -315,10 +315,12 @@ function renderVaccineSequenceSummary() {
   node.innerHTML = "";
   if (!report) return;
   const summary = report.summary;
+  const primary = report.primary;
   const link = el("a", "", "Inspect every vaccine sequence");
   link.href = "peptides.html";
-  node.append(el("strong", "", `${summary.n_variants_any_peptide_matched}/${summary.n_variants} targets have a recorded vaccine sequence contained in a reconstruction.`),
-    el("p", "", `${summary.n_peptide_entries_matched}/${summary.n_peptide_entries} peptide entries recovered; terminal K tags excluded. The reconstructed protein can be longer on either side.`), link);
+  node.append(el("strong", "", primary
+    ? `${primary.recovered}/${primary.targets} targets recovered by the top RNA-supported sequence.`
+    : `${summary.n_variants_any_peptide_matched}/${summary.n_variants} targets have a recorded vaccine sequence contained in a reconstruction.`), el("span", "", " "), link);
 }
 
 function renderTiles() {

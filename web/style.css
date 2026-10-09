@@ -81,6 +81,14 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .sequence-callout p { margin: .35rem 0; color: var(--ink-soft); }
 .sequence-summary { max-width: 70ch; font-size: 1.2rem; font-weight: 600; }
+.recovery-levels { width: min(34rem, 100%); margin: .8rem 0 1rem; font-size: 1rem; border-collapse: collapse; }
+.recovery-levels[hidden] { display: none; }
+.recovery-levels caption { text-align: left; color: var(--ink-soft); padding-bottom: .35rem; font-weight: 400; }
+.recovery-levels th, .recovery-levels td { padding: .3rem .8rem .3rem 0; border-bottom: 1px solid var(--rule); text-align: left; }
+.recovery-levels tbody th, .recovery-levels td { font-weight: 400; }
+.recovery-levels td { font-variant-numeric: tabular-nums; }
+.alignment-primary > .alignment-label { box-shadow: inset 3px 0 var(--ink); }
+.primary-window-label { display: block; font-size: .8rem; color: var(--ink-soft); }
 .sequence-page .wrap { max-width: 1400px; }
 .sequence-page .masthead { padding: 1.75rem 0 1.25rem; }
 .sequence-report { max-width: 1400px; }

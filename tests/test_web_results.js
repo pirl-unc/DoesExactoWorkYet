@@ -91,13 +91,13 @@ test("partial recovery keeps its measured fraction", () => {
 
 test("recorded vaccine sequence report is distinct from predicted epitopes", () => {
   const data = result(51, 32);
-  data.vaccine_sequence_report = { summary: {
+  data.vaccine_sequence_report = { primary: { recovered: 12, targets: 36 }, summary: {
     n_variants_any_peptide_matched: 15, n_variants: 36,
     n_peptide_entries_matched: 37, n_peptide_entries: 78,
   } };
   const nodes = render(data, ["renderVaccineSequenceSummary"]);
-  assert.match(nodes["#vaccine-sequence-summary"].textContent, /15\/36 targets/);
-  assert.match(nodes["#vaccine-sequence-summary"].textContent, /37\/78 peptide entries/);
+  assert.match(nodes["#vaccine-sequence-summary"].textContent, /12\/36 targets recovered by the top RNA-supported sequence/);
+  assert.doesNotMatch(nodes["#vaccine-sequence-summary"].textContent, /37\/78|15\/36/);
   assert.equal(nodes["#vaccine-sequence-summary"].hidden, false);
 });
 
