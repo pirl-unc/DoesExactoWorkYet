@@ -426,7 +426,7 @@ function primaryWindowReport(report) {
 
 function primaryOtherOutcomes(row) {
   const labels = { disagreement: "differs", tied: "mixed ties", incomplete: "partial",
-    unaligned: "unaligned", unresolved: "unconfirmed", assembly_only: "assembly only", no_sequence: "no output" };
+    unaligned: "no clear peptide overlap", unresolved: "unconfirmed", assembly_only: "assembly only", no_sequence: "no output" };
   return Object.entries(labels).filter(([status]) => row.outcomes[status])
     .map(([status, label]) => `${row.outcomes[status]} ${status === "tied" && row.outcomes[status] === 1 ? "mixed tie" : label}`).join(" · ") || "—";
 }
@@ -683,7 +683,7 @@ function targetComparison(report, rows, filters, columns, groups, top, primary) 
       group.referenceCaptions.forEach(caption => { caption.textContent = `P vs W${window.number}`; });
       group.compareButtons.forEach(item => item.button.setAttribute("aria-pressed", String(item.window === window)));
     };
-    if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "Unaligned candidates · mutation-centered windows; no shared vaccine anchor."));
+    if (group.unaligned) fragment.append(node("p", "sequence-alignment-note", "No clear peptide overlap · windows centered on the mutation."));
     else if (groups.filter((g) => !g.unaligned).length > 1) fragment.append(node("p", "sequence-alignment-note", `Alignment group ${groupIndex + 1}`));
     const nParts = Math.ceil((group.end - group.start) / columns);
     for (let start = group.start, part = 1; start < group.end; start += columns, part++) {
@@ -748,7 +748,8 @@ function targetComparison(report, rows, filters, columns, groups, top, primary) 
       const descriptions = leader.peptides.map(({ peptide, status, comparison }) => {
         const label = `P${rows[0].variant.published_vaccine_peptides.indexOf(peptide) + 1}`;
         const changes = comparison?.substitutions.map(({ position, reference, residue }) => `${reference}${position}${residue}`).join(", ");
-        return `${label}: ${status}${changes ? ` (${changes})` : ""}${comparison?.missing ? `; ${comparison.missing} aa not covered` : ""}`;
+        const description = status === "unaligned" ? "no clear peptide overlap" : status;
+        return `${label}: ${description}${changes ? ` (${changes})` : ""}${comparison?.missing ? `; ${comparison.missing} aa not covered` : ""}`;
       });
       row.append(node("td", "", `${run.sample} ${run.method} · W${leader.window.number}${run.leaders.length > 1 ? " (tie)" : ""}`),
         node("td", "", String(run.count)), node("td", "", descriptions.join(" · ")));

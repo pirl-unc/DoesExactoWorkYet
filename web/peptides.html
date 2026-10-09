@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261009-primary">
+<link rel="stylesheet" href="style.css?v=20261009-overlap2">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -43,7 +43,10 @@
         Amber marks other differences from the first W row in each
         aligned group. S17G means S in the reference window and G at position 17 in this window.
         Positions refer to the window, not the full protein. Missing ends are coverage differences.
-        Shared sequence anchors position rows without inserting gaps; unaligned candidates stay separate.</p>
+        Shared sequence stretches position rows without inserting gaps. “No clear peptide overlap” means
+        the report could not place the protein beside a vaccine peptide using a unique shared stretch
+        of at least six amino acids. These proteins are shown separately, centered on the mutation.
+        This describes the protein comparison; it does not mean the RNA failed to map to the genome.</p>
       <p>Purple marks suspected terminal solubility additions supported by independent reference-protein
         context. Native lysines, parent-supported lysines, encoded mRNA peptides and uncertain cases
         remain scored. A terminal K by itself is not a tag. Excluded residues count as neither mismatches
@@ -57,7 +60,7 @@
         counts are never pooled. All ties remain visible. Recovery requires every tied leader to contain
         at least one vaccine peptide. Mixed ties contain both recovering and non-recovering leaders;
         they are not counted as recovered. “Differs” means a covered-position mismatch; “partial” means
-        missing sequence, and “unaligned” means no shared sequence anchor. A recovered leader can still
+        missing sequence. A recovered leader can still
         disagree with a different peptide; the “Top ≠ vaccine” filter includes those cases.
         Missing ends stay separate from disagreements. Assembly-only outputs are diagnostic, not read-ranked.
         Lower-support windows never change the primary score. ★ retains the best count within each
@@ -125,6 +128,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261009-primary"></script>
+<script src="peptides.js?v=20261009-overlap"></script>
 </body>
 </html>

@@ -102,8 +102,9 @@ peptide. Lower-support alternatives remain diagnostic and never change this scor
 Exacto emits unranked candidates; this is the report’s ranking rule. The `top` label
 marks the primary windows; stars retain the best windows within each sample/method.
 The filter finds covered-position mismatches in primary windows, including leaders
-that contain another peptide. Missing ends, unaligned outputs and mixed ties are
-shown separately. Recovery means at least one peptide, not every administered peptide.
+that contain another peptide. Missing ends, outputs with no clear peptide overlap,
+and mixed ties are shown separately. Recovery means at least one peptide, not every
+administered peptide.
 
 Terminal K, KK, KKK or KKKK runs are suspected additions only where independent
 same-gene GENCODE protein context supports excluding them. Native lysines,
@@ -136,17 +137,20 @@ Re-scoring [run 37664740743](https://github.com/pirl-unc/DoesExactoWorkYet/actio
 | Largest raw/corrected count | Recovered | Other top results |
 |---|---|---|
 | 10+ | 12/12 | — |
-| 5–9 | 3/4 | 1 unaligned |
-| 2–4 | 1/4 | 1 partial, 1 unaligned, 1 mixed tie |
-| 1 | 1/7 | 1 differs, 2 unaligned, 3 mixed ties |
+| 5–9 | 3/4 | 1 with no clear peptide overlap |
+| 2–4 | 1/4 | 1 partial, 1 with no clear peptide overlap, 1 mixed tie |
+| 1 | 1/7 | 1 differs, 2 with no clear peptide overlap, 3 mixed ties |
 | No sequence | 0/9 | 9 without output |
 
 ANKRD17’s primary window differs at covered positions. TECPR1 has disagreeing and
-recovering leaders tied at one input. The other unaligned leaders are ABI3BP and
-VPS13B (one input each), ZNF436 (four corrected inputs) and MT-ND5 (five corrected
-inputs). A lack of a comparable alignment is not counted as a localized mismatch.
-PRRC2C has a partial leader tied with an unaligned one. Mixed ties are not scored
-as recovered. All-output diagnostic unions remain **25/36 targets and 57/78 peptide
+recovering leaders tied at one input. The leaders with no clear peptide overlap are
+ABI3BP and VPS13B (one input each), ZNF436 (four corrected inputs) and MT-ND5 (five
+corrected inputs). This label means the report cannot place the protein against a vaccine peptide
+using an unambiguous exact shared stretch of at least six amino acids. It is a
+protein-comparison category, independent of RNA-to-genome mapping status; it is
+not counted as a localized amino-acid mismatch.
+PRRC2C has a partial leader tied with one lacking clear peptide overlap. Mixed ties
+are not scored as recovered. All-output diagnostic unions remain **25/36 targets and 57/78 peptide
 entries**, across all 29 completed methods including T2-ONT; all 25 also match a
 non-minimal peptide. The full-panel amino-acid check remains 31/33. This reanalysis
 uses saved translations and does not rerun alignment, assembly, or Exacto.
@@ -161,6 +165,29 @@ GENCODE transcript ENST00000486770.7 places both that ORF start and the target
 base at codon offset 1, rather than 0. This establishes the phase disagreement,
 but does not establish why Exacto emitted that ORF or whether the raw read is
 otherwise accurate. No corrected output recovers this target.
+
+The same diagnostic remapping of this ABI3BP read gives MAPQ 60, 1,045 matching
+bases and two substitutions over 1,047 aligned bases, with no inserted/deleted
+bases; introns and the 43 clipped bases are excluded. These are freshly recomputed
+metrics against the benchmark’s restricted reference, not archived original
+whole-genome alignment metrics. The saved original FASTQ has measured base
+qualities Q40/Q43/Q42 for its ATG, with Q43 on the target base. Thus strong
+nucleotide evidence can coexist with a protein reading-frame error. The two
+reference substitutions are differences, not necessarily sequencing errors.
+
+Read/base quality, mapping confidence, and reference matches/substitutions/indels
+are useful additional evidence for ranking tied windows. They are not currently
+exported as per-window quality metrics or used in the primary ranking. The retained
+Exacto archives contain proteins and RNA calls, not the full alignment BAMs;
+prepared raw FASTQs retain qualities, but corrected FASTQs are not in those output
+archives. Collect local quality around the variant as well as whole-read quality,
+and distinguish original whole-genome mapping from benchmark remapping. Missing
+qualities in some inputs and assembled sequences are replaced with synthetic Q30
+for tool compatibility; those values must remain unavailable for quality ranking.
+Known target alleles, other established variants, and splice introns should not
+be penalized as sequencing errors. Protein-reference agreement must allow the
+expected mutation, frameshift or junction; vaccine agreement must remain outside
+the ranking rule.
 
 The analysis CLI and site build require Node.js as well as Python. They share the
 browser’s window grouping and ranking through `scripts/score_primary_windows.js`;
