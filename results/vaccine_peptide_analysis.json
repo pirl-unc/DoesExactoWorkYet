@@ -77,7 +77,8 @@
     "mode": "rescore_saved_outputs",
     "results_sha256": "122cba9375f5dab8cf39a6c121ad2d306114c43f9e92b3e41bc384727801c3cd",
     "metric_label": "Vaccine sequence contained in reconstruction",
-    "peptide_scoring_policy": "terminal_lysine_1_to_4_v1",
+    "peptide_scoring_policy": "reference_supported_terminal_tags_v2",
+    "peptide_context_sha256": "4ae72fa99211384dc5fcb081ac8e07a99a7673ea62af93cae0369900e26be957",
     "n_completed_methods": 29,
     "samples_available": [
       "T1-ONT",
@@ -87,7 +88,7 @@
       "T3-ONT"
     ],
     "samples_unavailable": [],
-    "matching_policy": "Complete terminal runs of 1\u20134 lysines at either end of every recorded vaccine peptide are treated as suspected solubility additions outside the ORF and excluded from scoring by benchmark convention, including minimal epitopes. Internal lysines and longer terminal runs are retained. The nonempty remaining sequence must be a contiguous substring of an exported Exacto protein sequence; the reconstruction may extend on either side of the vaccine sequence. It must be linked to an RNA call with the target's exact genomic locus and allele. The matched peptide must overlap the call's translated codon/junction or frameshifted tail. Counts are any-candidate unions over the available methods and samples; all-peptides matched can combine different candidates. Predicted pVACtools epitopes are excluded. Full recorded sequences are preserved; scoring_region uses zero-based, end-exclusive recorded-peptide coordinates. amino_acid_starts locates the scored region in the protein (one-based), not any excluded N-terminal tag.",
+    "matching_policy": "Terminal K runs of 1\u20134 are excluded only where independent same-gene GENCODE protein context supports a non-native addition. Native lysines, longer-parent-supported lysines, encoded mRNA sequences and uncertain cases remain scored. Exacto output is never used to decide exclusions. The nonempty remaining sequence must be a contiguous substring of an exported Exacto protein sequence; the reconstruction may extend on either side of the vaccine sequence. It must be linked to an RNA call with the target's exact genomic locus and allele. The matched peptide must overlap the call's translated codon/junction or frameshifted tail. Counts are any-candidate unions over the available methods and samples; all-peptides matched can combine different candidates. Predicted pVACtools epitopes are excluded. Full recorded sequences are preserved; scoring_region uses zero-based, end-exclusive recorded-peptide coordinates. amino_acid_starts locates the scored region in the protein (one-based), not any excluded N-terminal tag.",
     "artifacts": [
       {
         "sample": "T1-ONT",
@@ -2363,17 +2364,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KSFGRSCHL",
           "scoring_region": {
-            "sequence": "SFGRSCHL",
-            "start": 1,
+            "sequence": "KSFGRSCHL",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -2383,7 +2377,7 @@
               "protein_id": "ed635da6-6802-4838-866e-3a1594427455_0|orf_530-1363",
               "rna_call_id": "110",
               "amino_acid_starts": [
-                202
+                201
               ]
             },
             {
@@ -2393,7 +2387,7 @@
               "protein_id": "0aee796b-eb54-4a17-b94b-7ab709186ef1_0|orf_73-810",
               "rna_call_id": "390",
               "amino_acid_starts": [
-                113
+                112
               ]
             },
             {
@@ -2403,7 +2397,7 @@
               "protein_id": "8584c6aa-d7ef-4420-b58b-af693d382cae_0|orf_544-1956",
               "rna_call_id": "22",
               "amino_acid_starts": [
-                202
+                201
               ]
             },
             {
@@ -2413,7 +2407,7 @@
               "protein_id": "975b36d7-1f5d-4415-9a6c-af52405be1a7_0|orf_213-1487",
               "rna_call_id": "42",
               "amino_acid_starts": [
-                202
+                201
               ]
             },
             {
@@ -2423,7 +2417,7 @@
               "protein_id": "975b36d7-1f5d-4415-9a6c-af52405be1a7_0|orf_213-1487",
               "rna_call_id": "252",
               "amino_acid_starts": [
-                202
+                201
               ]
             },
             {
@@ -2433,7 +2427,7 @@
               "protein_id": "00b808e9-f4ad-4f46-b416-a8d1409ec5a5_0|orf_493-1782",
               "rna_call_id": "335",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -2443,7 +2437,7 @@
               "protein_id": "835b7632-c72d-4b33-ba49-aeb54f7f116a_0|orf_610-1641",
               "rna_call_id": "153",
               "amino_acid_starts": [
-                175
+                174
               ]
             }
           ]
@@ -2859,17 +2853,10 @@
           "minimal_epitope_offset": 20,
           "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD",
           "scoring_region": {
-            "sequence": "SLRPRKVNTPAGSSQKAREERALLPLELQD",
-            "start": 1,
+            "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD",
+            "start": 0,
             "end": 31,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -2879,7 +2866,7 @@
               "protein_id": "1c945b47-476b-4713-95fa-a2612e6dcafe_0|orf_70-702",
               "rna_call_id": "1157",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2889,7 +2876,7 @@
               "protein_id": "1f9cd0ee-44af-44de-ac2d-ef12e50f0d6f_0|orf_153-623",
               "rna_call_id": "2249",
               "amino_acid_starts": [
-                69
+                68
               ]
             },
             {
@@ -2899,7 +2886,7 @@
               "protein_id": "9a636625-9675-45a6-a24e-29f18d8811e3_0|orf_60-758",
               "rna_call_id": "6953",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2909,7 +2896,7 @@
               "protein_id": "e4fd6bf3-78f2-4ac0-b2d4-c8a968ec3e58_0|orf_65-1159",
               "rna_call_id": "7202",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2919,7 +2906,7 @@
               "protein_id": "fb500eee-ab27-49ba-8228-1b7dd2e9ae07_0|orf_58-762",
               "rna_call_id": "7608",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2929,7 +2916,7 @@
               "protein_id": "molecule/4771990|orf_46-1140",
               "rna_call_id": "225",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2939,7 +2926,7 @@
               "protein_id": "molecule/4872135|orf_25-1119",
               "rna_call_id": "190",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2949,7 +2936,7 @@
               "protein_id": "molecule/1225564|orf_68-949",
               "rna_call_id": "393",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2959,7 +2946,7 @@
               "protein_id": "molecule/474481|orf_84-1178",
               "rna_call_id": "384",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2969,7 +2956,7 @@
               "protein_id": "molecule/4771990|orf_46-1140",
               "rna_call_id": "588",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2979,7 +2966,7 @@
               "protein_id": "molecule/4872135|orf_25-657",
               "rna_call_id": "459",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2989,7 +2976,7 @@
               "protein_id": "molecule/6456687|orf_56-556",
               "rna_call_id": "321",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -2999,7 +2986,7 @@
               "protein_id": "molecule/6505156|orf_67-1161",
               "rna_call_id": "188",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3009,7 +2996,7 @@
               "protein_id": "molecule/8453797|orf_79-1173",
               "rna_call_id": "508",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3019,7 +3006,7 @@
               "protein_id": "09dfba99-52f5-415f-be55-449f6c2eb99e_0|orf_77-625",
               "rna_call_id": "3255",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3029,7 +3016,7 @@
               "protein_id": "22ae54d7-c818-45e6-909e-182904090fd8_0|orf_104-1120",
               "rna_call_id": "4406",
               "amino_acid_starts": [
-                69
+                68
               ]
             },
             {
@@ -3039,7 +3026,7 @@
               "protein_id": "26bec3aa-9710-481b-9617-70c325f54dc1_0|orf_64-555",
               "rna_call_id": "5568",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3049,7 +3036,7 @@
               "protein_id": "2ed03af0-cf3b-4a1f-9bff-fb7de976065a_0|orf_174-1088",
               "rna_call_id": "3133",
               "amino_acid_starts": [
-                54
+                53
               ]
             },
             {
@@ -3059,7 +3046,7 @@
               "protein_id": "2f0905d3-6132-46df-bfce-d9ba6a9d03e3_0|orf_61-942",
               "rna_call_id": "6257",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3069,7 +3056,7 @@
               "protein_id": "3dd69f20-f2fb-45ec-a814-f62ccb6d5d36_0|orf_78-1172",
               "rna_call_id": "4984",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3079,7 +3066,7 @@
               "protein_id": "47429369-ed4f-4200-beb3-f3ff95ca6e1d_0|orf_69-815",
               "rna_call_id": "982",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3089,7 +3076,7 @@
               "protein_id": "554e660d-d516-4fbe-9f67-cd81c0b3065f_0|orf_48-1175",
               "rna_call_id": "2591",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3099,7 +3086,7 @@
               "protein_id": "77e604dd-0869-46b3-b4ad-a4c6b39fe2d5_0|orf_77-946",
               "rna_call_id": "4147",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3109,7 +3096,7 @@
               "protein_id": "810d1157-6a91-4bee-8eac-9f3fde65a6ac_0|orf_82-1281",
               "rna_call_id": "1993",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3119,7 +3106,7 @@
               "protein_id": "93b63ca0-bbe7-4919-9a28-bbd5cc37877b_0|orf_141-803",
               "rna_call_id": "906",
               "amino_acid_starts": [
-                70
+                69
               ]
             },
             {
@@ -3129,7 +3116,7 @@
               "protein_id": "95ac2ab1-a232-4dd0-8a63-9336bc7df626_0|orf_46-1140",
               "rna_call_id": "5976",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3139,7 +3126,7 @@
               "protein_id": "9dd0c223-c397-4448-addd-f0d305c2c1d6_0|orf_54-935",
               "rna_call_id": "1870",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3149,7 +3136,7 @@
               "protein_id": "a4151748-83db-40a8-ac4f-7601ea9d0aca_0|orf_69-1163",
               "rna_call_id": "4640",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3159,7 +3146,7 @@
               "protein_id": "a9e6ced1-68de-43c1-bff9-28180c6f6369_0|orf_141-1157",
               "rna_call_id": "5361",
               "amino_acid_starts": [
-                69
+                68
               ]
             },
             {
@@ -3169,7 +3156,7 @@
               "protein_id": "ae8f443f-f91b-4e88-9c21-17a29eaa02b8_0|orf_77-1165",
               "rna_call_id": "5669",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3179,7 +3166,7 @@
               "protein_id": "c9c3ebce-5d69-4a7e-b428-0baae680ebfc_0|orf_39-1130",
               "rna_call_id": "4414",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3189,7 +3176,7 @@
               "protein_id": "d5db12fd-db4d-45ea-9fd2-8327c059a638_0|orf_68-1162",
               "rna_call_id": "6433",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3199,7 +3186,7 @@
               "protein_id": "e86af422-6e0a-4100-b9a2-3d2d0bc63a3c_0|orf_48-917",
               "rna_call_id": "2313",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -3209,7 +3196,7 @@
               "protein_id": "afab8e45-7196-4057-b372-e2a40cd62e1f_0|orf_55-750",
               "rna_call_id": "2462",
               "amino_acid_starts": [
-                94
+                93
               ]
             },
             {
@@ -3219,7 +3206,7 @@
               "protein_id": "c947cba7-308e-4779-97a0-b34a375b357c_0|orf_78-1172",
               "rna_call_id": "5345",
               "amino_acid_starts": [
-                95
+                94
               ]
             }
           ]
@@ -4497,17 +4484,10 @@
           "minimal_epitope_offset": 10,
           "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK",
           "scoring_region": {
-            "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRH",
+            "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK",
             "start": 0,
-            "end": 31,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 31,
-                "end": 32,
-                "sequence": "K"
-              }
-            ]
+            "end": 32,
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -5138,17 +5118,10 @@
           "minimal_epitope_offset": null,
           "sequence": "SSRPEDYFIGATHLQKRLESVRK",
           "scoring_region": {
-            "sequence": "SSRPEDYFIGATHLQKRLESVR",
+            "sequence": "SSRPEDYFIGATHLQKRLESVRK",
             "start": 0,
-            "end": 22,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 22,
-                "end": 23,
-                "sequence": "K"
-              }
-            ]
+            "end": 23,
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -7590,17 +7563,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KRFHATISF",
           "scoring_region": {
-            "sequence": "RFHATISF",
-            "start": 1,
+            "sequence": "KRFHATISF",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -7610,7 +7576,7 @@
               "protein_id": "4727|orf_121-1152",
               "rna_call_id": "42355",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7620,7 +7586,7 @@
               "protein_id": "1773cbca-b51a-4cfd-8eff-070ff6a943c1_0|orf_168-1481",
               "rna_call_id": "28021",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7630,7 +7596,7 @@
               "protein_id": "b8b15f01-e46c-4371-8027-db93ca821aba_0|orf_173-1315",
               "rna_call_id": "27935",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7640,7 +7606,7 @@
               "protein_id": "00f42e8c-9319-4ba9-a385-9da9939eb206_0|orf_648-1145",
               "rna_call_id": "97432",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -7650,7 +7616,7 @@
               "protein_id": "09252ded-e409-4219-9880-4e10d5fd5f54_0|orf_126-1280",
               "rna_call_id": "97472",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7660,7 +7626,7 @@
               "protein_id": "0f6b17ff-a0b3-42e1-8079-041b4e2f1390_0|orf_499-1440",
               "rna_call_id": "96597",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7670,7 +7636,7 @@
               "protein_id": "1a2035db-3716-4f20-8652-32bc0621ad84_0|orf_497-1423",
               "rna_call_id": "97618",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7680,7 +7646,7 @@
               "protein_id": "1e68f3b9-b9cb-491a-b618-6ccf1a1320e3_0|orf_123-1112",
               "rna_call_id": "96719",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7690,7 +7656,7 @@
               "protein_id": "2316f862-fbb4-45aa-ad91-56b4a5558b12_0|orf_530-1351",
               "rna_call_id": "93691",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7700,7 +7666,7 @@
               "protein_id": "25a8f774-4f25-490c-b04b-a91934728e4d_0|orf_699-1427",
               "rna_call_id": "95594",
               "amino_acid_starts": [
-                118
+                117
               ]
             },
             {
@@ -7710,7 +7676,7 @@
               "protein_id": "2a0f27b5-e4be-4f3a-98aa-6181223dc077_0|orf_655-1110",
               "rna_call_id": "96945",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -7720,7 +7686,7 @@
               "protein_id": "3788df39-2b11-4066-9b45-a6fcab1b855c_0|orf_727-1512",
               "rna_call_id": "90616",
               "amino_acid_starts": [
-                136
+                135
               ]
             },
             {
@@ -7730,7 +7696,7 @@
               "protein_id": "3d4747a9-9989-466d-9db7-e6743bb3e00e_0|orf_123-1442",
               "rna_call_id": "96640",
               "amino_acid_starts": [
-                310
+                309
               ]
             },
             {
@@ -7740,7 +7706,7 @@
               "protein_id": "3f92c5d2-d5fe-479f-b35c-33d8e5e012d0_0|orf_187-1380",
               "rna_call_id": "90903",
               "amino_acid_starts": [
-                308
+                307
               ]
             },
             {
@@ -7750,7 +7716,7 @@
               "protein_id": "41253a79-da77-4bf0-8fdd-91a65938e7af_0|orf_654-1394",
               "rna_call_id": "97793",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -7760,7 +7726,7 @@
               "protein_id": "5056a6c0-3dcc-4c39-9dc3-24e0a1b4da51_0|orf_648-1391",
               "rna_call_id": "98046",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -7770,7 +7736,7 @@
               "protein_id": "5815ba88-c90a-47ed-a402-7a3f5bf599fe_0|orf_121-1116",
               "rna_call_id": "97800",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7780,7 +7746,7 @@
               "protein_id": "5c2b2f89-d67a-4315-9886-34024603224a_0|orf_673-1437",
               "rna_call_id": "94022",
               "amino_acid_starts": [
-                131
+                130
               ]
             },
             {
@@ -7790,7 +7756,7 @@
               "protein_id": "64ee7e73-213c-48d2-a115-135b406f9260_0|orf_123-1319",
               "rna_call_id": "97181",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7800,7 +7766,7 @@
               "protein_id": "65edf0e5-b076-492c-81d4-695cc3e0e4ba_0|orf_308-1135",
               "rna_call_id": "95834",
               "amino_acid_starts": [
-                244
+                243
               ]
             },
             {
@@ -7810,7 +7776,7 @@
               "protein_id": "690dbadc-769a-435e-a0d8-273fbf3c92d6_0|orf_123-1439",
               "rna_call_id": "97092",
               "amino_acid_starts": [
-                310
+                309
               ]
             },
             {
@@ -7820,7 +7786,7 @@
               "protein_id": "706036d9-5763-4bc3-a778-78e6714c83af_0|orf_123-1442",
               "rna_call_id": "96002",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7830,7 +7796,7 @@
               "protein_id": "756a36c6-cecf-4b2b-af18-8d780eb0bab7_0|orf_207-1169",
               "rna_call_id": "94839",
               "amino_acid_starts": [
-                287
+                286
               ]
             },
             {
@@ -7840,7 +7806,7 @@
               "protein_id": "79173218-7b8e-4d55-b31b-f64771d50d3e_0|orf_499-1257",
               "rna_call_id": "95989",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7850,7 +7816,7 @@
               "protein_id": "7cb990d0-ddf0-478f-84bb-4b2d44ed6d80_0|orf_519-1460",
               "rna_call_id": "94363",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7860,7 +7826,7 @@
               "protein_id": "924f4aa7-2973-4d18-afb8-af726d009722_0|orf_509-1450",
               "rna_call_id": "95351",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -7870,7 +7836,7 @@
               "protein_id": "9ff4ee4a-ef0a-4dba-977b-f6898e76b37d_0|orf_160-1356",
               "rna_call_id": "92747",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7880,7 +7846,7 @@
               "protein_id": "a29da6cb-7e04-4a80-9439-1b2ecc0ff34b_0|orf_641-1183",
               "rna_call_id": "91260",
               "amino_acid_starts": [
-                154
+                153
               ]
             },
             {
@@ -7890,7 +7856,7 @@
               "protein_id": "b8b15f01-e46c-4371-8027-db93ca821aba_0|orf_173-1165",
               "rna_call_id": "91966",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7900,7 +7866,7 @@
               "protein_id": "c3ed65df-e60c-4332-a879-47ac7e7ff1b4_0|orf_446-1423",
               "rna_call_id": "98154",
               "amino_acid_starts": [
-                201
+                200
               ]
             },
             {
@@ -7910,7 +7876,7 @@
               "protein_id": "e86235e3-e3df-46dc-9445-df0da07e4da8_0|orf_120-1391",
               "rna_call_id": "98084",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7920,7 +7886,7 @@
               "protein_id": "efb19ce2-fb2f-4ac9-8039-3f18a4c3f63e_0|orf_132-1130",
               "rna_call_id": "95114",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7930,7 +7896,7 @@
               "protein_id": "f10924ff-96f7-4b55-9403-9a241ea3f502_0|orf_161-1357",
               "rna_call_id": "92815",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7940,7 +7906,7 @@
               "protein_id": "f4a2b2a6-9e0e-47de-9ee8-b8219ac324f2_0|orf_843-1529",
               "rna_call_id": "90628",
               "amino_acid_starts": [
-                98
+                97
               ]
             },
             {
@@ -7950,7 +7916,7 @@
               "protein_id": "f6d71e95-22fb-4e83-9786-36b1082e9561_0|orf_742-1473",
               "rna_call_id": "92206",
               "amino_acid_starts": [
-                119
+                118
               ]
             },
             {
@@ -7960,7 +7926,7 @@
               "protein_id": "fe383e2a-3eb0-4160-b6e1-83e7e3fff992_0|orf_652-1944",
               "rna_call_id": "97162",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -7970,7 +7936,7 @@
               "protein_id": "molecule/4502938|orf_120-1322",
               "rna_call_id": "7522",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7980,7 +7946,7 @@
               "protein_id": "molecule/6406178|orf_91-1254",
               "rna_call_id": "7638",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -7990,7 +7956,7 @@
               "protein_id": "molecule/7964253|orf_118-1281",
               "rna_call_id": "7601",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8000,7 +7966,7 @@
               "protein_id": "molecule/10653919|orf_594-1265",
               "rna_call_id": "12692",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8010,7 +7976,7 @@
               "protein_id": "molecule/2481063|orf_649-1314",
               "rna_call_id": "11999",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8020,7 +7986,7 @@
               "protein_id": "molecule/2754995|orf_467-1114",
               "rna_call_id": "12563",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -8030,7 +7996,7 @@
               "protein_id": "molecule/2924331|orf_762-1142",
               "rna_call_id": "12052",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -8040,7 +8006,7 @@
               "protein_id": "molecule/3104854|orf_120-1373",
               "rna_call_id": "12055",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8050,7 +8016,7 @@
               "protein_id": "molecule/4600551|orf_120-1361",
               "rna_call_id": "12118",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8060,7 +8026,7 @@
               "protein_id": "molecule/591851|orf_92-1078",
               "rna_call_id": "12546",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8070,7 +8036,7 @@
               "protein_id": "molecule/6650045|orf_120-1211",
               "rna_call_id": "12197",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8080,7 +8046,7 @@
               "protein_id": "molecule/7144507|orf_63-1019",
               "rna_call_id": "12694",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8090,7 +8056,7 @@
               "protein_id": "molecule/7269789|orf_649-1212",
               "rna_call_id": "12214",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8100,7 +8066,7 @@
               "protein_id": "molecule/7302991|orf_119-1360",
               "rna_call_id": "12217",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8110,7 +8076,7 @@
               "protein_id": "molecule/8365822|orf_102-1403",
               "rna_call_id": "12496",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8120,7 +8086,7 @@
               "protein_id": "molecule/8581101|orf_31-1272",
               "rna_call_id": "12699",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8130,7 +8096,7 @@
               "protein_id": "molecule/871958|orf_648-1319",
               "rna_call_id": "12420",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8140,7 +8106,7 @@
               "protein_id": "molecule/9754436|orf_141-1166",
               "rna_call_id": "12636",
               "amino_acid_starts": [
-                287
+                286
               ]
             },
             {
@@ -8150,7 +8116,7 @@
               "protein_id": "2520|orf_503-1393",
               "rna_call_id": "14841",
               "amino_acid_starts": [
-                218
+                217
               ]
             },
             {
@@ -8160,7 +8126,7 @@
               "protein_id": "eb53c2a4-829b-4c58-bd80-76774b30d6b9_0|orf_142-2214",
               "rna_call_id": "35499",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8170,7 +8136,7 @@
               "protein_id": "f527ade8-47fe-469f-a6a1-5d042ecfa6ac_0|orf_148-1314",
               "rna_call_id": "35370",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8180,7 +8146,7 @@
               "protein_id": "02cfa4ab-d51d-47b0-a953-a7daae94e4a7_0|orf_153-1454",
               "rna_call_id": "105627",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8190,7 +8156,7 @@
               "protein_id": "0be981d7-9477-40bb-bf23-26e01a5a0c21_0|orf_134-1330",
               "rna_call_id": "107185",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8200,7 +8166,7 @@
               "protein_id": "10d1bb5d-046c-4cec-aa79-f5a1a317c84d_0|orf_564-1442",
               "rna_call_id": "103470",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -8210,7 +8176,7 @@
               "protein_id": "118fc17b-ea87-4500-9002-75b9eb90c7b7_0|orf_654-1394",
               "rna_call_id": "109719",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8220,7 +8186,7 @@
               "protein_id": "1ca99262-06be-40e6-9de4-84e24c15f31c_0|orf_164-1360",
               "rna_call_id": "104652",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8230,7 +8196,7 @@
               "protein_id": "1ed8164a-791b-4e27-af88-2691b841a8aa_0|orf_123-1424",
               "rna_call_id": "108937",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8240,7 +8206,7 @@
               "protein_id": "256b8823-1327-4f7b-a0da-8b1f333caf74_0|orf_694-1464",
               "rna_call_id": "104746",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8250,17 +8216,7 @@
               "protein_id": "2d3d4269-f986-4de4-929c-707a91988c1a_0|orf_585-1319",
               "rna_call_id": "107892",
               "amino_acid_starts": [
-                155
-              ]
-            },
-            {
-              "sample": "T2-ONT",
-              "arm": "reads",
-              "reconstruction_id": "T2-ONT/reads/2e07b2d9-8c90-46a2-83c0-739565ff88f7_0|orf_173-1225",
-              "protein_id": "2e07b2d9-8c90-46a2-83c0-739565ff88f7_0|orf_173-1225",
-              "rna_call_id": "104112",
-              "amino_acid_starts": [
-                307
+                154
               ]
             },
             {
@@ -8270,7 +8226,7 @@
               "protein_id": "30204c1c-ff35-4c19-a42c-04b4abdba915_0|orf_594-1520",
               "rna_call_id": "103528",
               "amino_acid_starts": [
-                183
+                182
               ]
             },
             {
@@ -8280,7 +8236,7 @@
               "protein_id": "4da197fe-a83b-4662-9dbf-485d0e888aaf_0|orf_152-1453",
               "rna_call_id": "107168",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8290,7 +8246,7 @@
               "protein_id": "706584e1-7a9b-4996-8e21-9d277676e12d_0|orf_120-1388",
               "rna_call_id": "108337",
               "amino_acid_starts": [
-                308
+                307
               ]
             },
             {
@@ -8300,7 +8256,7 @@
               "protein_id": "8d6b541e-dc59-4a6b-825c-534f1e2a6a51_0|orf_673-1335",
               "rna_call_id": "106632",
               "amino_acid_starts": [
-                132
+                131
               ]
             },
             {
@@ -8310,7 +8266,7 @@
               "protein_id": "91ef250a-e2e4-49fd-ab48-ea8354453ebf_0|orf_236-1537",
               "rna_call_id": "103197",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8320,7 +8276,7 @@
               "protein_id": "a412b1bc-143b-48f5-83df-37fa395034a3_0|orf_500-1426",
               "rna_call_id": "108859",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -8330,7 +8286,7 @@
               "protein_id": "a48d1405-52a7-42a2-84d6-ffe8ef7fec0b_0|orf_164-1414",
               "rna_call_id": "104713",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8340,7 +8296,7 @@
               "protein_id": "a9052758-22a0-4c2d-88ce-9f9020f99ab1_0|orf_134-1531",
               "rna_call_id": "107155",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8350,7 +8306,7 @@
               "protein_id": "aca72ae6-7f5e-44e6-84d4-ddb3b1aed638_0|orf_753-1388",
               "rna_call_id": "110087",
               "amino_acid_starts": [
-                98
+                97
               ]
             },
             {
@@ -8360,7 +8316,7 @@
               "protein_id": "af499934-3f90-438e-b381-ea7ba34bd35b_0|orf_141-1133",
               "rna_call_id": "106510",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8370,7 +8326,7 @@
               "protein_id": "b492f92c-35c6-4f52-8973-4b1183b05f0d_0|orf_124-1317",
               "rna_call_id": "108682",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8380,7 +8336,7 @@
               "protein_id": "c2c5a1e2-610a-442f-83cc-10e8d2769449_0|orf_707-1300",
               "rna_call_id": "106966",
               "amino_acid_starts": [
-                119
+                118
               ]
             },
             {
@@ -8390,7 +8346,7 @@
               "protein_id": "c3683a56-3281-4427-935b-cc37b3c1f775_0|orf_523-1311",
               "rna_call_id": "105645",
               "amino_acid_starts": [
-                184
+                183
               ]
             },
             {
@@ -8400,7 +8356,7 @@
               "protein_id": "dc495107-d265-409f-bd5f-dbe643725b62_0|orf_118-1419",
               "rna_call_id": "109516",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8410,7 +8366,7 @@
               "protein_id": "f527ade8-47fe-469f-a6a1-5d042ecfa6ac_0|orf_148-1314",
               "rna_call_id": "106016",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8420,7 +8376,7 @@
               "protein_id": "f8dd7a11-e04e-403b-a9ad-18f4142e3a11_0|orf_136-1332",
               "rna_call_id": "106977",
               "amino_acid_starts": [
-                309
+                308
               ]
             },
             {
@@ -8430,7 +8386,7 @@
               "protein_id": "ca78c148-ceeb-4a3b-bbb8-ce944febbf4b_0|orf_784-1320",
               "rna_call_id": "121979",
               "amino_acid_starts": [
-                89
+                88
               ]
             }
           ]
@@ -9266,17 +9222,10 @@
           "minimal_epitope_offset": 3,
           "sequence": "KHGKRFHATISFDTDTGL",
           "scoring_region": {
-            "sequence": "HGKRFHATISFDTDTGL",
-            "start": 1,
+            "sequence": "KHGKRFHATISFDTDTGL",
+            "start": 0,
             "end": 18,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -9286,7 +9235,7 @@
               "protein_id": "4727|orf_121-1152",
               "rna_call_id": "42355",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9296,7 +9245,7 @@
               "protein_id": "1773cbca-b51a-4cfd-8eff-070ff6a943c1_0|orf_168-1481",
               "rna_call_id": "28021",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9306,7 +9255,7 @@
               "protein_id": "b8b15f01-e46c-4371-8027-db93ca821aba_0|orf_173-1315",
               "rna_call_id": "27935",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9316,7 +9265,7 @@
               "protein_id": "00f42e8c-9319-4ba9-a385-9da9939eb206_0|orf_648-1145",
               "rna_call_id": "97432",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9326,7 +9275,7 @@
               "protein_id": "09252ded-e409-4219-9880-4e10d5fd5f54_0|orf_126-1280",
               "rna_call_id": "97472",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9336,7 +9285,7 @@
               "protein_id": "0f6b17ff-a0b3-42e1-8079-041b4e2f1390_0|orf_499-1440",
               "rna_call_id": "96597",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9346,7 +9295,7 @@
               "protein_id": "1a2035db-3716-4f20-8652-32bc0621ad84_0|orf_497-1423",
               "rna_call_id": "97618",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9356,7 +9305,7 @@
               "protein_id": "1e68f3b9-b9cb-491a-b618-6ccf1a1320e3_0|orf_123-1112",
               "rna_call_id": "96719",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9366,7 +9315,7 @@
               "protein_id": "2316f862-fbb4-45aa-ad91-56b4a5558b12_0|orf_530-1351",
               "rna_call_id": "93691",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9376,7 +9325,7 @@
               "protein_id": "25a8f774-4f25-490c-b04b-a91934728e4d_0|orf_699-1427",
               "rna_call_id": "95594",
               "amino_acid_starts": [
-                115
+                114
               ]
             },
             {
@@ -9386,7 +9335,7 @@
               "protein_id": "2a0f27b5-e4be-4f3a-98aa-6181223dc077_0|orf_655-1110",
               "rna_call_id": "96945",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9396,7 +9345,7 @@
               "protein_id": "3788df39-2b11-4066-9b45-a6fcab1b855c_0|orf_727-1512",
               "rna_call_id": "90616",
               "amino_acid_starts": [
-                133
+                132
               ]
             },
             {
@@ -9406,7 +9355,7 @@
               "protein_id": "3d4747a9-9989-466d-9db7-e6743bb3e00e_0|orf_123-1442",
               "rna_call_id": "96640",
               "amino_acid_starts": [
-                307
+                306
               ]
             },
             {
@@ -9416,7 +9365,7 @@
               "protein_id": "3f92c5d2-d5fe-479f-b35c-33d8e5e012d0_0|orf_187-1380",
               "rna_call_id": "90903",
               "amino_acid_starts": [
-                305
+                304
               ]
             },
             {
@@ -9426,7 +9375,7 @@
               "protein_id": "41253a79-da77-4bf0-8fdd-91a65938e7af_0|orf_654-1394",
               "rna_call_id": "97793",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9436,7 +9385,7 @@
               "protein_id": "5815ba88-c90a-47ed-a402-7a3f5bf599fe_0|orf_121-1116",
               "rna_call_id": "97800",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9446,7 +9395,7 @@
               "protein_id": "5c2b2f89-d67a-4315-9886-34024603224a_0|orf_673-1437",
               "rna_call_id": "94022",
               "amino_acid_starts": [
-                128
+                127
               ]
             },
             {
@@ -9456,7 +9405,7 @@
               "protein_id": "64ee7e73-213c-48d2-a115-135b406f9260_0|orf_123-1319",
               "rna_call_id": "97181",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9466,7 +9415,7 @@
               "protein_id": "65edf0e5-b076-492c-81d4-695cc3e0e4ba_0|orf_308-1135",
               "rna_call_id": "95834",
               "amino_acid_starts": [
-                241
+                240
               ]
             },
             {
@@ -9476,7 +9425,7 @@
               "protein_id": "690dbadc-769a-435e-a0d8-273fbf3c92d6_0|orf_123-1439",
               "rna_call_id": "97092",
               "amino_acid_starts": [
-                307
+                306
               ]
             },
             {
@@ -9486,7 +9435,7 @@
               "protein_id": "706036d9-5763-4bc3-a778-78e6714c83af_0|orf_123-1442",
               "rna_call_id": "96002",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9496,7 +9445,7 @@
               "protein_id": "756a36c6-cecf-4b2b-af18-8d780eb0bab7_0|orf_207-1169",
               "rna_call_id": "94839",
               "amino_acid_starts": [
-                284
+                283
               ]
             },
             {
@@ -9506,7 +9455,7 @@
               "protein_id": "79173218-7b8e-4d55-b31b-f64771d50d3e_0|orf_499-1257",
               "rna_call_id": "95989",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9516,7 +9465,7 @@
               "protein_id": "7cb990d0-ddf0-478f-84bb-4b2d44ed6d80_0|orf_519-1460",
               "rna_call_id": "94363",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9526,7 +9475,7 @@
               "protein_id": "924f4aa7-2973-4d18-afb8-af726d009722_0|orf_509-1450",
               "rna_call_id": "95351",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9536,7 +9485,7 @@
               "protein_id": "9ff4ee4a-ef0a-4dba-977b-f6898e76b37d_0|orf_160-1356",
               "rna_call_id": "92747",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9546,7 +9495,7 @@
               "protein_id": "a29da6cb-7e04-4a80-9439-1b2ecc0ff34b_0|orf_641-1183",
               "rna_call_id": "91260",
               "amino_acid_starts": [
-                151
+                150
               ]
             },
             {
@@ -9556,7 +9505,7 @@
               "protein_id": "b8b15f01-e46c-4371-8027-db93ca821aba_0|orf_173-1165",
               "rna_call_id": "91966",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9566,7 +9515,7 @@
               "protein_id": "c3ed65df-e60c-4332-a879-47ac7e7ff1b4_0|orf_446-1423",
               "rna_call_id": "98154",
               "amino_acid_starts": [
-                198
+                197
               ]
             },
             {
@@ -9576,7 +9525,7 @@
               "protein_id": "e86235e3-e3df-46dc-9445-df0da07e4da8_0|orf_120-1391",
               "rna_call_id": "98084",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9586,7 +9535,7 @@
               "protein_id": "efb19ce2-fb2f-4ac9-8039-3f18a4c3f63e_0|orf_132-1130",
               "rna_call_id": "95114",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9596,7 +9545,7 @@
               "protein_id": "f10924ff-96f7-4b55-9403-9a241ea3f502_0|orf_161-1357",
               "rna_call_id": "92815",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9606,7 +9555,7 @@
               "protein_id": "f4a2b2a6-9e0e-47de-9ee8-b8219ac324f2_0|orf_843-1529",
               "rna_call_id": "90628",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -9616,7 +9565,7 @@
               "protein_id": "f6d71e95-22fb-4e83-9786-36b1082e9561_0|orf_742-1473",
               "rna_call_id": "92206",
               "amino_acid_starts": [
-                116
+                115
               ]
             },
             {
@@ -9626,7 +9575,7 @@
               "protein_id": "fe383e2a-3eb0-4160-b6e1-83e7e3fff992_0|orf_652-1944",
               "rna_call_id": "97162",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9636,7 +9585,7 @@
               "protein_id": "molecule/4502938|orf_120-1322",
               "rna_call_id": "7522",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9646,7 +9595,7 @@
               "protein_id": "molecule/6406178|orf_91-1254",
               "rna_call_id": "7638",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9656,7 +9605,7 @@
               "protein_id": "molecule/7964253|orf_118-1281",
               "rna_call_id": "7601",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9666,7 +9615,7 @@
               "protein_id": "molecule/10653919|orf_594-1265",
               "rna_call_id": "12692",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9676,7 +9625,7 @@
               "protein_id": "molecule/2481063|orf_649-1314",
               "rna_call_id": "11999",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9686,7 +9635,7 @@
               "protein_id": "molecule/2754995|orf_467-1114",
               "rna_call_id": "12563",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9696,7 +9645,7 @@
               "protein_id": "molecule/2924331|orf_762-1142",
               "rna_call_id": "12052",
               "amino_acid_starts": [
-                92
+                91
               ]
             },
             {
@@ -9706,7 +9655,7 @@
               "protein_id": "molecule/3104854|orf_120-1373",
               "rna_call_id": "12055",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9716,7 +9665,7 @@
               "protein_id": "molecule/4600551|orf_120-1361",
               "rna_call_id": "12118",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9726,7 +9675,7 @@
               "protein_id": "molecule/591851|orf_92-1078",
               "rna_call_id": "12546",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9736,7 +9685,7 @@
               "protein_id": "molecule/6650045|orf_120-1211",
               "rna_call_id": "12197",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9746,7 +9695,7 @@
               "protein_id": "molecule/7269789|orf_649-1212",
               "rna_call_id": "12214",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9756,7 +9705,7 @@
               "protein_id": "molecule/7302991|orf_119-1360",
               "rna_call_id": "12217",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9766,7 +9715,7 @@
               "protein_id": "molecule/8365822|orf_102-1403",
               "rna_call_id": "12496",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9776,7 +9725,7 @@
               "protein_id": "molecule/8581101|orf_31-1272",
               "rna_call_id": "12699",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9786,7 +9735,7 @@
               "protein_id": "molecule/871958|orf_648-1319",
               "rna_call_id": "12420",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9796,7 +9745,7 @@
               "protein_id": "molecule/9754436|orf_141-1166",
               "rna_call_id": "12636",
               "amino_acid_starts": [
-                284
+                283
               ]
             },
             {
@@ -9806,7 +9755,7 @@
               "protein_id": "2520|orf_503-1393",
               "rna_call_id": "14841",
               "amino_acid_starts": [
-                215
+                214
               ]
             },
             {
@@ -9816,7 +9765,7 @@
               "protein_id": "eb53c2a4-829b-4c58-bd80-76774b30d6b9_0|orf_142-2214",
               "rna_call_id": "35499",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9826,7 +9775,7 @@
               "protein_id": "f527ade8-47fe-469f-a6a1-5d042ecfa6ac_0|orf_148-1314",
               "rna_call_id": "35370",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9836,7 +9785,7 @@
               "protein_id": "02cfa4ab-d51d-47b0-a953-a7daae94e4a7_0|orf_153-1454",
               "rna_call_id": "105627",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9846,7 +9795,7 @@
               "protein_id": "0be981d7-9477-40bb-bf23-26e01a5a0c21_0|orf_134-1330",
               "rna_call_id": "107185",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9856,7 +9805,7 @@
               "protein_id": "10d1bb5d-046c-4cec-aa79-f5a1a317c84d_0|orf_564-1442",
               "rna_call_id": "103470",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9866,7 +9815,7 @@
               "protein_id": "118fc17b-ea87-4500-9002-75b9eb90c7b7_0|orf_654-1394",
               "rna_call_id": "109719",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9876,7 +9825,7 @@
               "protein_id": "1ca99262-06be-40e6-9de4-84e24c15f31c_0|orf_164-1360",
               "rna_call_id": "104652",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9886,7 +9835,7 @@
               "protein_id": "1ed8164a-791b-4e27-af88-2691b841a8aa_0|orf_123-1424",
               "rna_call_id": "108937",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9896,7 +9845,7 @@
               "protein_id": "256b8823-1327-4f7b-a0da-8b1f333caf74_0|orf_694-1464",
               "rna_call_id": "104746",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9906,7 +9855,7 @@
               "protein_id": "2d3d4269-f986-4de4-929c-707a91988c1a_0|orf_585-1319",
               "rna_call_id": "107892",
               "amino_acid_starts": [
-                152
+                151
               ]
             },
             {
@@ -9916,7 +9865,7 @@
               "protein_id": "30204c1c-ff35-4c19-a42c-04b4abdba915_0|orf_594-1520",
               "rna_call_id": "103528",
               "amino_acid_starts": [
-                180
+                179
               ]
             },
             {
@@ -9926,7 +9875,7 @@
               "protein_id": "4da197fe-a83b-4662-9dbf-485d0e888aaf_0|orf_152-1453",
               "rna_call_id": "107168",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9936,7 +9885,7 @@
               "protein_id": "706584e1-7a9b-4996-8e21-9d277676e12d_0|orf_120-1388",
               "rna_call_id": "108337",
               "amino_acid_starts": [
-                305
+                304
               ]
             },
             {
@@ -9946,7 +9895,7 @@
               "protein_id": "8d6b541e-dc59-4a6b-825c-534f1e2a6a51_0|orf_673-1335",
               "rna_call_id": "106632",
               "amino_acid_starts": [
-                129
+                128
               ]
             },
             {
@@ -9956,7 +9905,7 @@
               "protein_id": "91ef250a-e2e4-49fd-ab48-ea8354453ebf_0|orf_236-1537",
               "rna_call_id": "103197",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9966,7 +9915,7 @@
               "protein_id": "a412b1bc-143b-48f5-83df-37fa395034a3_0|orf_500-1426",
               "rna_call_id": "108859",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -9976,7 +9925,7 @@
               "protein_id": "a48d1405-52a7-42a2-84d6-ffe8ef7fec0b_0|orf_164-1414",
               "rna_call_id": "104713",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9986,7 +9935,7 @@
               "protein_id": "a9052758-22a0-4c2d-88ce-9f9020f99ab1_0|orf_134-1531",
               "rna_call_id": "107155",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -9996,7 +9945,7 @@
               "protein_id": "aca72ae6-7f5e-44e6-84d4-ddb3b1aed638_0|orf_753-1388",
               "rna_call_id": "110087",
               "amino_acid_starts": [
-                95
+                94
               ]
             },
             {
@@ -10006,7 +9955,7 @@
               "protein_id": "af499934-3f90-438e-b381-ea7ba34bd35b_0|orf_141-1133",
               "rna_call_id": "106510",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -10016,7 +9965,7 @@
               "protein_id": "b492f92c-35c6-4f52-8973-4b1183b05f0d_0|orf_124-1317",
               "rna_call_id": "108682",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -10026,7 +9975,7 @@
               "protein_id": "c2c5a1e2-610a-442f-83cc-10e8d2769449_0|orf_707-1300",
               "rna_call_id": "106966",
               "amino_acid_starts": [
-                116
+                115
               ]
             },
             {
@@ -10036,7 +9985,7 @@
               "protein_id": "c3683a56-3281-4427-935b-cc37b3c1f775_0|orf_523-1311",
               "rna_call_id": "105645",
               "amino_acid_starts": [
-                181
+                180
               ]
             },
             {
@@ -10046,7 +9995,7 @@
               "protein_id": "dc495107-d265-409f-bd5f-dbe643725b62_0|orf_118-1419",
               "rna_call_id": "109516",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -10056,7 +10005,7 @@
               "protein_id": "f527ade8-47fe-469f-a6a1-5d042ecfa6ac_0|orf_148-1314",
               "rna_call_id": "106016",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -10066,7 +10015,7 @@
               "protein_id": "f8dd7a11-e04e-403b-a9ad-18f4142e3a11_0|orf_136-1332",
               "rna_call_id": "106977",
               "amino_acid_starts": [
-                306
+                305
               ]
             },
             {
@@ -10076,7 +10025,7 @@
               "protein_id": "ca78c148-ceeb-4a3b-bbb8-ce944febbf4b_0|orf_784-1320",
               "rna_call_id": "121979",
               "amino_acid_starts": [
-                86
+                85
               ]
             }
           ]
@@ -11237,17 +11186,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KLIDDQDVSI",
           "scoring_region": {
-            "sequence": "LIDDQDVSI",
-            "start": 1,
+            "sequence": "KLIDDQDVSI",
+            "start": 0,
             "end": 10,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -11257,7 +11199,7 @@
               "protein_id": "0c68b5bc-4889-4a1f-b632-2025367912bd_0|orf_2-1096",
               "rna_call_id": "118838",
               "amino_acid_starts": [
-                142
+                141
               ]
             },
             {
@@ -11267,7 +11209,7 @@
               "protein_id": "1273e865-89ea-480f-8889-121deaba2880_0|orf_79-1521",
               "rna_call_id": "115637",
               "amino_acid_starts": [
-                120
+                119
               ]
             },
             {
@@ -11277,7 +11219,7 @@
               "protein_id": "2ec22c5d-0b3d-44f1-be6b-adb1988c4f9d_0|orf_23-1522",
               "rna_call_id": "118184",
               "amino_acid_starts": [
-                139
+                138
               ]
             },
             {
@@ -11287,7 +11229,7 @@
               "protein_id": "505f75f7-019d-4729-b1f0-26115ae8d9c7_0|orf_17-1687",
               "rna_call_id": "115458",
               "amino_acid_starts": [
-                141
+                140
               ]
             },
             {
@@ -11297,7 +11239,7 @@
               "protein_id": "51aeb913-ec99-4fb6-b724-2bac072c9773_0|orf_6-620",
               "rna_call_id": "114931",
               "amino_acid_starts": [
-                114
+                113
               ]
             },
             {
@@ -11307,7 +11249,7 @@
               "protein_id": "55e138fb-874d-42bc-8e8f-4a921b51fc36_0|orf_27-635",
               "rna_call_id": "116467",
               "amino_acid_starts": [
-                141
+                140
               ]
             },
             {
@@ -11317,7 +11259,7 @@
               "protein_id": "b10d82e2-21a8-448a-92f3-af1b108b62af_0|orf_82-1656",
               "rna_call_id": "118072",
               "amino_acid_starts": [
-                122
+                121
               ]
             },
             {
@@ -11327,7 +11269,7 @@
               "protein_id": "bae190a8-5619-4082-9070-ae11b7be9563_0|orf_38-916",
               "rna_call_id": "116201",
               "amino_acid_starts": [
-                121
+                120
               ]
             }
           ]
@@ -11635,21 +11577,15 @@
           "minimal_epitope_offset": null,
           "sequence": "KKFDWIVFRINHALLNSKVLEHNTK",
           "scoring_region": {
-            "sequence": "FDWIVFRINHALLNSKVLEHNT",
+            "sequence": "FDWIVFRINHALLNSKVLEHNTK",
             "start": 2,
-            "end": 24,
+            "end": 25,
             "terminal_tags": [
               {
                 "terminus": "N",
                 "start": 0,
                 "end": 2,
                 "sequence": "KK"
-              },
-              {
-                "terminus": "C",
-                "start": 24,
-                "end": 25,
-                "sequence": "K"
               }
             ]
           },
@@ -17951,16 +17887,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KELPLYLWQPSTSEIAVIRDWKK",
           "scoring_region": {
-            "sequence": "ELPLYLWQPSTSEIAVIRDW",
-            "start": 1,
+            "sequence": "KELPLYLWQPSTSEIAVIRDW",
+            "start": 0,
             "end": 21,
             "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              },
               {
                 "terminus": "C",
                 "start": 21,
@@ -17981,17 +17911,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KELPLYLWQPSTSEIAVIRD",
           "scoring_region": {
-            "sequence": "ELPLYLWQPSTSEIAVIRD",
-            "start": 1,
+            "sequence": "KELPLYLWQPSTSEIAVIRD",
+            "start": 0,
             "end": 20,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": []
         },
@@ -18005,17 +17928,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
           "scoring_region": {
-            "sequence": "SVIRTLSTIDDVEDRENEKGR",
-            "start": 2,
+            "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
+            "start": 0,
             "end": 23,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 2,
-                "sequence": "KK"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": []
         }
@@ -19645,17 +19561,10 @@
           "minimal_epitope_offset": 8,
           "sequence": "KTVRIYQGRVVPFTKALMIKFEE",
           "scoring_region": {
-            "sequence": "TVRIYQGRVVPFTKALMIKFEE",
-            "start": 1,
+            "sequence": "KTVRIYQGRVVPFTKALMIKFEE",
+            "start": 0,
             "end": 23,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": []
         },
@@ -19726,17 +19635,10 @@
           "minimal_epitope_offset": 8,
           "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
           "scoring_region": {
-            "sequence": "TVRIYQGRVVPFTKALMIKFEEI",
-            "start": 1,
+            "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
+            "start": 0,
             "end": 24,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": []
         }
@@ -23384,17 +23286,10 @@
           "minimal_epitope_offset": null,
           "sequence": "HENLFLQPPKLSREESSNPFLAFVEK",
           "scoring_region": {
-            "sequence": "HENLFLQPPKLSREESSNPFLAFVE",
+            "sequence": "HENLFLQPPKLSREESSNPFLAFVEK",
             "start": 0,
-            "end": 25,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 25,
-                "end": 26,
-                "sequence": "K"
-              }
-            ]
+            "end": 26,
+            "terminal_tags": []
           },
           "matches": []
         },
@@ -41024,17 +40919,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KIILNFTTL",
           "scoring_region": {
-            "sequence": "IILNFTTL",
-            "start": 1,
+            "sequence": "KIILNFTTL",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -41044,7 +40932,7 @@
               "protein_id": "5328|orf_10-1356",
               "rna_call_id": "9010",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -41054,7 +40942,7 @@
               "protein_id": "03343e0b-44e9-479d-8b9e-077b1ff4bce6_0|orf_890-2329",
               "rna_call_id": "17371",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41064,7 +40952,7 @@
               "protein_id": "03782511-7341-4f45-8e0c-b988e1fbc6b2_0|orf_139-1578",
               "rna_call_id": "18164",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41074,7 +40962,7 @@
               "protein_id": "050f0f95-9578-44f7-a831-1edb1fbbc2df_0|orf_179-2581",
               "rna_call_id": "17309",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41084,7 +40972,7 @@
               "protein_id": "07b08431-3373-411a-b92d-eb3bb7f0a7c2_0|orf_36-2546",
               "rna_call_id": "17960",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41094,7 +40982,7 @@
               "protein_id": "08305c0d-a7f3-4e27-a6a4-baa7fd989f5e_0|orf_112-2298",
               "rna_call_id": "17397",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41104,7 +40992,7 @@
               "protein_id": "086400c9-f6bf-4e62-9cea-47f289c8a7fc_0|orf_43-2235",
               "rna_call_id": "17681",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41114,7 +41002,7 @@
               "protein_id": "0ba62054-273f-42c1-a16c-c4e7f524aa2a_0|orf_174-1376",
               "rna_call_id": "17314",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41124,7 +41012,7 @@
               "protein_id": "0e1852ad-79bf-432a-a518-afb855b9a8fb_0|orf_43-2235",
               "rna_call_id": "17697",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41134,7 +41022,7 @@
               "protein_id": "16daa179-609c-4632-8fee-8ec022a167d7_0|orf_207-1646",
               "rna_call_id": "18162",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41144,7 +41032,7 @@
               "protein_id": "1881a9be-a5fa-44f4-954a-9202a090fa5f_0|orf_844-2442",
               "rna_call_id": "17761",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -41154,7 +41042,7 @@
               "protein_id": "19a49da6-d93a-4328-80a8-0f7252cb45bd_0|orf_11-2203",
               "rna_call_id": "18069",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41164,7 +41052,7 @@
               "protein_id": "2c1c5bdb-e5d8-445d-9ed4-ee26c55b71cc_0|orf_15-2975",
               "rna_call_id": "18055",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41174,7 +41062,7 @@
               "protein_id": "301deb91-0736-4cc9-a086-e889a64c133e_0|orf_233-2425",
               "rna_call_id": "17177",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41184,7 +41072,7 @@
               "protein_id": "354ecfdd-4b90-40e4-a787-fbae766ae267_0|orf_20-1558",
               "rna_call_id": "18011",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41194,7 +41082,7 @@
               "protein_id": "36732cef-82ad-4d39-bd52-cbdf8aa8a118_0|orf_33-2225",
               "rna_call_id": "17788",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41204,7 +41092,7 @@
               "protein_id": "39e61a84-fa9e-447b-9f47-ab0a0db81a0f_0|orf_120-2312",
               "rna_call_id": "17374",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41214,7 +41102,7 @@
               "protein_id": "3a866e7c-58ab-4532-b05f-6e26caf052f1_0|orf_10-1818",
               "rna_call_id": "18220",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41224,7 +41112,7 @@
               "protein_id": "3c07dcec-6348-4572-917b-62b557a5bdf1_0|orf_43-1767",
               "rna_call_id": "17708",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41234,7 +41122,7 @@
               "protein_id": "3c4bce1d-858d-461f-93aa-7786d4657380_0|orf_823-2262",
               "rna_call_id": "17778",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41244,7 +41132,7 @@
               "protein_id": "52fd0854-e183-4e8e-b64f-c15523d8c37f_0|orf_82-1980",
               "rna_call_id": "17532",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41254,7 +41142,7 @@
               "protein_id": "580565cf-f3bb-4e9b-93e1-e81a688e523a_0|orf_33-2225",
               "rna_call_id": "17786",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41264,7 +41152,7 @@
               "protein_id": "623c1c4f-db08-489d-9a4e-cf5ed2752c8d_0|orf_103-1833",
               "rna_call_id": "18154",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41274,7 +41162,7 @@
               "protein_id": "62ff7def-32d2-4f70-bc1b-d26fa353a835_0|orf_43-2235",
               "rna_call_id": "17674",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41284,7 +41172,7 @@
               "protein_id": "639c0f9a-2e7d-429e-9d72-5d52f24d7ac7_0|orf_31-2223",
               "rna_call_id": "17844",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41294,7 +41182,7 @@
               "protein_id": "64ed5fc7-09df-4052-bed3-3d150b14a209_0|orf_86-2278",
               "rna_call_id": "17515",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41304,7 +41192,7 @@
               "protein_id": "653115b7-8cda-4407-a0dd-c70c96c14518_0|orf_112-2304",
               "rna_call_id": "17395",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41314,7 +41202,7 @@
               "protein_id": "68fd69e7-88bb-4ff0-9800-80ee008be65b_0|orf_42-2234",
               "rna_call_id": "17695",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41324,7 +41212,7 @@
               "protein_id": "694cdd94-7e50-4d8a-9c83-af051179d617_0|orf_106-1263",
               "rna_call_id": "18211",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41334,7 +41222,7 @@
               "protein_id": "6ba3456b-58a1-41fe-a33c-b782802a5776_0|orf_63-1220",
               "rna_call_id": "18217",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41344,7 +41232,7 @@
               "protein_id": "6d505164-2b32-4413-8422-ed774dadd644_0|orf_121-2313",
               "rna_call_id": "17361",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41354,7 +41242,7 @@
               "protein_id": "72afd278-24f7-4779-86b7-4dc9a607935c_0|orf_745-2184",
               "rna_call_id": "18119",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41364,7 +41252,7 @@
               "protein_id": "77602395-6c56-45cb-9756-0a2616eee214_0|orf_43-2235",
               "rna_call_id": "17699",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41374,7 +41262,7 @@
               "protein_id": "7a5a5289-1b09-4910-87ec-ab94b0f281d6_0|orf_144-2336",
               "rna_call_id": "17325",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41384,7 +41272,7 @@
               "protein_id": "7bfa1f87-74af-4d14-a973-dc2d0f2e33e4_0|orf_229-2373",
               "rna_call_id": "17183",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41394,7 +41282,7 @@
               "protein_id": "7e371884-d2dc-4aa0-9a57-a65b3d66e461_0|orf_12-2210",
               "rna_call_id": "18052",
               "amino_acid_starts": [
-                362
+                361
               ]
             },
             {
@@ -41404,7 +41292,7 @@
               "protein_id": "7f89fc15-b8cc-4c5d-b5d8-7b4a975007ac_0|orf_42-2234",
               "rna_call_id": "17702",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41414,7 +41302,7 @@
               "protein_id": "80bdc6a2-5ddf-453b-bd2f-cbfe3a7af699_0|orf_33-2225",
               "rna_call_id": "17797",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41424,7 +41312,7 @@
               "protein_id": "8655a9b1-148b-41f2-a759-f3a8f1cf0166_0|orf_2034-3146",
               "rna_call_id": "17243",
               "amino_acid_starts": [
-                98
+                97
               ]
             },
             {
@@ -41434,7 +41322,7 @@
               "protein_id": "88a746a7-9948-4ae4-bf36-80cfd8f85969_0|orf_43-1428",
               "rna_call_id": "18176",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -41444,7 +41332,7 @@
               "protein_id": "907ce335-4fef-4b37-b39e-f63ef15621ea_0|orf_212-2404",
               "rna_call_id": "17205",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41454,7 +41342,7 @@
               "protein_id": "93ab3460-f131-471c-9c04-e201badab597_0|orf_27-1970",
               "rna_call_id": "18156",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41464,7 +41352,7 @@
               "protein_id": "9a873a81-79b6-4524-9843-ca5736e8eb7f_0|orf_121-2541",
               "rna_call_id": "17357",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41474,7 +41362,7 @@
               "protein_id": "a50703f9-bd19-4eec-b092-cfd9e4ed3a61_0|orf_33-2225",
               "rna_call_id": "17781",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41484,7 +41372,7 @@
               "protein_id": "a7357b2c-05df-4c00-a1ec-d2ddde158bc1_1|orf_104-2116",
               "rna_call_id": "18145",
               "amino_acid_starts": [
-                229
+                228
               ]
             },
             {
@@ -41494,7 +41382,7 @@
               "protein_id": "a93cc68d-5006-4edd-b775-870da1501d96_0|orf_23-2215",
               "rna_call_id": "17981",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41504,7 +41392,7 @@
               "protein_id": "b1b9e05d-af4e-4b47-a8b6-3fd617325957_0|orf_92-2284",
               "rna_call_id": "17478",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41514,7 +41402,7 @@
               "protein_id": "b28a7485-1b1e-42b4-ba58-2577351ec686_0|orf_36-2228",
               "rna_call_id": "17742",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41524,7 +41412,7 @@
               "protein_id": "b3d9e7c7-22e7-4a53-89d5-41ffc3464b34_0|orf_28-2220",
               "rna_call_id": "17906",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41534,7 +41422,7 @@
               "protein_id": "b5fee2dc-70d9-4a33-b6a8-ade260d6ffcf_0|orf_28-2979",
               "rna_call_id": "17885",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41544,7 +41432,7 @@
               "protein_id": "b90bed2e-3bcc-491d-a749-ab5b736e522d_0|orf_53-2245",
               "rna_call_id": "17658",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41554,7 +41442,7 @@
               "protein_id": "bd7696e4-5df9-49c4-a09a-3301c4b0383e_0|orf_87-2279",
               "rna_call_id": "17519",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41564,7 +41452,7 @@
               "protein_id": "becfeba8-bd7d-4cee-af79-8dbd269ab93f_0|orf_86-2278",
               "rna_call_id": "17521",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41574,7 +41462,7 @@
               "protein_id": "bf2984ab-2abd-4802-8324-833ef3aefb43_0|orf_1135-2292",
               "rna_call_id": "17439",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41584,7 +41472,7 @@
               "protein_id": "c838dea2-aee5-45fd-9f43-bc941f96a1a4_0|orf_44-2236",
               "rna_call_id": "17677",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41594,7 +41482,7 @@
               "protein_id": "cd2d0d57-fb57-4842-9998-3935cbe1b7e1_0|orf_83-1513",
               "rna_call_id": "17554",
               "amino_acid_starts": [
-                106
+                105
               ]
             },
             {
@@ -41604,7 +41492,7 @@
               "protein_id": "d16c998c-f0e6-4616-9a22-e0e88b9e8fa2_0|orf_19-2211",
               "rna_call_id": "18020",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41614,7 +41502,7 @@
               "protein_id": "d80eb15a-f392-4849-a2b1-fc9d9f1ec097_0|orf_149-1879",
               "rna_call_id": "18149",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41624,7 +41512,7 @@
               "protein_id": "db43d41f-c259-4c20-bb37-440614e193cb_0|orf_83-2275",
               "rna_call_id": "17545",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41634,7 +41522,7 @@
               "protein_id": "dddde5a2-b89a-4f82-82e0-26538a49d5bc_0|orf_83-2485",
               "rna_call_id": "17540",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41644,7 +41532,7 @@
               "protein_id": "de785ab2-258a-4c7b-a439-819a3d8dfae7_0|orf_105-2297",
               "rna_call_id": "17404",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41654,7 +41542,7 @@
               "protein_id": "e2df4913-0153-46e6-b242-c72993b0be94_0|orf_32-2224",
               "rna_call_id": "17976",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41664,7 +41552,7 @@
               "protein_id": "e3c28d58-6e91-4ebd-84b7-5e121b7180cf_0|orf_194-1351",
               "rna_call_id": "18196",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41674,7 +41562,7 @@
               "protein_id": "edcdd4f5-54f3-4629-861b-86c4e0b1ab33_0|orf_36-2228",
               "rna_call_id": "17746",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41684,7 +41572,7 @@
               "protein_id": "ef2e6961-edea-4eab-a678-bf2a0627deb2_0|orf_214-2403",
               "rna_call_id": "17230",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41694,7 +41582,7 @@
               "protein_id": "f2fa5c15-e02c-4817-8bee-6818685fa4d4_1|orf_133-2325",
               "rna_call_id": "17336",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41704,7 +41592,7 @@
               "protein_id": "f5f3c0ef-47a7-4d88-8a34-1cbed051e08f_0|orf_36-2228",
               "rna_call_id": "17753",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41714,7 +41602,7 @@
               "protein_id": "f97e20b0-8503-437b-bfac-dfe1a59afbce_0|orf_21-2213",
               "rna_call_id": "18009",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41724,7 +41612,7 @@
               "protein_id": "ff2fc7a1-7c7e-427d-b34d-127d90001bc0_0|orf_213-2114",
               "rna_call_id": "17208",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41734,7 +41622,7 @@
               "protein_id": "07b08431-3373-411a-b92d-eb3bb7f0a7c2_0|orf_789-2189",
               "rna_call_id": "61369",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41744,7 +41632,7 @@
               "protein_id": "086400c9-f6bf-4e62-9cea-47f289c8a7fc_0|orf_43-2472",
               "rna_call_id": "60469",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41754,7 +41642,7 @@
               "protein_id": "0ba62054-273f-42c1-a16c-c4e7f524aa2a_0|orf_638-1378",
               "rna_call_id": "58179",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41764,7 +41652,7 @@
               "protein_id": "0e1852ad-79bf-432a-a518-afb855b9a8fb_0|orf_43-2232",
               "rna_call_id": "60245",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41774,7 +41662,7 @@
               "protein_id": "1881a9be-a5fa-44f4-954a-9202a090fa5f_0|orf_1061-1375",
               "rna_call_id": "60808",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41784,7 +41672,7 @@
               "protein_id": "19a49da6-d93a-4328-80a8-0f7252cb45bd_0|orf_472-1326",
               "rna_call_id": "62934",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41794,7 +41682,7 @@
               "protein_id": "2c1c5bdb-e5d8-445d-9ed4-ee26c55b71cc_0|orf_1051-1932",
               "rna_call_id": "62819",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41804,7 +41692,7 @@
               "protein_id": "301deb91-0736-4cc9-a086-e889a64c133e_0|orf_990-2135",
               "rna_call_id": "57587",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41814,7 +41702,7 @@
               "protein_id": "36732cef-82ad-4d39-bd52-cbdf8aa8a118_0|orf_33-2219",
               "rna_call_id": "61362",
               "amino_acid_starts": [
-                358
+                357
               ]
             },
             {
@@ -41824,7 +41712,7 @@
               "protein_id": "39e61a84-fa9e-447b-9f47-ab0a0db81a0f_0|orf_1152-2555",
               "rna_call_id": "58594",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41834,7 +41722,7 @@
               "protein_id": "3c07dcec-6348-4572-917b-62b557a5bdf1_0|orf_43-1767",
               "rna_call_id": "60423",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41844,7 +41732,7 @@
               "protein_id": "623c1c4f-db08-489d-9a4e-cf5ed2752c8d_0|orf_675-1832",
               "rna_call_id": "63409",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41854,7 +41742,7 @@
               "protein_id": "64ed5fc7-09df-4052-bed3-3d150b14a209_0|orf_86-2275",
               "rna_call_id": "59348",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41864,7 +41752,7 @@
               "protein_id": "653115b7-8cda-4407-a0dd-c70c96c14518_0|orf_1145-2299",
               "rna_call_id": "58687",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41874,7 +41762,7 @@
               "protein_id": "68fd69e7-88bb-4ff0-9800-80ee008be65b_0|orf_42-1715",
               "rna_call_id": "60340",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -41884,7 +41772,7 @@
               "protein_id": "694cdd94-7e50-4d8a-9c83-af051179d617_0|orf_106-1263",
               "rna_call_id": "63757",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41894,7 +41782,7 @@
               "protein_id": "6ba3456b-58a1-41fe-a33c-b782802a5776_0|orf_63-1220",
               "rna_call_id": "63774",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -41904,7 +41792,7 @@
               "protein_id": "77602395-6c56-45cb-9756-0a2616eee214_0|orf_131-2446",
               "rna_call_id": "60287",
               "amino_acid_starts": [
-                331
+                330
               ]
             },
             {
@@ -41914,7 +41802,7 @@
               "protein_id": "7e371884-d2dc-4aa0-9a57-a65b3d66e461_0|orf_12-1331",
               "rna_call_id": "62880",
               "amino_acid_starts": [
-                361
+                360
               ]
             },
             {
@@ -41924,7 +41812,7 @@
               "protein_id": "88a746a7-9948-4ae4-bf36-80cfd8f85969_0|orf_43-1671",
               "rna_call_id": "63541",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -41934,7 +41822,7 @@
               "protein_id": "907ce335-4fef-4b37-b39e-f63ef15621ea_0|orf_674-2644",
               "rna_call_id": "57737",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -41944,7 +41832,7 @@
               "protein_id": "9a873a81-79b6-4524-9843-ca5736e8eb7f_0|orf_120-2036",
               "rna_call_id": "58467",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41954,7 +41842,7 @@
               "protein_id": "a50703f9-bd19-4eec-b092-cfd9e4ed3a61_0|orf_1049-2461",
               "rna_call_id": "61208",
               "amino_acid_starts": [
-                20
+                19
               ]
             },
             {
@@ -41964,7 +41852,7 @@
               "protein_id": "a7357b2c-05df-4c00-a1ec-d2ddde158bc1_1|orf_464-1465",
               "rna_call_id": "63340",
               "amino_acid_starts": [
-                108
+                107
               ]
             },
             {
@@ -41974,7 +41862,7 @@
               "protein_id": "a93cc68d-5006-4edd-b775-870da1501d96_0|orf_23-2215",
               "rna_call_id": "62473",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -41984,7 +41872,7 @@
               "protein_id": "b1b9e05d-af4e-4b47-a8b6-3fd617325957_0|orf_838-2277",
               "rna_call_id": "59020",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -41994,7 +41882,7 @@
               "protein_id": "b28a7485-1b1e-42b4-ba58-2577351ec686_0|orf_788-2227",
               "rna_call_id": "60657",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42004,7 +41892,7 @@
               "protein_id": "b3d9e7c7-22e7-4a53-89d5-41ffc3464b34_0|orf_782-2221",
               "rna_call_id": "62068",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42014,7 +41902,7 @@
               "protein_id": "b5fee2dc-70d9-4a33-b6a8-ade260d6ffcf_0|orf_28-1338",
               "rna_call_id": "61919",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42024,7 +41912,7 @@
               "protein_id": "bd7696e4-5df9-49c4-a09a-3301c4b0383e_0|orf_547-2277",
               "rna_call_id": "59457",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42034,7 +41922,7 @@
               "protein_id": "becfeba8-bd7d-4cee-af79-8dbd269ab93f_0|orf_86-1312",
               "rna_call_id": "59300",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42044,7 +41932,7 @@
               "protein_id": "bf2984ab-2abd-4802-8324-833ef3aefb43_0|orf_1136-2533",
               "rna_call_id": "58742",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42054,7 +41942,7 @@
               "protein_id": "c838dea2-aee5-45fd-9f43-bc941f96a1a4_0|orf_44-2233",
               "rna_call_id": "60313",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42064,7 +41952,7 @@
               "protein_id": "cd2d0d57-fb57-4842-9998-3935cbe1b7e1_0|orf_83-1222",
               "rna_call_id": "59583",
               "amino_acid_starts": [
-                106
+                105
               ]
             },
             {
@@ -42074,7 +41962,7 @@
               "protein_id": "d16c998c-f0e6-4616-9a22-e0e88b9e8fa2_0|orf_1055-2212",
               "rna_call_id": "62671",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42084,7 +41972,7 @@
               "protein_id": "d80eb15a-f392-4849-a2b1-fc9d9f1ec097_0|orf_720-1874",
               "rna_call_id": "63386",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42094,7 +41982,7 @@
               "protein_id": "db43d41f-c259-4c20-bb37-440614e193cb_0|orf_1118-2542",
               "rna_call_id": "59499",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42104,7 +41992,7 @@
               "protein_id": "de785ab2-258a-4c7b-a439-819a3d8dfae7_0|orf_914-2512",
               "rna_call_id": "58719",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42114,7 +42002,7 @@
               "protein_id": "e3c28d58-6e91-4ebd-84b7-5e121b7180cf_0|orf_193-1593",
               "rna_call_id": "63644",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42124,7 +42012,7 @@
               "protein_id": "ef2e6961-edea-4eab-a678-bf2a0627deb2_0|orf_963-2390",
               "rna_call_id": "57820",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42134,7 +42022,7 @@
               "protein_id": "f2fa5c15-e02c-4817-8bee-6818685fa4d4_1|orf_937-2322",
               "rna_call_id": "58337",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42144,7 +42032,7 @@
               "protein_id": "f47d46c2-e2c3-4c6d-9b90-c8b842b403f2_0|orf_128-496",
               "rna_call_id": "63738",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42154,7 +42042,7 @@
               "protein_id": "f97e20b0-8503-437b-bfac-dfe1a59afbce_0|orf_21-1784",
               "rna_call_id": "62520",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42164,7 +42052,7 @@
               "protein_id": "molecule/10053416|orf_34-2226",
               "rna_call_id": "4672",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42174,7 +42062,7 @@
               "protein_id": "molecule/10933706|orf_120-2312",
               "rna_call_id": "4625",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42184,7 +42072,7 @@
               "protein_id": "molecule/11027571|orf_564-2294",
               "rna_call_id": "4630",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42194,7 +42082,7 @@
               "protein_id": "molecule/1723051|orf_211-2403",
               "rna_call_id": "4597",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42204,7 +42092,7 @@
               "protein_id": "molecule/3103885|orf_25-2217",
               "rna_call_id": "4687",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42214,7 +42102,7 @@
               "protein_id": "molecule/3369384|orf_130-3090",
               "rna_call_id": "4617",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42224,7 +42112,7 @@
               "protein_id": "molecule/409052|orf_235-2226",
               "rna_call_id": "4586",
               "amino_acid_starts": [
-                293
+                292
               ]
             },
             {
@@ -42234,7 +42122,7 @@
               "protein_id": "molecule/4537471|orf_42-2234",
               "rna_call_id": "4668",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42244,7 +42132,7 @@
               "protein_id": "molecule/4732600|orf_27-2219",
               "rna_call_id": "4686",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42254,7 +42142,7 @@
               "protein_id": "molecule/4837536|orf_52-1434",
               "rna_call_id": "4698",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42264,7 +42152,7 @@
               "protein_id": "molecule/5426151|orf_92-1351",
               "rna_call_id": "4644",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42274,7 +42162,7 @@
               "protein_id": "molecule/5907924|orf_825-2312",
               "rna_call_id": "4675",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42284,7 +42172,7 @@
               "protein_id": "molecule/6504865|orf_8-1816",
               "rna_call_id": "4717",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42294,7 +42182,7 @@
               "protein_id": "molecule/7606410|orf_81-2900",
               "rna_call_id": "4653",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42304,7 +42192,7 @@
               "protein_id": "molecule/8866884|orf_120-2312",
               "rna_call_id": "4623",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42314,7 +42202,7 @@
               "protein_id": "molecule/9868923|orf_125-2317",
               "rna_call_id": "4622",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42324,7 +42212,7 @@
               "protein_id": "molecule/10053416|orf_34-1758",
               "rna_call_id": "7803",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42334,7 +42222,7 @@
               "protein_id": "molecule/11027571|orf_564-2504",
               "rna_call_id": "7665",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42344,7 +42232,7 @@
               "protein_id": "molecule/3103885|orf_25-2217",
               "rna_call_id": "7833",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42354,7 +42242,7 @@
               "protein_id": "molecule/3369384|orf_130-3141",
               "rna_call_id": "7602",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42364,7 +42252,7 @@
               "protein_id": "molecule/4308644|orf_1093-2019",
               "rna_call_id": "7498",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42374,7 +42262,7 @@
               "protein_id": "molecule/4537471|orf_42-2444",
               "rna_call_id": "7741",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42384,7 +42272,7 @@
               "protein_id": "molecule/4732600|orf_27-2219",
               "rna_call_id": "7832",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42394,7 +42282,7 @@
               "protein_id": "molecule/4837536|orf_52-1434",
               "rna_call_id": "7884",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42404,7 +42292,7 @@
               "protein_id": "molecule/5426151|orf_92-1351",
               "rna_call_id": "7685",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42414,7 +42302,7 @@
               "protein_id": "molecule/6504865|orf_8-1816",
               "rna_call_id": "7924",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42424,7 +42312,7 @@
               "protein_id": "molecule/7606410|orf_81-2951",
               "rna_call_id": "7719",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42434,7 +42322,7 @@
               "protein_id": "molecule/8866884|orf_120-2312",
               "rna_call_id": "7644",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42444,7 +42332,7 @@
               "protein_id": "molecule/9868923|orf_586-1440",
               "rna_call_id": "7641",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42454,7 +42342,7 @@
               "protein_id": "0963723b-44fc-4f7d-ab6b-06f3a063d2ba_0|orf_1134-2291",
               "rna_call_id": "23454",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42464,7 +42352,7 @@
               "protein_id": "13a45d7f-80c8-4c08-9499-316fc7a516c8_0|orf_475-2205",
               "rna_call_id": "23624",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42474,7 +42362,7 @@
               "protein_id": "2019e937-dafa-44a5-8a0f-74b12f012f8d_0|orf_32-2224",
               "rna_call_id": "23555",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42484,7 +42372,7 @@
               "protein_id": "27ce3dff-dbac-433b-b000-99a31b695081_0|orf_210-1367",
               "rna_call_id": "23742",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42494,7 +42382,7 @@
               "protein_id": "328fdf8c-216b-4f84-84d7-1becceed54e1_0|orf_36-2228",
               "rna_call_id": "23531",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42504,7 +42392,7 @@
               "protein_id": "44bb9b0e-494f-486d-810c-7a443d2bdc5f_0|orf_60-2252",
               "rna_call_id": "23558",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42514,7 +42402,7 @@
               "protein_id": "4f2afd1c-0b64-482d-b827-8d5cfdcd892c_0|orf_36-2441",
               "rna_call_id": "23579",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42524,7 +42412,7 @@
               "protein_id": "61f6d706-31a8-418c-81d7-c176723f10e6_0|orf_24-2216",
               "rna_call_id": "23607",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42534,7 +42422,7 @@
               "protein_id": "6a47a8ae-71e3-4bd7-90c2-8b6cb8fca016_0|orf_8-2197",
               "rna_call_id": "23630",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -42544,7 +42432,7 @@
               "protein_id": "7cfd9cc4-6588-4903-ab50-8e25bf8f2ea0_0|orf_85-2274",
               "rna_call_id": "23480",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -42554,7 +42442,7 @@
               "protein_id": "8c3bb791-0a7b-4c9e-ab6e-1cece14e5544_0|orf_210-2402",
               "rna_call_id": "23412",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42564,7 +42452,7 @@
               "protein_id": "9667006a-5076-4926-bd1a-44b249a3a75e_0|orf_212-1651",
               "rna_call_id": "23694",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42574,7 +42462,7 @@
               "protein_id": "9af67fba-6127-4cfe-9441-2b16708e1603_0|orf_40-1479",
               "rna_call_id": "23699",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42584,7 +42472,7 @@
               "protein_id": "a20c2fe1-d794-4143-bc9b-40a11f08f2a5_0|orf_56-2248",
               "rna_call_id": "23561",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42594,7 +42482,7 @@
               "protein_id": "a4c86560-cb27-4a19-ab97-1f9a4150a270_0|orf_209-2398",
               "rna_call_id": "23409",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -42604,7 +42492,7 @@
               "protein_id": "a93aa0f8-dc12-4490-90ee-8a8316717919_0|orf_593-1750",
               "rna_call_id": "23673",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42614,7 +42502,7 @@
               "protein_id": "bdf86ebe-86aa-4d68-b790-64cafe91f3b2_0|orf_43-2235",
               "rna_call_id": "23512",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42624,7 +42512,7 @@
               "protein_id": "e5e8f01b-3a29-441b-86f2-80ab74e1617a_0|orf_2-1387",
               "rna_call_id": "23703",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42634,7 +42522,7 @@
               "protein_id": "e5f5ae84-6f57-477a-be74-925fecd685bf_0|orf_25-2217",
               "rna_call_id": "23605",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42644,7 +42532,7 @@
               "protein_id": "f536eaeb-8612-4c62-a7ec-f81112ad9999_0|orf_69-2261",
               "rna_call_id": "23489",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42654,7 +42542,7 @@
               "protein_id": "0963723b-44fc-4f7d-ab6b-06f3a063d2ba_0|orf_1118-2503",
               "rna_call_id": "70281",
               "amino_acid_starts": [
-                21
+                20
               ]
             },
             {
@@ -42664,7 +42552,7 @@
               "protein_id": "13a45d7f-80c8-4c08-9499-316fc7a516c8_0|orf_475-2205",
               "rna_call_id": "71125",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42674,7 +42562,7 @@
               "protein_id": "27ce3dff-dbac-433b-b000-99a31b695081_0|orf_210-1367",
               "rna_call_id": "71592",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42684,7 +42572,7 @@
               "protein_id": "44bb9b0e-494f-486d-810c-7a443d2bdc5f_0|orf_1079-2497",
               "rna_call_id": "70910",
               "amino_acid_starts": [
-                21
+                20
               ]
             },
             {
@@ -42694,7 +42582,7 @@
               "protein_id": "4f2afd1c-0b64-482d-b827-8d5cfdcd892c_0|orf_36-2441",
               "rna_call_id": "70922",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42704,7 +42592,7 @@
               "protein_id": "61f6d706-31a8-418c-81d7-c176723f10e6_0|orf_24-2216",
               "rna_call_id": "71023",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42714,7 +42602,7 @@
               "protein_id": "8346c39a-c383-4656-81ee-ae77add7737d_0|orf_492-1793",
               "rna_call_id": "70952",
               "amino_acid_starts": [
-                206
+                205
               ]
             },
             {
@@ -42724,7 +42612,7 @@
               "protein_id": "9667006a-5076-4926-bd1a-44b249a3a75e_0|orf_477-1652",
               "rna_call_id": "71468",
               "amino_acid_starts": [
-                21
+                20
               ]
             },
             {
@@ -42734,7 +42622,7 @@
               "protein_id": "9af67fba-6127-4cfe-9441-2b16708e1603_0|orf_95-1480",
               "rna_call_id": "71498",
               "amino_acid_starts": [
-                91
+                90
               ]
             },
             {
@@ -42744,7 +42632,7 @@
               "protein_id": "a20c2fe1-d794-4143-bc9b-40a11f08f2a5_0|orf_808-2244",
               "rna_call_id": "70813",
               "amino_acid_starts": [
-                109
+                108
               ]
             },
             {
@@ -42754,7 +42642,7 @@
               "protein_id": "a4c86560-cb27-4a19-ab97-1f9a4150a270_0|orf_209-2398",
               "rna_call_id": "70066",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -42764,7 +42652,7 @@
               "protein_id": "a93aa0f8-dc12-4490-90ee-8a8316717919_0|orf_593-1993",
               "rna_call_id": "71349",
               "amino_acid_starts": [
-                15
+                14
               ]
             },
             {
@@ -42774,7 +42662,7 @@
               "protein_id": "e5f5ae84-6f57-477a-be74-925fecd685bf_0|orf_25-2217",
               "rna_call_id": "70997",
               "amino_acid_starts": [
-                360
+                359
               ]
             },
             {
@@ -42784,7 +42672,7 @@
               "protein_id": "f536eaeb-8612-4c62-a7ec-f81112ad9999_0|orf_70-1470",
               "rna_call_id": "70461",
               "amino_acid_starts": [
-                359
+                358
               ]
             },
             {
@@ -42794,7 +42682,7 @@
               "protein_id": "21c748c5-2473-407c-a915-453a18e73257_0|orf_75-1232",
               "rna_call_id": "81537",
               "amino_acid_starts": [
-                15
+                14
               ]
             }
           ]
@@ -46840,17 +46728,10 @@
           "minimal_epitope_offset": 1,
           "sequence": "DRQKRIGNTRKMIEDLQNELK",
           "scoring_region": {
-            "sequence": "DRQKRIGNTRKMIEDLQNEL",
+            "sequence": "DRQKRIGNTRKMIEDLQNELK",
             "start": 0,
-            "end": 20,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 20,
-                "end": 21,
-                "sequence": "K"
-              }
-            ]
+            "end": 21,
+            "terminal_tags": []
           },
           "matches": [
             {
@@ -48136,5 +48017,1458 @@
         }
       ]
     }
-  ]
+  ],
+  "primary_window_report": {
+    "policy": "max_raw_or_corrected_per_sample_method_v1",
+    "targets": 36,
+    "recovered": 17,
+    "disagreement": 2,
+    "incomplete": 1,
+    "tied": 5,
+    "outcomes": {
+      "unaligned": 4,
+      "recovered": 17,
+      "incomplete": 1,
+      "no_sequence": 9,
+      "disagreement": 1,
+      "tied": 4
+    },
+    "by_support": [
+      {
+        "label": "10+",
+        "targets": 12,
+        "recovered": 12,
+        "disagreement": 0,
+        "incomplete": 0,
+        "tied": 0,
+        "outcomes": {
+          "recovered": 12
+        }
+      },
+      {
+        "label": "5\u20139",
+        "targets": 4,
+        "recovered": 3,
+        "disagreement": 0,
+        "incomplete": 0,
+        "tied": 0,
+        "outcomes": {
+          "recovered": 3,
+          "unaligned": 1
+        }
+      },
+      {
+        "label": "2\u20134",
+        "targets": 4,
+        "recovered": 1,
+        "disagreement": 0,
+        "incomplete": 1,
+        "tied": 2,
+        "outcomes": {
+          "unaligned": 1,
+          "recovered": 1,
+          "incomplete": 1,
+          "tied": 1
+        }
+      },
+      {
+        "label": "1",
+        "targets": 7,
+        "recovered": 1,
+        "disagreement": 2,
+        "incomplete": 0,
+        "tied": 3,
+        "outcomes": {
+          "recovered": 1,
+          "unaligned": 2,
+          "disagreement": 1,
+          "tied": 3
+        }
+      },
+      {
+        "label": "No sequence",
+        "targets": 9,
+        "recovered": 0,
+        "disagreement": 0,
+        "incomplete": 0,
+        "tied": 0,
+        "outcomes": {
+          "no_sequence": 9
+        }
+      }
+    ],
+    "variants": [
+      {
+        "variant_id": "ZNF436-chr1-23362762",
+        "support": 4,
+        "status": "unaligned",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 2,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "KEHILGRGLMTVTSVGKVLEEVVT*",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "ZNF436-chr1-23362762.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "ZNF436-chr1-23362762.peptide-2",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "ZNF436-chr1-23362762.peptide-3",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "VPS72-chr1-151185547",
+        "support": 18,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "EPLKSLRPRKVNTPAGSSQKAREERALLPLELQDDGSDSRKSMRQ",
+            "offset": -3,
+            "peptides": [
+              {
+                "peptide_id": "VPS72-chr1-151185547.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "VPS72-chr1-151185547.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "VPS72-chr1-151185547.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "PIP5K1A-chr1-151242178",
+        "support": 2,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "PSPSKKFRSGSSFSRRAAPVATPALLTSHRSLGNTRHK*",
+            "offset": -6,
+            "peptides": [
+              {
+                "peptide_id": "PIP5K1A-chr1-151242178.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "PIP5K1A-chr1-151242178.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "PIP5K1A-chr1-151242178.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "PRRC2C-chr1-171540477",
+        "support": 2,
+        "status": "incomplete",
+        "recovered": false,
+        "disagreement": false,
+        "tied": true,
+        "leaders": [
+          {
+            "window": 3,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "MEEVNDRPVRRSGPIKKPVL",
+            "offset": 17,
+            "peptides": [
+              {
+                "peptide_id": "PRRC2C-chr1-171540477.peptide-1",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "PRRC2C-chr1-171540477.peptide-2",
+                "status": "incomplete"
+              }
+            ]
+          },
+          {
+            "window": 5,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "NLKKYINLNQKLVGAHDQALTEWKKLMIDL*",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "PRRC2C-chr1-171540477.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "PRRC2C-chr1-171540477.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "CENPL-chr1-173811223",
+        "support": 15,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "SYSAPESTPSASSRPEDYFIGATHLQKRLESVRKQSSFILTPPRR",
+            "offset": -11,
+            "peptides": [
+              {
+                "peptide_id": "CENPL-chr1-173811223.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "ASPM-chr1-197102716",
+        "support": 8,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "YYQGKMQREKYLTILKAVKVLQASFRRVRVRRTLRKMQTAATLIQ",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "ASPM-chr1-197102716.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "ASPM-chr1-197102716.peptide-2",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "DYNC1H1-chr14-101980529",
+        "support": 23,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "RESPEVLLTLDILKHGKRFHATISFDTDTGLKQALETVNDYNPLM",
+            "offset": -5,
+            "peptides": [
+              {
+                "peptide_id": "DYNC1H1-chr14-101980529.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "DYNC1H1-chr14-101980529.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "DYNC1H1-chr14-101980529.peptide-3",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "DYNC1H1-chr14-101980529.peptide-4",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "SPG11-chr15-44660435",
+        "support": 8,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "LKDGRCDATILYSCSREALQKLIDDQDVSISLLSLRILSFHNNTS",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "SPG11-chr15-44660435.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SPG11-chr15-44660435.peptide-2",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "MYO9A-chr15-71994488",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "NR2F2-chr15-96332299",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "KIF1C-chr17-5007293",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "NME1-chr17-51154443",
+        "support": 53,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "MVLLSTLGIVFQGEGPPISSCDTRTMANCERTFIAIKPDGVQRG",
+            "offset": -15,
+            "peptides": [
+              {
+                "peptide_id": "NME1-chr17-51154443.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "MYO15B-chr17-75589953",
+        "support": 1,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "SEAELETLNDEPRCAGRRAQAPTRVLGLAPPCCYPDSPWRPACSR",
+            "offset": -14,
+            "peptides": [
+              {
+                "peptide_id": "MYO15B-chr17-75589953.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "EPG5-chr18-45925851",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "SLC25A12-chr2-171813470",
+        "support": 11,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "LQIAESAYRFTLGSVAGAVGATAVYPTDLVKTRMQNQRGSGSVVG",
+            "offset": -6,
+            "peptides": [
+              {
+                "peptide_id": "SLC25A12-chr2-171813470.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SLC25A12-chr2-171813470.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SLC25A12-chr2-171813470.peptide-3",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SLC25A12-chr2-171813470.peptide-4",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "MAP2-chr2-209694768",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "BTD-chr3-15645183",
+        "support": 16,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "CSNGLCCYLLYERPTLSKELYALGVVDGLHTVHGTYYIQVCALVR",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "BTD-chr3-15645183.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "BTD-chr3-15645183.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "BTD-chr3-15645183.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "PTH1R-chr3-46898732",
+        "support": 20,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-PacBio",
+            "method": "reads",
+            "sequence": "TRNYIHMHLFLSFMLRAVSFFVKDAVLYSGATLDEAERLTEEELR",
+            "offset": -11,
+            "peptides": [
+              {
+                "peptide_id": "PTH1R-chr3-46898732.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "ABI3BP-chr3-100850671",
+        "support": 1,
+        "status": "unaligned",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "QQQVIVFWILSHLKLLELLNSQWQHWLQVKHHLFLKNWKSLPVQK",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "ABI3BP-chr3-100850671.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "ABI3BP-chr3-100850671.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "ANKRD17-chr4-73097139",
+        "support": 1,
+        "status": "disagreement",
+        "recovered": false,
+        "disagreement": true,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "GPSPLSSPNGKLTVASPKCGHRGKKDGKKL*",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "ANKRD17-chr4-73097139.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "ANKRD17-chr4-73097139.peptide-2",
+                "status": "disagreement"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "KDM3B-chr5-138391529",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "WWC1-chr5-168399513",
+        "support": 1,
+        "status": "tied",
+        "recovered": false,
+        "disagreement": false,
+        "tied": true,
+        "leaders": [
+          {
+            "window": 2,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "SASDPALCVVCCPPGQQAEERDGSPPARAAVQRAWLSDPEEVSTP",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-2",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-3",
+                "status": "unaligned"
+              }
+            ]
+          },
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "YDPEILKAEIATAKSRVNKLKREMGHLQHELQFKERGFQTLKKID",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "WWC1-chr5-168399513.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "H1_2-chr6-26055824",
+        "support": 146,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-PacBio",
+            "method": "corrected",
+            "sequence": "KKAKVAKPKKAAKSAAKAVKPKVVKPKKAAPKKK*",
+            "offset": -14,
+            "peptides": [
+              {
+                "peptide_id": "H1_2-chr6-26055824.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "CUL9-chr6-43186384",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "ADGRF5-chr6-46856758",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "CD109-chr6-73818405",
+        "support": 25,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "DLNHVDLNVCTSFSGPGMSGMALMEVNLLSGFMVPSEAISLSETV",
+            "offset": -11,
+            "peptides": [
+              {
+                "peptide_id": "CD109-chr6-73818405.peptide-1",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "CDC40-chr6-110228838",
+        "support": 11,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 2,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "VDFKYIAEPSMHSMPAVTLSPNGKSLACQSMDNQILIFGAQNRFR",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "CDC40-chr6-110228838.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "CDC40-chr6-110228838.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "CDC40-chr6-110228838.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "TECPR1-chr7-98241127",
+        "support": 1,
+        "status": "tied",
+        "recovered": false,
+        "disagreement": true,
+        "tied": true,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGRCGSEEASTLTIPAAPVGLRWLVR",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 4,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGR*",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 6,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGEGINRSNPKGGQPGSPTHIPCTGEKGEGHSLPSCPG*",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGRCGSEEASTLTIPAAPVGLRWLVR",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 6,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGEGINRSNPKGGQPGSPTHIPCTGEKGEGHSLPSCPG*",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 7,
+            "sample": "T1-PacBio",
+            "method": "corrected",
+            "sequence": "RPPCLAGVNELMQVLCPCLASQVWYREDVSHSNPEGSSWSLLDTPGRWFRSAVGPTTSCGHTLGGTGPGPGRNQQEQSQRWQPGSPTHI",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 1,
+            "sample": "T1-PacBio",
+            "method": "reads",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGRCGSEEASTLTIPAAPVGLRWLVR",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 7,
+            "sample": "T1-PacBio",
+            "method": "reads",
+            "sequence": "RPPCLAGVNELMQVLCPCLASQVWYREDVSHSNPEGSSWSLLDTPGRWFRSAVGPTTSCGHTLGGTGPGPGRNQQEQSQRWQPGSPTHI",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 2,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "PTYPVLGRRVGSLAPQLSRLMGATGGFLGARSEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGR*",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 3,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKVGTPAPPPTYPVLGRRVGSLAPQLSRLMGATGGFLGARSEVPGPSWSLLDLKTGSCT",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 5,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKVGSPAPPPTYPVLGRRVRVTRSPAVQADGGHWGFLGGPVGSSWSIVEPPGSENGVMH",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 2,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "PTYPVLGRRVGSLAPQLSRLMGATGGFLGARSEVPGPSWSLLDLKTGSCTSRWESAWSGLSPRTGR*",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "incomplete"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "disagreement"
+              }
+            ]
+          },
+          {
+            "window": 3,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "VQISCGPHDLLWAHSGRDRPWSGKESTGAIPKVGTPAPPPTYPVLGRRVGSLAPQLSRLMGATGGFLGARSEVPGPSWSLLDLKTGSCT",
+            "offset": 0,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "disagreement"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 8,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "VPAGHPRGGGSDQLWAPRPPVGTLWEGQALVREGINRSNPKGGQP",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "unaligned"
+              }
+            ]
+          },
+          {
+            "window": 9,
+            "sample": "T3-ONT",
+            "method": "reads",
+            "sequence": "VPASTPPGRWFRSAVGPTTSCGHAGQALVREGINRSNPKGSSWSI",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-2",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-3",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-4",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "TECPR1-chr7-98241127.peptide-5",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "EXOC4-chr7-133274996",
+        "support": 23,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "TVSKSKDPSGLLISVIRTLSTIDDVEDRENEKGRLEEAYEKCDRD",
+            "offset": -11,
+            "peptides": [
+              {
+                "peptide_id": "EXOC4-chr7-133274996.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "EXOC4-chr7-133274996.peptide-2",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "BMP1-chr8-22192067",
+        "support": 63,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "PEYPNGYSAHMHCVWRISVTPGEKIILNFTTLDLYRSRLCWYDYV",
+            "offset": -6,
+            "peptides": [
+              {
+                "peptide_id": "BMP1-chr8-22192067.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "BMP1-chr8-22192067.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "BMP1-chr8-22192067.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "VPS13B-chr8-99861923",
+        "support": 1,
+        "status": "unaligned",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 2,
+            "sample": "T1-ONT",
+            "method": "corrected",
+            "sequence": "TGRRSGGGSSPRAWARGFDRACSGWASACLVRGCGASHLSVLQQA",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "VPS13B-chr8-99861923.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "VPS13B-chr8-99861923.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          },
+          {
+            "window": 2,
+            "sample": "T1-ONT",
+            "method": "reads",
+            "sequence": "TGRRSGGGSSPRAWARGFDRACSGWASACLVRGCGASHLSVLQQA",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "VPS13B-chr8-99861923.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "VPS13B-chr8-99861923.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "GLIS3-chr9-3856149",
+        "support": 0,
+        "status": "no_sequence",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": []
+      },
+      {
+        "variant_id": "SMC5-chr9-70298024",
+        "support": 8,
+        "status": "recovered",
+        "recovered": true,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "DKHIEELQQALIVKQNEELDRQKRIGNTRKMIEDLQNELKTTENC",
+            "offset": -4,
+            "peptides": [
+              {
+                "peptide_id": "SMC5-chr9-70298024.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SMC5-chr9-70298024.peptide-2",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "SMC5-chr9-70298024.peptide-3",
+                "status": "contained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "EXD3-chr9-137373504",
+        "support": 1,
+        "status": "tied",
+        "recovered": false,
+        "disagreement": false,
+        "tied": true,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "GLLPWTTLAGLLDMLESCRGQRGDGPSLAAWISHQLQCWLQAQPC",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-2",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 2,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "FAALDDPLAGLLDMLESCRGQRGDGPSLAAWISHQLQCWLQAQPC",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-2",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 3,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "MLEELQGPAGRRPLPGGLDLPPAAVLATGTAMPE",
+            "offset": -11,
+            "peptides": [
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          },
+          {
+            "window": 4,
+            "sample": "T3-ONT",
+            "method": "reads",
+            "sequence": "CLGRPPGRASGHAGELPGPAGRRPLPGGLDLPPAAVLATGTAMPR",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "EXD3-chr9-137373504.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "MT_ND5-chrM-12994",
+        "support": 5,
+        "status": "unaligned",
+        "recovered": false,
+        "disagreement": false,
+        "tied": false,
+        "leaders": [
+          {
+            "window": 5,
+            "sample": "T3-ONT",
+            "method": "corrected",
+            "sequence": "GVGPSMAEGSQGWRPNWADLPAVARRRPSSGVRLGLAFRRAICCG",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "MT_ND5-chrM-12994.peptide-1",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "variant_id": "PPP1R3F-chrX-49270761",
+        "support": 2,
+        "status": "tied",
+        "recovered": false,
+        "disagreement": false,
+        "tied": true,
+        "leaders": [
+          {
+            "window": 1,
+            "sample": "T2-ONT",
+            "method": "corrected",
+            "sequence": "FWANNHGRNYTVLLRIAPAPTPTDAERLPQQQQLPQLEPQPECQG",
+            "offset": -7,
+            "peptides": [
+              {
+                "peptide_id": "PPP1R3F-chrX-49270761.peptide-1",
+                "status": "contained"
+              },
+              {
+                "peptide_id": "PPP1R3F-chrX-49270761.peptide-2",
+                "status": "contained"
+              }
+            ]
+          },
+          {
+            "window": 3,
+            "sample": "T2-ONT",
+            "method": "reads",
+            "sequence": "TTTAATTQSCSGSHPLPHPLMPKGCPSSSSCRSWSHSPSARVPWR",
+            "offset": -22,
+            "peptides": [
+              {
+                "peptide_id": "PPP1R3F-chrX-49270761.peptide-1",
+                "status": "unaligned"
+              },
+              {
+                "peptide_id": "PPP1R3F-chrX-49270761.peptide-2",
+                "status": "unaligned"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { sequenceRows, highlightedPieces, sharedOffset, referenceGroups,
   sequenceComparison, alignmentSlice, reconstructionWindows, windowDifferences, windowSlice, rnaSupport, sequenceStatus, sourceRnaState,
-  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, terminalTagPositions, peptideScoringRegion } = require("../web/peptides.js");
+  vaccineComparison, vaccineDifferences, windowEvents, referenceEvents, prepareComparisons, topWindows, primaryWindows, primaryWindowReport, terminalTagPositions, peptideScoringRegion } = require("../web/peptides.js");
 
 const reportPath = path.join(__dirname, "../results/vaccine_peptide_analysis.json");
 const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, "utf8")) : null;
@@ -191,7 +191,7 @@ test("VPS72 distinguishes the one-residue difference and identifies which peptid
     b: "EPLKSLRPRKVNTPAGGSQKAREERALLPLELQDDGSDSRKSMRQ",
   };
   const peptides = [
-    { peptide_id: "P1", sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD", start: 5 }, // scored core starts after terminal K
+    { peptide_id: "P1", sequence: "KSLRPRKVNTPAGSSQKAREERALLPLELQD", start: 4 }, // native leading K remains scored
     { peptide_id: "P2", sequence: "ERALLPLEL", start: 24 },
     { peptide_id: "P3", sequence: "GSSQKAREERALLPLELQDDGSDSRKS", start: 16 },
   ];
@@ -345,7 +345,7 @@ test("RNA support counts input RNAs once per sample and method, without counting
 function annotatedFixture() {
   const sequence = 'SFSGPGMSGMALMEVNLLSGKKK';
   const variant = { variant_id: 'CD109', gene: 'CD109', ref: 'G', alt: 'T', protein_change: 'p.Arg1310Met',
-    reconstructed_candidates: [], published_vaccine_peptides: [{ peptide_id: 'p1', sequence, in_vaccines: ['V3'], matches: [] }] };
+    reconstructed_candidates: [], published_vaccine_peptides: [{ peptide_id: 'p1', sequence, in_vaccines: ['V3'], matches: [], scoring_region: { sequence: sequence.slice(0, 20), start: 0, end: 20, terminal_tags: [{ terminus: 'C', start: 20, end: 23, sequence: 'KKK' }] } }] };
   const data = { analysis: { artifacts: [{ sample: 'T1', arm: 'reads' }, { sample: 'T1', arm: 'corrected' }] },
     variants: [variant], reconstructions: {} };
   function add(id, sequence, position, matched = false, arm = 'reads') {
@@ -360,23 +360,20 @@ function annotatedFixture() {
 
 test('suspected synthesis tags mark only the three terminal residues at the aligned offset', () => {
   for (const sequence of ['SFSGPGMSGMALMEVNLLSGKKK', 'SFMLRAVSFFVKDAVLYSGAKKK', 'RMLDYYEEISAGDEGEFRQSKKK']) {
-    const entry = { offset: 12, row: { peptide: { sequence, in_vaccines: ['JLF V3'] } } };
+    const entry = { offset: 12, row: { peptide: { sequence, scoring_region: { sequence: sequence.slice(0, 20), start: 0, end: 20, terminal_tags: [{ terminus: 'C', start: 20, end: 23, sequence: 'KKK' }] } } } };
     const tags = terminalTagPositions(entry);
     assert.deepEqual([...tags.keys()], [32, 33, 34]);
     assert.ok([...tags.values()].every(description => /unconfirmed/.test(description)));
   }
 });
 
-test('terminal K runs of one to four are excluded for every vaccine label, but internal and longer runs remain', () => {
-  for (const n of [0, 1, 2, 3, 4]) for (const c of [0, 1, 2, 3, 4]) {
-    const peptide = { sequence: 'K'.repeat(n) + 'AAKQAA' + 'K'.repeat(c), in_vaccines: ['mRNA'] };
-    const entry = { offset: 8, row: { peptide } };
-    assert.equal(peptideScoringRegion(peptide).sequence, 'AAKQAA');
-    assert.deepEqual([...terminalTagPositions(entry).keys()],
-      [...Array.from({length:n}, (_,i) => 8+i), ...Array.from({length:c}, (_,i) => 8+n+6+i)]);
+test('without an independent scoring annotation terminal lysines remain scored', () => {
+  for (const sequence of ['KAAKQAA', 'KKAAKQAAKKKK', 'AAAKKKAAAA', 'KKKKKAAAKKKKK',
+    'KSFGRSCHL', 'KSLRPRKVNTPAGSSQKAREERALLPLELQD']) {
+    const peptide = { sequence };
+    assert.equal(peptideScoringRegion(peptide).sequence, sequence);
+    assert.equal(terminalTagPositions({ offset: 8, row: { peptide } }).size, 0);
   }
-  for (const sequence of ['AAAKKKAAAA', 'KKKKKAAAKKKKK'])
-    assert.equal(terminalTagPositions({ offset: 0, row: { peptide: { sequence } } }).size, 0);
 });
 
 test('CD109 terminal KKK versus FMV is excluded while missing core residues still count', () => {
@@ -398,7 +395,7 @@ test('CD109 terminal KKK versus FMV is excluded while missing core residues stil
 
 test('a reconstruction with neither terminal tag is fully contained, aligned and not a top-window disagreement', () => {
   const { data, variant, add } = annotatedFixture();
-  variant.published_vaccine_peptides[0].sequence = 'KKACDMNPQKKKK';
+  Object.assign(variant.published_vaccine_peptides[0], { sequence: 'KKACDMNPQKKKK', scoring_region: { sequence: 'ACDMNPQ', start: 2, end: 9, terminal_tags: [{ terminus: 'N', start: 0, end: 2, sequence: 'KK' }, { terminus: 'C', start: 9, end: 13, sequence: 'KKKK' }] } });
   add('core|orf_0-20', 'ACDMNPQ', 3, true);
   const rows = sequenceRows(data), [group] = prepareComparisons(data, rows);
   const window = group.windows[0], entry = group.references[0];
@@ -501,4 +498,69 @@ test('RNA evidence tiers follow sample selection and remain independent of metho
   assert.equal(sequenceRows(data, { rnaTier: 'multiple' }).length, 1);
   assert.equal(sequenceRows(data, { rnaTier: 'multiple', sample: 'T1' }).length, 0);
   assert.equal(sequenceRows(data, { rnaTier: 'single', sample: 'T1', method: 'corrected' }).length, 1);
+});
+
+
+test('dominant window score ignores weaker mismatches, even leaders in another method', () => {
+  const { data, add, sequence } = annotatedFixture();
+  for (let i = 0; i < 20; i++) add(`match${i}|orf_0-68`, sequence, 7, true);
+  add('weak|orf_0-68', 'SFSGPGMSGMALAEVNLLSGFMV', 7);
+  add('corrected|orf_0-68', 'SFSGPGMSGMALAEVNLLSGFMV', 7, false, 'corrected');
+  const result = primaryWindowReport(data);
+  assert.equal(result.recovered, 1);
+  assert.equal(result.disagreement, 0);
+  assert.equal(result.variants[0].support, 20);
+  assert.equal(result.variants[0].leaders.length, 1);
+  assert.equal(result.by_support[0].label, '10+');
+});
+
+test('raw and corrected counts are never pooled; corrected can win and ties stay explicit', () => {
+  const match = { window: {}, peptides: [{ status: 'contained' }] };
+  const mismatch = { window: {}, peptides: [{ status: 'disagreement' }] };
+  const runs = [
+    { sample: 'T1', method: 'reads', count: 2, leaders: [match] },
+    { sample: 'T1', method: 'corrected', count: 2, leaders: [match] },
+    { sample: 'T2', method: 'corrected', count: 3, leaders: [mismatch] },
+    { sample: 'T3', method: 'assembly', count: 50, leaders: [match] },
+  ];
+  let primary = primaryWindows(runs);
+  assert.equal(primary.count, 3);
+  assert.equal(primary.status, 'disagreement');
+  assert.equal(primary.leaders[0].sample, 'T2');
+  runs[2].count = 2;
+  primary = primaryWindows(runs);
+  assert.equal(primary.count, 2);
+  assert.equal(primary.status, 'tied');
+  assert.equal(primary.recovered, false);
+  assert.equal(primary.tied, true);
+  assert.equal(primary.windows.size, 2);
+  assert.equal(primary.leaders.length, 3);
+  assert.equal(primary.disagreement, true);
+});
+
+test('assembly-only, no output, partial and unaligned primary outcomes stay distinct', () => {
+  const { data, add } = annotatedFixture();
+  assert.equal(primaryWindowReport(data).variants[0].status, 'no_sequence');
+  data.analysis.artifacts.push({ sample: 'T1', arm: 'spades' });
+  add('assembly|orf_0-68', 'SFSGPGMSGMALAEVNLLSGFMV', 7, false, 'spades');
+  assert.equal(primaryWindowReport(data).variants[0].status, 'assembly_only');
+  add('short|orf_0-50', 'MSGMALMEVNLLSGKKK', 1);
+  let result = primaryWindowReport(data);
+  assert.equal(result.variants[0].status, 'incomplete');
+  assert.equal(result.disagreement, 0);
+  assert.equal(result.by_support[0].outcomes.incomplete, 1);
+  add('unrelated1|orf_0-29', 'AAAAAAAAAA', 3, false, 'corrected');
+  add('unrelated2|orf_0-29', 'AAAAAAAAAA', 3, false, 'corrected');
+  result = primaryWindowReport(data);
+  assert.equal(result.variants[0].status, 'unaligned');
+  assert.equal(result.disagreement, 0);
+});
+
+test('all tied leaders containing a vaccine peptide remain recovered', () => {
+  const primary = primaryWindows([{ sample: 'T1', method: 'reads', count: 2,
+    leaders: [{ window: {}, peptides: [{ status: 'contained' }] },
+      { window: {}, peptides: [{ status: 'contained' }, { status: 'disagreement' }] }] }]);
+  assert.equal(primary.tied, true);
+  assert.equal(primary.recovered, true);
+  assert.equal(primary.disagreement, true); // one different peptide; recovery still true
 });

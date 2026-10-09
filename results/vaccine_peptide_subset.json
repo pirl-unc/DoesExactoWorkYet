@@ -72,7 +72,8 @@
     }
   },
   "selection_policy": "Keep published_vaccine_peptides entries with a nonempty sequence and nonempty in_vaccines. Include a variant if it has at least one such entry. Preserve full peptides and mRNA minimal epitopes as recorded; do not include pVACtools predictions or peptides without vaccine membership. Membership does not establish expression or RNA recovery.",
-  "peptide_scoring_policy": "terminal_lysine_1_to_4_v1",
+  "peptide_scoring_policy": "reference_supported_terminal_tags_v2",
+  "peptide_context_sha256": "4ae72fa99211384dc5fcb081ac8e07a99a7673ea62af93cae0369900e26be957",
   "n_catalogue_variants": 51,
   "n_variants": 36,
   "n_peptides": 78,
@@ -120,17 +121,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KSFGRSCHL",
           "scoring_region": {
-            "sequence": "SFGRSCHL",
-            "start": 1,
+            "sequence": "KSFGRSCHL",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -177,17 +171,10 @@
           "minimal_epitope_offset": 20,
           "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD",
           "scoring_region": {
-            "sequence": "SLRPRKVNTPAGSSQKAREERALLPLELQD",
-            "start": 1,
+            "sequence": "KSLRPRKVNTPAGSSQKAREERALLPLELQD",
+            "start": 0,
             "end": 31,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -250,17 +237,10 @@
           "minimal_epitope_offset": 10,
           "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK",
           "scoring_region": {
-            "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRH",
+            "sequence": "FRSGSSFSRRAAPVATPALLTSHRSLGNTRHK",
             "start": 0,
-            "end": 31,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 31,
-                "end": 32,
-                "sequence": "K"
-              }
-            ]
+            "end": 32,
+            "terminal_tags": []
           }
         },
         {
@@ -371,17 +351,10 @@
           "minimal_epitope_offset": null,
           "sequence": "SSRPEDYFIGATHLQKRLESVRK",
           "scoring_region": {
-            "sequence": "SSRPEDYFIGATHLQKRLESVR",
+            "sequence": "SSRPEDYFIGATHLQKRLESVRK",
             "start": 0,
-            "end": 22,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 22,
-                "end": 23,
-                "sequence": "K"
-              }
-            ]
+            "end": 23,
+            "terminal_tags": []
           }
         }
       ]
@@ -491,17 +464,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KRFHATISF",
           "scoring_region": {
-            "sequence": "RFHATISF",
-            "start": 1,
+            "sequence": "KRFHATISF",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -583,17 +549,10 @@
           "minimal_epitope_offset": 3,
           "sequence": "KHGKRFHATISFDTDTGL",
           "scoring_region": {
-            "sequence": "HGKRFHATISFDTDTGL",
-            "start": 1,
+            "sequence": "KHGKRFHATISFDTDTGL",
+            "start": 0,
             "end": 18,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         }
       ]
@@ -639,17 +598,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KLIDDQDVSI",
           "scoring_region": {
-            "sequence": "LIDDQDVSI",
-            "start": 1,
+            "sequence": "KLIDDQDVSI",
+            "start": 0,
             "end": 10,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         }
       ]
@@ -724,21 +676,15 @@
           "minimal_epitope_offset": null,
           "sequence": "KKFDWIVFRINHALLNSKVLEHNTK",
           "scoring_region": {
-            "sequence": "FDWIVFRINHALLNSKVLEHNT",
+            "sequence": "FDWIVFRINHALLNSKVLEHNTK",
             "start": 2,
-            "end": 24,
+            "end": 25,
             "terminal_tags": [
               {
                 "terminus": "N",
                 "start": 0,
                 "end": 2,
                 "sequence": "KK"
-              },
-              {
-                "terminus": "C",
-                "start": 24,
-                "end": 25,
-                "sequence": "K"
               }
             ]
           }
@@ -1050,16 +996,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KELPLYLWQPSTSEIAVIRDWKK",
           "scoring_region": {
-            "sequence": "ELPLYLWQPSTSEIAVIRDW",
-            "start": 1,
+            "sequence": "KELPLYLWQPSTSEIAVIRDW",
+            "start": 0,
             "end": 21,
             "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              },
               {
                 "terminus": "C",
                 "start": 21,
@@ -1079,17 +1019,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KELPLYLWQPSTSEIAVIRD",
           "scoring_region": {
-            "sequence": "ELPLYLWQPSTSEIAVIRD",
-            "start": 1,
+            "sequence": "KELPLYLWQPSTSEIAVIRD",
+            "start": 0,
             "end": 20,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -1102,17 +1035,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
           "scoring_region": {
-            "sequence": "SVIRTLSTIDDVEDRENEKGR",
-            "start": 2,
+            "sequence": "KKSVIRTLSTIDDVEDRENEKGR",
+            "start": 0,
             "end": 23,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 2,
-                "sequence": "KK"
-              }
-            ]
+            "terminal_tags": []
           }
         }
       ]
@@ -1330,17 +1256,10 @@
           "minimal_epitope_offset": 8,
           "sequence": "KTVRIYQGRVVPFTKALMIKFEE",
           "scoring_region": {
-            "sequence": "TVRIYQGRVVPFTKALMIKFEE",
-            "start": 1,
+            "sequence": "KTVRIYQGRVVPFTKALMIKFEE",
+            "start": 0,
             "end": 23,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -1410,17 +1329,10 @@
           "minimal_epitope_offset": 8,
           "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
           "scoring_region": {
-            "sequence": "TVRIYQGRVVPFTKALMIKFEEI",
-            "start": 1,
+            "sequence": "KTVRIYQGRVVPFTKALMIKFEEI",
+            "start": 0,
             "end": 24,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         }
       ]
@@ -1741,17 +1653,10 @@
           "minimal_epitope_offset": null,
           "sequence": "HENLFLQPPKLSREESSNPFLAFVEK",
           "scoring_region": {
-            "sequence": "HENLFLQPPKLSREESSNPFLAFVE",
+            "sequence": "HENLFLQPPKLSREESSNPFLAFVEK",
             "start": 0,
-            "end": 25,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 25,
-                "end": 26,
-                "sequence": "K"
-              }
-            ]
+            "end": 26,
+            "terminal_tags": []
           }
         },
         {
@@ -2421,17 +2326,10 @@
           "minimal_epitope_offset": null,
           "sequence": "KIILNFTTL",
           "scoring_region": {
-            "sequence": "IILNFTTL",
-            "start": 1,
+            "sequence": "KIILNFTTL",
+            "start": 0,
             "end": 9,
-            "terminal_tags": [
-              {
-                "terminus": "N",
-                "start": 0,
-                "end": 1,
-                "sequence": "K"
-              }
-            ]
+            "terminal_tags": []
           }
         },
         {
@@ -2593,17 +2491,10 @@
           "minimal_epitope_offset": 1,
           "sequence": "DRQKRIGNTRKMIEDLQNELK",
           "scoring_region": {
-            "sequence": "DRQKRIGNTRKMIEDLQNEL",
+            "sequence": "DRQKRIGNTRKMIEDLQNELK",
             "start": 0,
-            "end": 20,
-            "terminal_tags": [
-              {
-                "terminus": "C",
-                "start": 20,
-                "end": 21,
-                "sequence": "K"
-              }
-            ]
+            "end": 21,
+            "terminal_tags": []
           }
         }
       ]

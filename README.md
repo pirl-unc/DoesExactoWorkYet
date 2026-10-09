@@ -94,37 +94,79 @@ breakpoints and novel-ORF boundaries are not annotated in this panel. Reference
 markers require an exact local anchor with an unambiguous projected position.
 Rose marks vaccine-versus-reconstruction differences on both rows, independently
 of the amber comparison against W1. Missing ends are coverage, not substitutions.
-Stars mark every RNA-support leader (including ties) per sample and method.
-Exacto itself emits unranked candidates; this report ranks displayed windows by
-distinct input RNAs without using vaccine agreement. The top-window filter finds
-covered-position disagreements, including leaders that contain another peptide;
-details distinguish incomplete, unaligned, and allele-unconfirmed sequences.
-By benchmark convention, **complete terminal runs of K, KK, KKK or KKKK at either
-end of every vaccine peptide are suspected solubility additions outside the ORF**
-and excluded from containment, mismatch and missing-coverage scoring. This includes
-all vaccine labels and mRNA minimal epitopes. Internal lysines and terminal runs
-longer than four remain scored. The rule is an evaluation convention, not a
-confirmed per-peptide synthesis annotation. Purple marks the excluded residues;
-full recorded sequences remain visible and are preserved in the reference FASTA.
-Both subset and analysis JSON export `scoring_region`: the retained sequence,
-zero-based/end-exclusive coordinates within the recorded peptide, and excluded tags.
-Match `amino_acid_starts` are one-based locations of the scored region in the protein.
-An empty scored region never matches.
-Its metric is **vaccine sequence contained in reconstruction (terminal K tags
-excluded)**: the full remaining region must appear as a contiguous substring of a reconstructed protein,
-which can extend on either side. Every counted occurrence is tied to an RNA call
-at the target's exact locus and allele, and overlaps its translated codon/junction
-or frameshifted tail. The analysis reads the full exported protein FASTAs, since
-the main results JSON retains only three candidate examples per target/method.
+The primary score uses the window with the largest distinct raw or corrected RNA
+count in any one sample/method. Counts are never added across methods or samples,
+and assembly-only outputs stay separate. All tied leaders remain visible; a target
+is recovered only when every tied leader contains at least one recorded vaccine
+peptide. Lower-support alternatives remain diagnostic and never change this score.
+Exacto emits unranked candidates; this is the report’s ranking rule. The `top` label
+marks the primary windows; stars retain the best windows within each sample/method.
+The filter finds covered-position mismatches in primary windows, including leaders
+that contain another peptide. Missing ends, unaligned outputs and mixed ties are
+shown separately. Recovery means at least one peptide, not every administered peptide.
+
+Terminal K, KK, KKK or KKKK runs are suspected additions only where independent
+same-gene GENCODE protein context supports excluding them. Native lysines,
+longer-parent-supported lysines, encoded mRNA sequences and uncertain cases remain
+scored. In particular, the initial K in ZNF436’s `KSFGRSCHL` and VPS72’s
+`KSLRPRKVNTPAGSSQKAREERALLPLELQD` is native. Exacto outputs never decide which
+reference residues are excluded. The frozen evidence is in
+[`data/vaccine_peptide_context.json`](data/vaccine_peptide_context.json), bound to
+the catalogue and the benchmark’s GENCODE v44 protein subset. To regenerate it:
+
+```bash
+python -m scripts.build_peptide_context --proteins work/reference/vaccine_genes.proteins.fa
+python -m pipeline.fetch_osteosarc
+```
+
+Purple marks suspected additions; synthesis origin remains unconfirmed. Full
+recorded sequences remain visible and in the reference FASTA. Both subset and
+analysis JSON export `scoring_region`: the retained sequence, zero-based/end-exclusive
+coordinates within the recorded peptide, and excluded tags. Match
+`amino_acid_starts` are one-based positions of the scored region in the protein.
+The nonempty scored region must be a contiguous substring of a reconstructed
+protein, which can extend on either side. Every counted occurrence is tied to an
+RNA call at the target’s exact locus and allele, and overlaps its translated
+codon/junction or frameshifted tail. The analysis reads full exported protein
+FASTAs; the main results JSON retains only three candidate examples per target/method.
 
 Re-scoring [run 37664740743](https://github.com/pirl-unc/DoesExactoWorkYet/actions/runs/37664740743)
-(Exacto 0.5.0a1) under this policy found **25/36 targets** with at least one scored
-vaccine sequence contained in a reconstruction: **57/78 peptide entries**.
-All 25 also matched a non-minimal vaccine peptide. These are unions over all 29
-completed methods, including T2-ONT. Full recorded-sequence scoring of the same
-outputs had recovered 23/36 targets and 52/78 entries; the added targets are
-CD109 and PTH1R. This reanalysis uses the saved translations and does not rerun
-alignment, assembly, or Exacto. The full-panel amino-acid check remains 31/33.
+(Exacto 0.5.0a1) gives **17/36 targets recovered by the primary windows**:
+
+| Largest raw/corrected count | Recovered | Other top results |
+|---|---|---|
+| 10+ | 12/12 | — |
+| 5–9 | 3/4 | 1 unaligned |
+| 2–4 | 1/4 | 1 partial, 1 unaligned, 1 mixed tie |
+| 1 | 1/7 | 1 differs, 2 unaligned, 3 mixed ties |
+| No sequence | 0/9 | 9 without output |
+
+ANKRD17’s primary window differs at covered positions. TECPR1 has disagreeing and
+recovering leaders tied at one input. The other unaligned leaders are ABI3BP and
+VPS13B (one input each), ZNF436 (four corrected inputs) and MT-ND5 (five corrected
+inputs). A lack of a comparable alignment is not counted as a localized mismatch.
+PRRC2C has a partial leader tied with an unaligned one. Mixed ties are not scored
+as recovered. All-output diagnostic unions remain **25/36 targets and 57/78 peptide
+entries**, across all 29 completed methods including T2-ONT; all 25 also match a
+non-minimal peptide. The full-panel amino-acid check remains 31/33. This reanalysis
+uses saved translations and does not rerun alignment, assembly, or Exacto.
+
+For ABI3BP p.Arg472Met, the sole translated raw T2-ONT input contains `ATG`
+(Met) at read positions 740–742 (zero-based). Exacto’s exported `orf_516-1004`
+uses positions 741–743 as `TGG` (Trp), placing W at protein residue 76. Direct
+translation reproduces the archived protein: this is a different reading frame,
+not a display error. A fresh splice alignment of input
+`7ded8e54-a148-4363-8209-a0bd39ad5fc0_0` has no internal insertions/deletions;
+GENCODE transcript ENST00000486770.7 places both that ORF start and the target
+base at codon offset 1, rather than 0. This establishes the phase disagreement,
+but does not establish why Exacto emitted that ORF or whether the raw read is
+otherwise accurate. No corrected output recovers this target.
+
+The analysis CLI and site build require Node.js as well as Python. They share the
+browser’s window grouping and ranking through `scripts/score_primary_windows.js`;
+the site rebuilds the primary score so a stored ranking cannot become stale.
+Containment analysis is bound to both the exact benchmark results and the frozen
+terminal-context fingerprint; stale or mismatched analyses are not published.
 
 The full benchmark workflow regenerates this report from the current run's
 archived proteins and RNA calls before publishing. If those outputs cannot be
