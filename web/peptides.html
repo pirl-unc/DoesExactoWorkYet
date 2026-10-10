@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vaccine sequences — Does Exacto Work Yet?</title>
 <meta name="description" content="Check each recorded vaccine peptide inside the proteins reconstructed by Exacto, with sequence highlights and evidence by sample and method.">
-<link rel="stylesheet" href="style.css?v=20261009-overlap2">
+<link rel="stylesheet" href="style.css?v=20261010-mismatches">
 </head>
 <body class="sequence-page">
 <header class="masthead compact">
@@ -14,6 +14,7 @@
     <h1>Vaccine peptide recovery</h1>
     <p class="lede">Recorded vaccine peptides alongside reconstructed proteins and their RNA support.</p>
     <p id="sequence-summary" class="sequence-summary" aria-live="polite">Loading the sequence analysis…</p>
+    <a id="sequence-mismatch-shortcut" class="sequence-mismatch-shortcut" href="#sequence-mismatch-filters" hidden></a>
     <table id="sequence-recovery-levels" class="recovery-levels" hidden>
       <caption>Top sequence recovery by RNA support</caption>
       <thead><tr><th scope="col">RNA inputs</th><th scope="col">Recovered</th><th scope="col">Other top results</th></tr></thead>
@@ -51,17 +52,20 @@
         context. Native lysines, parent-supported lysines, encoded mRNA peptides and uncertain cases
         remain scored. A terminal K by itself is not a tag. Excluded residues count as neither mismatches
         nor missing coverage; their synthesis origin remains unconfirmed.</p>
-      <p>Blue underlines mark the translated target codon from the RNA call. For a deletion this is
-        the codon at/after its junction; for a frameshift, the dotted blue tail means downstream of
-        the event, not verified novelty at every residue. Dotted target marks indicate differing
+      <p>Bold blue letters mark the translated target codon from the RNA call. For a deletion this is
+        the codon at/after its junction; lighter-weight blue letters in a frameshift tail mean downstream of
+        the event, not verified novelty at every residue. Dotted outlines indicate differing target
         locations among grouped outputs. Vaccine-row marks require an unambiguous exact local anchor.
+        A blue letter in a rose box is both a target codon and a vaccine mismatch.
         The current panel has no annotated fusion breakpoints or novel-ORF boundaries; these are not inferred.</p>
       <p><b>Top</b> is the window with the largest raw or corrected RNA count in any one sample/method;
         counts are never pooled. All ties remain visible. Recovery requires every tied leader to contain
         at least one vaccine peptide. Mixed ties contain both recovering and non-recovering leaders;
         they are not counted as recovered. “Differs” means a covered-position mismatch; “partial” means
         missing sequence. A recovered leader can still
-        disagree with a different peptide; the “Top ≠ vaccine” filter includes those cases.
+        disagree with a different peptide; “Top mismatches” includes those cases.
+        “Any window” also finds mismatches in lower-support and assembled outputs, for diagnosis only.
+        Mismatch filters require a difference at a covered vaccine position; missing ends and unclear overlap do not qualify.
         Missing ends stay separate from disagreements. Assembly-only outputs are diagnostic, not read-ranked.
         Lower-support windows never change the primary score. ★ retains the best count within each
         sample/method for diagnosis. Exacto outputs are unranked; this is the report’s support rule.</p>
@@ -80,6 +84,12 @@
         sample's library; method filtering does not change these independent evidence groups. Missing libraries remain unknown.
         Two reads are a support threshold, not a guarantee of complete vaccine-sequence recovery.</p>
     </details>
+    <div id="sequence-mismatch-filters" class="sequence-mismatch-filters" role="group" aria-label="Find vaccine mismatches" tabindex="-1" hidden>
+      <button type="button" value="" aria-pressed="true">All targets</button>
+      <button type="button" value="disagreement" aria-pressed="false">Top mismatches</button>
+      <button type="button" value="any" aria-pressed="false" title="Targets with a vaccine mismatch in any window, including lower-support and assembled outputs; diagnostic only">Any window</button>
+    </div>
+    <nav id="sequence-mismatch-targets" class="sequence-mismatch-targets" aria-label="Jump to mismatch target" hidden></nav>
     <div class="sequence-controls" id="sequence-controls" hidden>
       <label class="sequence-search">Search targets or sequences
         <input type="search" id="sequence-search" placeholder="Gene, mutation, or amino-acid sequence">
@@ -89,12 +99,11 @@
       <label>Method <select id="sequence-method"><option value="">All available methods</option></select></label>
       <label>Vaccine <select id="sequence-vaccine"><option value="">All vaccines</option></select></label>
       <label>Sid RNA evidence <select id="sequence-source-rna"><option value="">All source evidence</option><option value="supported">Mutant RNA observed</option><option value="no_alt_reads">Covered, no mutant reads</option><option value="no_coverage">No coverage</option><option value="not_reported">Not reported</option></select></label>
-      <label>Top RNA windows <select id="sequence-top"><option value="">All targets</option><option value="disagreement">Differ from vaccine</option></select></label>
       <label>RNA support <select id="sequence-rna-tier"><option value="">All evidence</option><option value="multiple">2+ mutant reads</option><option value="single">Single-read evidence</option><option value="zero">0 mutant reads observed</option><option value="unknown">Counts unavailable</option></select></label>
     </div>
     <div class="sequence-legend" aria-label="Sequence and read-count legend">
       <span><mark>ACD</mark> vaccine contained</span>
-      <span><b class="sequence-vaccine-difference">G</b> differs from vaccine</span>
+      <span><b class="sequence-vaccine-difference">G</b> vaccine mismatch · <b class="vaccine-mismatch-count">3≠</b> positions</span>
       <span><b class="sequence-suspected-tag">KK</b> suspected tag · excluded</span>
       <span><b class="sequence-difference">G</b> differs from W1</span>
       <span><b class="sequence-event sequence-event-mutation">M</b> target codon</span>
@@ -128,6 +137,6 @@
       <a href="vaccine_peptide_analysis.json" download>Analysis and reconstructed sequences (JSON)</a></p>
   </section>
 </main>
-<script src="peptides.js?v=20261009-overlap"></script>
+<script src="peptides.js?v=20261010-mismatches"></script>
 </body>
 </html>

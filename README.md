@@ -87,13 +87,15 @@ this tier; per-sample evidence retains both underlying counts. The main
 page retains the overall score and shows recovery within each evidence group;
 amino-acid failures name the expected and observed residues inline.
 
-Blue underlines locate each translated target codon using the archived RNA-call
-position. Deletion markers mean the codon at/after the junction. A dotted tail
-means downstream of a frameshift, not confirmed novel sequence throughout; fusion
+Bold blue letters locate each translated target codon using the archived RNA-call
+position. Deletion markers mean the codon at/after the junction. Lighter-weight
+blue letters in a tail mean downstream of a frameshift, not confirmed novel sequence throughout; fusion
 breakpoints and novel-ORF boundaries are not annotated in this panel. Reference
 markers require an exact local anchor with an unambiguous projected position.
 Rose marks vaccine-versus-reconstruction differences on both rows, independently
 of the amber comparison against W1. Missing ends are coverage, not substitutions.
+A target codon that also differs from a vaccine peptide keeps its blue letter in
+a rose box. Per-row rose counts identify the mismatched positions in each region.
 The primary score uses the window with the largest distinct raw or corrected RNA
 count in any one sample/method. Counts are never added across methods or samples,
 and assembly-only outputs stay separate. All tied leaders remain visible; a target
@@ -101,8 +103,11 @@ is recovered only when every tied leader contains at least one recorded vaccine
 peptide. Lower-support alternatives remain diagnostic and never change this score.
 Exacto emits unranked candidates; this is the report’s ranking rule. The `top` label
 marks the primary windows; stars retain the best windows within each sample/method.
-The filter finds covered-position mismatches in primary windows, including leaders
-that contain another peptide. Missing ends, outputs with no clear peptide overlap,
+The summary links directly to the top mismatches, with gene links to jump between
+targets. “Top mismatches” finds covered-position mismatches in primary windows,
+including leaders that contain another peptide. “Any window” includes lower-support
+and assembly mismatches for diagnosis; it does not alter the primary score.
+Missing ends, outputs with no clear peptide overlap,
 and mixed ties are shown separately. Recovery means at least one peptide, not every
 administered peptide.
 
