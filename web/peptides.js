@@ -649,6 +649,15 @@ function reconstructionRow(report, window, slice, filters, rows, comparison, gro
     `P${variant.published_vaccine_peptides.indexOf(peptide) + 1}`);
   const match = node("td", `alignment-match ${contained.length ? "contained" : "sequence_disagreement"}`, contained.join(" ") || "≠");
   match.title = contained.length ? `Contains ${contained.join(", ")}` : "No contained vaccine sequence";
+  const mismatches = [...group.vaccineDifferences.windows.get(window).keys()].filter(column =>
+    column >= window.offset + slice.from && column < window.offset + slice.to).length;
+  if (mismatches) {
+    if (!contained.length) match.replaceChildren();
+    const badge = node("span", "vaccine-mismatch-count", `${mismatches}≠`);
+    badge.title = `${mismatches} covered position${mismatches === 1 ? " differs" : "s differ"} from a vaccine peptide in this region`;
+    badge.setAttribute("aria-label", badge.title);
+    match.append(badge);
+  }
   const changes = node("td", "alignment-differences");
   if (comparison) {
     if (window.number === comparison.reference) changes.append(node("span", "comparison-reference", "ref"));
@@ -792,6 +801,11 @@ function renderSequenceRows(report) {
   });
   const container = queryNode("#sequence-targets");
   container.replaceChildren();
+  const mismatchMode = queryNode('#sequence-mismatch-filters [aria-pressed="true"]').value;
+  const mismatchTargets = queryNode("#sequence-mismatch-targets");
+  mismatchTargets.replaceChildren();
+  mismatchTargets.hidden = !mismatchMode;
+  const totals = { all: groups.size, top: 0, any: 0 };
   let shown = 0, peptidesShown = 0, topDisagreements = 0;
   const columns = Math.max(45, Math.min(72, Math.floor((container.clientWidth - 650) / 9.6) - 2));
   for (const entries of groups.values()) {
@@ -799,11 +813,21 @@ function renderSequenceRows(report) {
     const comparisons = prepareComparisons(report, entries, filters);
     const top = topWindows(report, comparisons, entries, filters);
     const primary = primaryWindows(top);
-    if (queryNode("#sequence-top").value === "disagreement" && !primary.disagreement) continue;
+    const anyMismatch = comparisons.some(group => [...group.vaccineDifferences.windows.values()].some(positions => positions.size));
+    totals.top += primary.disagreement;
+    totals.any += anyMismatch;
+    if ((mismatchMode === "disagreement" && !primary.disagreement) || (mismatchMode === "any" && !anyMismatch)) continue;
     shown++;
     peptidesShown += entries.length;
     topDisagreements += primary.disagreement;
     const target = node("article", "sequence-target");
+    target.id = `target-${variant.variant_id}`;
+    if (mismatchMode) {
+      const jump = node("a", "", variant.gene);
+      jump.href = `#${encodeURIComponent(target.id)}`;
+      jump.title = `${variant.gene} ${variant.protein_change || variant.variant_id}`;
+      mismatchTargets.append(jump);
+    }
     const title = node("h3", "sequence-target-title");
     title.append(node("span", "", variant.gene), node("span", "mono", variant.protein_change || "Protein change not annotated"));
     const tier = filters.sample ? variant.rna_support?.by_sample?.[filters.sample] : variant.rna_support;
@@ -818,6 +842,9 @@ function renderSequenceRows(report) {
     target.append(sourceRnaEvidence(report, variant, filters));
     container.append(target);
   }
+  queryNode('#sequence-mismatch-filters button[value=""]').textContent = `All targets · ${totals.all}`;
+  queryNode('#sequence-mismatch-filters button[value="disagreement"]').textContent = `Top mismatches · ${totals.top}`;
+  queryNode('#sequence-mismatch-filters button[value="any"]').textContent = `Any window · ${totals.any}`;
   queryNode("#sequence-count").textContent = `${shown} targets · ${peptidesShown} peptides · ${topDisagreements} primary sequence disagreements`;
   if (!shown) container.append(node("p", "empty", "No sequences match these filters. Try another gene, sequence, or recovery status."));
 }
@@ -830,6 +857,20 @@ function populateSequenceReport(report) {
   const { summary, analysis } = report;
   const primary = report.primary_window_report || primaryWindowReport(report);
   queryNode("#sequence-summary").textContent = `${primary.recovered}/${primary.targets} targets recovered by the top RNA-supported sequence.`;
+  const mismatchButtons = [...document.querySelectorAll("#sequence-mismatch-filters button")];
+  const selectMismatches = (value) => {
+    mismatchButtons.forEach(button => button.setAttribute("aria-pressed", String(button.value === value)));
+    renderSequenceRows(report);
+  };
+  mismatchButtons.forEach(button => button.addEventListener("click", () => selectMismatches(button.value)));
+  const shortcut = queryNode("#sequence-mismatch-shortcut");
+  shortcut.textContent = `View ${primary.disagreement} target${primary.disagreement === 1 ? "" : "s"} with top mismatches`;
+  shortcut.hidden = !primary.disagreement;
+  shortcut.addEventListener("click", () => {
+    for (const select of document.querySelectorAll(".sequence-controls select")) select.selectedIndex = 0;
+    queryNode("#sequence-search").value = "";
+    selectMismatches("disagreement");
+  });
   const body = queryNode("#sequence-recovery-levels tbody");
   for (const row of primary.by_support) {
     const tr = node("tr"), label = node("th", "", row.label); label.scope = "row";
@@ -863,7 +904,8 @@ function populateSequenceReport(report) {
     }
   }
   queryNode("#sequence-controls").hidden = false;
-  for (const selector of ["#sequence-search", "#sequence-status", "#sequence-source-rna", "#sequence-top", "#sequence-rna-tier", ...Object.keys(options)]) {
+  queryNode("#sequence-mismatch-filters").hidden = false;
+  for (const selector of ["#sequence-search", "#sequence-status", "#sequence-source-rna", "#sequence-rna-tier", ...Object.keys(options)]) {
     queryNode(selector).addEventListener("input", () => renderSequenceRows(report));
   }
   let resizeFrame;
