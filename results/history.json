@@ -65,9 +65,9 @@
   },
   {
     "date": "2026-10-07",
-    "timestamp": "2026-10-12T12:21:18+00:00",
+    "timestamp": "2026-10-19T10:08:26+00:00",
     "exacto_version": "0.5.0a1",
-    "commit": "54219c7",
+    "commit": "31fcfeb",
     "input_id": "af299e74992360e7892c7effbe163bcec7d61d044981807b2dc100bca55d845d",
     "n_variants": 51,
     "n_testable": 51,
